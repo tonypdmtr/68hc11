@@ -1,7 +1,7 @@
 ;*******************************************************************************
 ;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
 ;*******************************************************************************
-; The original version of this program was found here:                CRC: $0943
+; The original version of this program was found here:
 ; http://incolor.inetnebr.com/mariley/projects/68HC11/68hc11.htm
 ;
 ; Optimized and adapted to ASM11 by Tony Papadimitriou <tonyp@acm.org>
@@ -11,345 +11,293 @@ E2
                     #Uses     mcu.inc
                     #ListOn
 
+;*******************************************************************************
                     #RAM
-
-LAT                 rmb       15+1
-LON                 rmb       16+1
-QUAL                rmb       1+1                 ; QUALITY
-
-; LINE 3 OF LCD
-
-ALT                 rmb       6
-HDG                 rmb       6
-SPD                 rmb       5+1
-
-; LINE 4
-
-SAT                 rmb       7
-TIME                rmb       8+1
-
-;*******************************************************************************
-;                      SYMBOL DEFINITIONS
 ;*******************************************************************************
 
-; PORT C
+lat                 rmb       15+1
+lon                 rmb       16+1
+qual                rmb       1+1                 ; QUALITY
+          ;-------------------------------------- ; LINE 3 OF LCD
+alt                 rmb       6
+hdg                 rmb       6
+spd                 rmb       5+1
+          ;-------------------------------------- ; LINE 4
+sat                 rmb       7
+time                rmb       8+1
 
-IOPAT               equ       $FF                 ; I/O PATTERNS 0=IN 1=OUT 11111111
+;*******************************************************************************
+;                      Symbol Definitions
+;*******************************************************************************
 
-; SPI MASKS
+; PORTC
+
+IOPAT               equ       $FF                 ; I/O patterns 0=IN 1=OUT 11111111
+
+; SPI masks
 
 TDRE                equ       %10000000
 RDRF                equ       %00100000
-TXCOM               equ       %01000000           ; TRANSMIT COMPLETE =1
-OVRUN               equ       %00001000           ; OVER RUN ERROR
+TXCOM               equ       %01000000           ; transmit complete =1
+OVRUN               equ       %00001000           ; overrun error
 
-;****** start of program ****************************
-
+;*******************************************************************************
                     #ROM
+;*******************************************************************************
 
 Start               proc
                     lds       #STACKTOP           ; set up stack (essential if you use subroutines)
-
-;********* INITIALIZE DISPLAY *****************
-
+          ;-------------------------------------- ; initialize display
                     jsr:2     DELAYL
-
-          ; INITIALIZE THE SERIAL CONTROL REGISTER
-
+          ;-------------------------------------- ; initialize the serial control register
                     lda       #%00110001          ; 00110001 = 4800 BAUD
                     sta       BAUD
                     clr       SCCR1
                     lda       #%00001100
-                    sta       SCCR2               ; RECEIVER & TRANS. ENABLED
+                    sta       SCCR2               ; RX & TX enabled
                     clr       SPCR
-
-;******* SETUP NMEA SENTENCES *******************
-
+          ;-------------------------------------- ; setup NMEA sentences
                     ldx       #NMEAON
                     jsr       SENDX
 
                     jsr:2     DELAYL
-
-          ; INITIALIZE OUTPUT TO LCD
-
-                    ldx       #TEXT1              ; SEND TEXT1 TO SERIAL PORT
+          ;-------------------------------------- ; initialize output to LCD
+                    ldx       #TEXT1              ; send text1 to serial port
                     jsr       SENDX
-
-COMMA               ldb       #'.'                ; SEND ..... WHILE WAITING
+Comma@@             ldb       #'.'                ; send ..... while waiting
                     jsr       TXWAIT
                     stb       SCDR
-
-;*********** READ FROM GPS ****************
-
-LOOP                ldx       #NMEA               ; START LOOKING FOR "$GP"
+          ;-------------------------------------- ; read from GPS
+Loop@@              ldx       #NMEA               ; start looking for "$GP"
                     ldb       #3
-?GP1                jsr       RVWAIT              ; WAIT FOR DATA FROM GPS
-                    lda       SCDR                ; LOAD BYTE FROM SERIAL PORT
-                    cmpa      ,X                  ; COMPARE TO POSITION FORMAT
-                    bne       LOOP                ; IF SCDR IS NOT "$GP" START OVER
+_1@@                jsr       RVWAIT              ; wait for data from GPS
+                    lda       SCDR                ; load byte from serial port
+                    cmpa      ,x                  ; compare to position format
+                    bne       Loop@@              ; if SCDR is not "$GP" start over
                     inx
                     decb
-                    bne       ?GP1
+                    bne       _1@@
 
                     ldx       #GPGGA
                     ldb       #4
-?STRING             jsr       RVWAIT              ; WAIT FOR DATA FROM GPS
-                    lda       SCDR                ; LOAD BYTE FROM SERIAL PORT
-                    cmpa      ,X                  ; COMPARE TO POSITION FORMAT
-                    bne       LOOP                ; IF SCDR IS NOT "GGA," GO TO NEXT STRING
+String@@            jsr       RVWAIT              ; wait for data from GPS
+                    lda       SCDR                ; load byte from serial port
+                    cmpa      ,x                  ; compare to position format
+                    bne       Loop@@              ; if SCDR is not "GGA," go to next string
                     inx
                     decb
-                    bne       ?STRING
-
-; DECODE MESSAGE
-; $GPGGA,hhmmss.ss,ddmm.mmmm,n,dddmm.mmmm,e,q,ss,y.y,a.a,z,g.g,z,t.t,iiii*CC<CR><LF>
-
-;*************** Time *************************************
-; HOUR
-                    lda       #$02                ; GET HH
-                    ldx       #TIME
-?TIMEL1             jsr       GETCHAR
-                    cmpb      #','                ; IF A COMMA IS DETECTED THE DATA IS INVALID
-                    beq       COMMA
-                    stb       ,X
+                    bne       String@@
+          ;--------------------------------------
+          ; DECODE MESSAGE
+          ; $GPGGA,hhmmss.ss,ddmm.mmmm,n,dddmm.mmmm,e,q,ss,y.y,a.a,z,g.g,z,t.t,iiii*CC<CR><LF>
+          ;-------------------------------------- ; hour
+                    lda       #2                  ; get HH
+                    ldx       #time
+Time@@              jsr       GETCHAR
+                    cmpb      #','                ; if a comma is detected the data is invalid
+                    beq       Comma@@
+                    stb       ,x
                     inx
                     deca
-                    bne       ?TIMEL1
+                    bne       Time@@
 
-                    ldb       #':'                ; INSERT ":"
-                    stb       ,X
+                    ldb       #':'                ; insert ":"
+                    stb       ,x
                     inx
 
                     tstb
-          ; MINUTE
-                    lda       #2                  ; GET MM
+          ;-------------------------------------- ; minute
+                    lda       #2                  ; get mm
                     jsr       GETLINE
 
-                    ldb       #':'                ; INSERT ":"
-                    stb       ,X
+                    ldb       #':'                ; insert ":"
+                    stb       ,x
                     inx
-          ; SECOND
-                    lda       #2                  ; GET SS
+          ;-------------------------------------- ; second
+                    lda       #2                  ; get ss
                     jsr       GETLINE
 
-                    clr       ,X                  ; INSERT NULL
-
-;************** SKIP FRACTIONAL SECONDS *******************
-
-                    lda       #4                  ; SKIP .SS,
-SKIPFS              jsr       GETCHAR
+                    clr       ,x                  ; insert NULL
+          ;-------------------------------------- ; skip fractional seconds
+                    lda       #4                  ; skip .ss,
+SkipFs@@            jsr       GETCHAR
                     deca
-                    bne       SKIPFS
-
-;************** LATITUDE ********************************
-
-                    lda       #2                  ; GET ddmm.mmmm,n
-                    ldx       #LAT
+                    bne       SkipFs@@
+          ;-------------------------------------- ; latitude
+                    lda       #2                  ; get ddmm.mmmm,n
+                    ldx       #lat
                     jsr       GETLINE
 
-                    ldb       #$DF                ; INSERT DEGREE SYMBOL
-                    stb       ,X
+                    ldb       #$DF                ; insert degree symbol
+                    stb       ,x
                     inx
 
-                    lda       #$07                ; GET ddmm.mmmm,n
+                    lda       #7                  ; get ddmm.mmmm,n
                     jsr       GETLINE
-
-          ; INSERT A SPACE INSTEAD OF THE COMMA
-
+          ;-------------------------------------- ; insert a space instead of the comma
                     jsr       GETCHAR
                     ldb       #' '
-                    stb       ,X
+                    stb       ,x
                     inx
 
                     jsr       GETCHAR
-                    stb       ,X
+                    stb       ,x
                     inx
 
                     lda       #3
                     jsr       SPACE
 
-                    clr       ,X                  ; INSERT NULL
-          ; SKIP COMMA
-                    jsr       GETCHAR
-
-;************* LONGITUDE *********************************
-
-                    lda       #3                  ; GET ddmm.mmmm,n
-                    ldx       #LON
+                    clr       ,x                  ; insert NULL
+                    jsr       GETCHAR             ; skip comma
+          ;-------------------------------------- ; longitude
+                    lda       #3                  ; get ddmm.mmmm,n
+                    ldx       #lon
                     jsr       GETLINE
 
-                    ldb       #$DF                ; INSERT DEGREE SYMBOL
-                    stb       ,X
+                    ldb       #$DF                ; insert degree symbol
+                    stb       ,x
                     inx
 
-                    lda       #7                  ; GET ddmm.mmmm,n
+                    lda       #7                  ; get ddmm.mmmm,n
                     jsr       GETLINE
-
-          ; INSERT A SPACE INSTEAD OF THE COMMA
-
+          ;-------------------------------------- ; insert a space instead of the comma
                     jsr       GETCHAR
                     ldb       #' '
-                    stb       ,X
+                    stb       ,x
                     inx
 
                     jsr       GETCHAR
-                    stb       ,X
+                    stb       ,x
                     inx
 
-                    lda       #3                  ; INSERT 3 SPACES
+                    lda       #3                  ; insert 3 spaces
                     jsr       SPACE
 
-                    clr       ,X                  ; INSERT NULL
-          ; SKIP COMMA
+                    clr       ,x                  ; insert NULL
+                    jsr       GETCHAR             ; skip comma
+          ;-------------------------------------- ; GPS quality indication
+                    ldx       #qual
                     jsr       GETCHAR
-
-;************** GPS QUALITY INDICATION **************
-                    ldx       #QUAL
-                    jsr       GETCHAR
-                    stb       ,X
-          ; SKIP COMMA
-                    jsr       GETCHAR
-
-;************* SATS BEING USED ***************************
-
-                    ldx       #SAT
-                    lda       #2                  ; GET ss
+                    stb       ,x
+                    jsr       GETCHAR             ; skip comma
+          ;-------------------------------------- ; sats being used
+                    ldx       #sat
+                    lda       #2                  ; get ss
                     jsr       GETLINE
 
                     lda       #5
                     jsr       SPACE
-
-;************** SKIP ,y.y, *******************
-
+          ;-------------------------------------- ; skip ,y.y,
                     lda       #5
-SKIPYS              jsr       GETCHAR
+_2@@                jsr       GETCHAR
                     deca
-                    bne       SKIPYS
-
-;*************** ALTITUDE ********************
-                    ldx       #ALT
-                    lda       #3                  ; GET ALT
+                    bne       _2@@
+          ;-------------------------------------- ; altitude
+                    ldx       #alt
+                    lda       #3                  ; get alt
                     jsr       GETLINE
 
                     ldb       #'m'
-                    stb       ,X
+                    stb       ,x
                     inx
 
                     ldb       #' '
-                    stb       ,X
-                    stb       1,X
+                    stb       ,x
+                    stb       1,x
                     inx:2
-
-;********* HEADING AND SPEED ********************
-
-LOOP2               ldx       #NMEA               ; START LOOKING FOR "$GP"
-                    ldb       #$03
-
-GP2                 jsr       RVWAIT              ; WAIT FOR DATA FROM GPS
-                    lda       SCDR                ; LOAD BYTE FROM SERIAL PORT
-                    cmpa      ,X                  ; COMPARE TO POSITION FORMAT
-                    bne       LOOP2               ; IF SCDR IS NOT "$GP" START OVER
+          ;-------------------------------------- ; heading and speed
+Loop2@@             ldx       #NMEA               ; start looking for "$GP"
+                    ldb       #3
+_3@@                jsr       RVWAIT              ; wait for data from GPS
+                    lda       SCDR                ; load byte from serial port
+                    cmpa      ,x                  ; compare to position format
+                    bne       Loop2@@             ; if SCDR is not "$GP" start over
                     inx
                     decb
-                    bne       GP2
+                    bne       _3@@
 
                     ldx       #GPVTG
-                    ldb       #$04
-
-STRING2             jsr       RVWAIT              ; WAIT FOR DATA FROM GPS
-                    lda       SCDR                ; LOAD BYTE FROM SERIAL PORT
-                    cmpa      ,X                  ; COMPARE TO POSITION FORMAT
-                    bne       LOOP2               ; IF SCDR IS NOT "GGA," GO TO NEXT STRING
+                    ldb       #4
+String2@@           jsr       RVWAIT              ; wait for data from GPS
+                    lda       SCDR                ; load byte from serial port
+                    cmpa      ,x                  ; compare to position format
+                    bne       Loop2@@             ; if SCDR is not "GGA," go to next string
                     inx
                     decb
-                    bne       STRING2
-
-; DECODE MESSAGE
-; $GPVTG,,T,,M,,N,,K*4E
-
-                    ldx       #HDG
-                    lda       #3                  ; GET HEADING
-HDG1                jsr       GETCHAR
+                    bne       String2@@
+          ;--------------------------------------
+          ; DECODE MESSAGE
+          ; $GPVTG,,T,,M,,N,,K*4E
+          ;--------------------------------------
+                    ldx       #hdg
+                    lda       #3                  ; get heading
+HDG1@@              jsr       GETCHAR
 
                     cmpb      #','
-                    beq       DEGREE
+                    beq       Degree@@
 
                     cmpb      #'.'
-                    beq       DEGREE
-                    stb       ,X
+                    beq       Degree@@
+                    stb       ,x
                     inx
                     deca
-                    bne       HDG1
+                    bne       HDG1@@
 
-DEGREE              ldb       #$DF                ; DEGREE SYMBOL
-                    stb       ,X
+Degree@@            ldb       #$DF                ; degree symbol
+                    stb       ,x
                     inx
 
-                    ldb       #'T'                ; INSERT A "T"
-                    stb       ,X
+                    ldb       #'T'                ; insert a "T"
+                    stb       ,x
                     inx
 
                     lda       #5
                     jsr       SPACE
 
-                    clr       ,X                  ; INSERT NULL
-
-;*******************************************************************************
-;************************** DISPLAY DATA TO LCD ********************************
-;*******************************************************************************
-
-;************* LATTITUDE ***********************************
-
+                    clr       ,x                  ; insert NULL
+          ;-------------------------------------- ; display data to LCD - latitude
                     ldx       #LINE1
                     bsr       SENDX
 
-                    ldx       #LAT
+                    ldx       #lat
                     bsr       SENDX
-
-;************* LONGITUDE ***********************************
-
+          ;-------------------------------------- ;longitude
                     ldx       #LINE2
                     bsr       SENDX
 
-                    ldx       #LON
+                    ldx       #lon
                     bsr       SENDX
-
-;************* LINE 3 **************************************
-
-                    ldb       QUAL
+          ;-------------------------------------- ;line 3
+                    ldb       qual
                     cmpb      #'0'
-                    bne       AVAIL
+                    bne       Avail@@
 
                     ldx       #GPSOFF
                     bsr       SENDX
-                    bra       OUT
+                    bra       Out@@
 
-AVAIL               cmpb      #'1'
-                    bne       DIF
+Avail@@             cmpb      #'1'
+                    bne       Diff@@
                     ldx       #LINE3
                     bsr       SENDX
 
-                    ldx       #ALT
+                    ldx       #alt
                     bsr       SENDX
+                    bra       Out@@
 
-                    bra       OUT
-
-DIF                 cmpb      #$32
+Diff@@              cmpb      #$32
                     ldx       #DIFFIX
                     bsr       SENDX
-
-;************* LINE 4 **************************************
-
-OUT                 ldx       #LINE4
+          ;-------------------------------------- ;line 4
+Out@@               ldx       #LINE4
                     bsr       SENDX
 
-                    ldx       #SAT
+                    ldx       #sat
                     bsr       SENDX
-; END OF LOOP
-                    jmp       LOOP
+                    jmp       Loop@@
 
 ;*******************************************************************************
-;******************************* SUBROUTINES ***********************************
+; SUBROUTINES
 ;*******************************************************************************
 
 ;*******************************************************************************
@@ -360,14 +308,12 @@ OUT                 ldx       #LINE4
 SENDX               proc
                     dex
                     pshb
-
 Loop@@              bsr       TXWAIT
                     inx
-                    ldb       ,X
+                    ldb       ,x
                     beq       Done@@
                     stb       SCDR
                     bra       Loop@@
-
 Done@@              pulb
                     rts
 
@@ -377,8 +323,8 @@ Done@@              pulb
 ; Output : None
 
 TXWAIT              proc
-                    tst       SCSR                ; load Status Register RS232
-                    bpl       TXWAIT
+Loop@@              tst       SCSR
+                    bpl       Loop@@
                     rts
 
 ;*******************************************************************************
@@ -389,11 +335,11 @@ TXWAIT              proc
 ; Note(s): B destroyed
 
 GETLINE             proc
-                    bsr       GETCHAR
-                    stb       ,X
+Loop@@              bsr       GETCHAR
+                    stb       ,x
                     inx
                     deca
-                    bne       GETLINE
+                    bne       Loop@@
                     rts
 
 ;*******************************************************************************
@@ -410,7 +356,7 @@ GETCHAR             proc
 
 RVWAIT              proc
                     psha
-Loop@@              lda       SCSR                ; load Status Register RS232
+Loop@@              lda       SCSR
                     bita      #RDRF
                     beq       Loop@@
                     pula
@@ -436,7 +382,7 @@ Loop@@              dex
 
 DELAYS              proc
                     psha
-                    lda       #$40
+                    lda       #64
 Loop@@              deca
                     bne       Loop@@
                     pula
@@ -450,7 +396,7 @@ Loop@@              deca
 SPACE               proc
                     pshb
 Loop@@              ldb       #' '
-                    stb       ,X
+                    stb       ,x
                     inx
                     deca
                     bne       Loop@@
@@ -460,20 +406,14 @@ Loop@@              ldb       #' '
 ;*******************************************************************************
 ; TEXT AND POSITION DATA
 ;*******************************************************************************
-
-; LCD INITIAL TEXT
-
+          ;-------------------------------------- ; LCD initial text
 TEXT1               fcb       $FE,$01,$FE,$0C
                     fcc       'ACQUIRING SATELLITES'
                     fcs       '    PLEASE WAIT...'
-
-; GPS QUALITY MESSAGES
-
+          ;-------------------------------------- ; GPS quality messages
 DIFFIX              fcs       $FE,$A0,'GPS DIFF. FIX MODE  '
 GPSOFF              fcs       $FE,$A0,'  GPS UNAVAILABLE!  '
-
-;*******************************************************************************
-
+          ;--------------------------------------
 LINE1               fcs       $FE,$80,'LAT  '
 LINE2               fcs       $FE,$C0,'LON '
 LINE3               fcs       $FE,$A0,'Alt='
