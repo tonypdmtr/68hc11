@@ -6,7 +6,7 @@
 ; Version:         0.05  Revised 14-Aug-98                                     *
 ;                  0.06  Revised 18-Jul-01 <tonyp@acm.org>                     *
 ;------------------------------------------------------------------------------*
-; Assembled with Tony Papadimitriou's ASM11 v1.84+                             *
+; Assembled with Tony Papadimitriou's ASM11 (aspisys.com/ASM11)                *
 ;                                                                              *
 ; Tested on modified Motorola EVBU2 with Am29F010 FLASH device mapped in HC11  *
 ; address space at $8000-$FFFF.                                                *
@@ -17,27 +17,28 @@
 ;------------------------------------------------------------------------------
 ;Version History:
 ;
-;0.01   11-Aug-98   - First test version
-;0.02   12-Aug-98   - Modified all JMPs and JSRs to use relative forms.
+;0.01   1998.08.11  - First test version
+;0.02   1998.08.12  - Modified all JMPs and JSRs to use relative forms.
 ;                   - Added "helper" branches to allow all-relative addressing.
 ;                   - Modified MSG routine to use subroutine return address as
 ;                     string pointer.
-;0.03   13-Aug-98   - Changed all LSRD instructions to "DB $04" to work around
+;0.03   1998.08.13  - Changed all LSRD instructions to "DB $04" to work around
 ;                     object code generation bug in ASM11 v1.09beta.
-;0.04   14-Aug-98   - Changed "DB $04" back to "LSRD" after obtaining v1.11beta
+;0.04   1998.08.14  - Changed "DB $04" back to "LSRD" after obtaining v1.11beta
 ;                     version of ASM11 that has LSRD bug fixed.
 ;                   - Added comments pertaining to S-record structure and
 ;                     FLASH programming/erasure algorithms.
 ;                   - Various minor modifications to reduce code size.
 ;                     Code size for this version: $01FC bytes
-;0.05   17-Aug-98   - Added instruction to disable bootloader ROM if active
+;0.05   1998.08.17  - Added instruction to disable bootloader ROM if active
 ;                     Code size for this version: $01FE bytes
-;0.06   18-Jul-01   - No functional changes at all.
+;0.06   2001.07.18  - No functional changes at all.
 ;                     Saved with tabs converted to spaces.
 ;                     Fixed loop bug in CharIn routine.
 ;                     Removed @ signs from variables, it's automatic.
 ;                     CharOut optimized to not use RegA for SCSR
 ;                     Used "repeaters" and ASM11 extra instructions
+;       2019.11.09  - Minor optimizations [-3 bytes] and cosmetic changes
 ;------------------------------------------------------------------------------
 ;Abstract:
 ;
@@ -154,7 +155,7 @@
 EraseAck            equ       '!'                 ; Erasure acknowledge character
 ErrorChr            equ       '?'                 ; Bad entry character
 
-EraAllChr           equ       $05                 ; Erase-all command character
+EraAllChr           equ       5                   ; Erase-all command character
 
 SRecLead            equ       'S'                 ; Lead-in character for S-records
 
@@ -283,13 +284,15 @@ GetNum              proc
                     clrx                          ; Zero number accumulator
 
 Loop@@              bsr       GetHexD$            ; Get a digit
-                    bcc       GetNum2             ; If valid, add to accumulator
+                    bcc       _2@@                ; If valid, add to accumulator
 
                     cmpa      #ESC                ; Abort entry ?
-                    beq       GetNum3             ; Yes, exit (carry set)
+                    sec                           ; Flag aborted entry (in case of exit)
+                    beq       Done@@              ; Yes, exit (carry set)
 
                     cmpa      #CR                 ; End of entry ?
-                    beq       GetNum4             ; Yes, exit (carry clear)
+                    clc                           ; Clear abort flag
+                    beq       Done@@              ; Yes, exit (carry clear)
 
                     cmpa      #BS                 ; Backspace ?
                     bne       Loop@@              ; No, invalid digit, ignore
@@ -304,7 +307,7 @@ Loop@@              bsr       GetHexD$            ; Get a digit
                     xgdx                          ; Put # back in storage
                     bra       Loop@@              ; Get next character
           ;-------------------------------------- ; Valid digit entered
-GetNum2             cpx       #$1000              ; Room for another digit ?
+_2@@                cpx       #$1000              ; Room for another digit ?
                     bhs       Loop@@              ; No, ignore new digit
                     bsr       CharOut$            ; Echo digit received
 
@@ -313,12 +316,8 @@ GetNum2             cpx       #$1000              ; Room for another digit ?
                     xgdx                          ; Put # back in storage, B <- new digit
                     abx                           ; Add new digit to accumulator
                     bra       Loop@@              ; Get next digit
-          ;-------------------------------------- ; <ESC> received - abort entry
-GetNum3             sec                           ; Flag aborted entry
-                    rts                           ; Exit
           ;-------------------------------------- ; <CR> received - standard exit
-GetNum4             clc                           ; Clear abort flag
-                    rts                           ; Exit
+Done@@              rts                           ; Exit
           ;--------------------------------------
 GetHexD$            bra       GetHexD$$           ; Help for GETHEXD call
 
@@ -355,45 +354,44 @@ Main                proc
                     fcs       CR,LF,'Sec (+8=Era):'
 
                     bsr       GetHexD$$           ; Get single hex digit
-                    bcc       Main1               ; Set or erase sector if valid digit
+                    bcc       _1@@                ; Set or erase sector if valid digit
 
                     cmpa      #ESC                ; ESC entered ?
-                    beq       Main6               ; Yes, exit sector set/erase mode
+                    beq       _6@@                ; Yes, exit sector set/erase mode
 
                     cmpa      #EraAllChr          ; "Erase all" character ?
-                    beq       Main5               ; Yes, erase entire array
+                    beq       _5@@                ; Yes, erase entire array
 
                     lda       #ErrorChr           ; Invalid entry - transmit error char
-                    bra       Main4               ; Send char, return to sector prompt
+                    bra       _4@@                ; Send char, return to sector prompt
 ;-------------------------------------------------------------------------------
 GetNum$             bra       GetNum              ; Help for GETNUM call
 ;-------------------------------------------------------------------------------
 ; Valid sector address entered
 ; 0-7 sets sector only, 8-F erases sector (n-8).
 
-Main1               bsr       CharOut             ; Echo entry
+_1@@                bsr       CharOut             ; Echo entry
 
                     stb       sector              ; Save sector #
                     cmpb      #8                  ; Erase sector request ?
-                    blo       Main6               ; No, advance to offset prompt
-
-;*******************************************************************************
-; Erase sector
-;
-; Sector erase procedure:
-; 1. Write unlock sequence:
-; Value <FUnlkV1> written to address <FUnlkA1>
-; Value <FUnlkV2> written to address <FUnlkA2>
-; These writes must occur with FA15=FA16=0
-; 2. Write generic erase-enable command:
-; Value <FCmdErase> written to address <FCmdA>
-; 3. Write unlock sequence again (same as step 1).
-; 4. Write "erase sector" command:
-; Value <FCmdSEra> written to any address in the sector to be erased.
-; (address bits FA14,FA15,FA16 relevant, others ignored)
-;
-; Note: Verification of erasure is not performed.
-
+                    blo       _6@@                ; No, advance to offset prompt
+          ;--------------------------------------
+          ; Erase sector
+          ;
+          ; Sector erase procedure:
+          ; 1. Write unlock sequence:
+          ; Value <FUnlkV1> written to address <FUnlkA1>
+          ; Value <FUnlkV2> written to address <FUnlkA2>
+          ; These writes must occur with FA15=FA16=0
+          ; 2. Write generic erase-enable command:
+          ; Value <FCmdErase> written to address <FCmdA>
+          ; 3. Write unlock sequence again (same as step 1).
+          ; 4. Write "erase sector" command:
+          ; Value <FCmdSEra> written to any address in the sector to be erased.
+          ; (address bits FA14,FA15,FA16 relevant, others ignored)
+          ;
+          ; Note: Verification of erasure is not performed.
+          ;--------------------------------------
                     bsr       FUnlock             ; Send unlock sequence
                     lda       #FCmdErase          ; Erase command prebyte
                     sta       FCmdA+FOffset
@@ -403,54 +401,53 @@ Main1               bsr       CharOut             ; Echo entry
 
                     ldx       #FOffset            ; Assume even sector
                     bita      #$01                ; Odd sector ?
-                    beq       Main2               ; No
+                    beq       _2@@                ; No
                     ldx       #FOffset+$4000      ; Yes, set address for odd sector
 
-Main2               lda       #FCmdSEra           ; Sector erase command
+_2@@                lda       #FCmdSEra           ; Sector erase command
                     sta       ,x                  ; Send to sector base address
 
-Main3               lda       #EraseAck           ; Acknowledge erase request
-Main4               bsr       CharOut
-Main$$              bra       Main                ; Issue sector prompt again
+_3@@                lda       #EraseAck           ; Acknowledge erase request
+_4@@                bsr       CharOut
 ;-------------------------------------------------------------------------------
+Main$$              bra       Main                ; Issue sector prompt again
 GetHexD$$           bra       GetHexD             ; Help for GETHEXD call
 CharOut$            bra       CharOut             ; Help for CHAROUT call
-Msg$                bra       Msg                 ; Help for MSG call
-;-------------------------------------------------------------------------------
-; Erase entire FLASH array
-;
-; Entire device erase procedure:
-; 1. Write unlock sequence:
-; Value <FUnlkV1> written to address <FUnlkA1>
-; Value <FUnlkV2> written to address <FUnlkA2>
-; These writes must occur with FA15=FA16=0
-; 2. Write generic erase-enable command:
-; Value <FCmdErase> written to address <FCmdA>
-; 3. Write unlock sequence again (same as step 1).
-; 4. Write "erase device" command:
-; Value <FCmdCEra> written to address <FCmdA>
-;
-; Note: Verification of erasure is not performed.
-
-Main5               bsr       FUnlock             ; Send unlock sequence
+          ;--------------------------------------
+          ; Erase entire FLASH array
+          ;
+          ; Entire device erase procedure:
+          ; 1. Write unlock sequence:
+          ; Value <FUnlkV1> written to address <FUnlkA1>
+          ; Value <FUnlkV2> written to address <FUnlkA2>
+          ; These writes must occur with FA15=FA16=0
+          ; 2. Write generic erase-enable command:
+          ; Value <FCmdErase> written to address <FCmdA>
+          ; 3. Write unlock sequence again (same as step 1).
+          ; 4. Write "erase device" command:
+          ; Value <FCmdCEra> written to address <FCmdA>
+          ;
+          ; Note: Verification of erasure is not performed.
+          ;--------------------------------------
+_5@@                bsr       FUnlock             ; Send unlock sequence
                     lda       #FCmdErase          ; Erase command prebyte
                     sta       FCmdA+FOffset
                     bsr       FUnlock             ; Send unlock sequence again
                     lda       #FCmdCEra           ; Erase entire device command
                     sta       FCmdA+FOffset
-                    bra       Main3               ; Echo "!" & issue sector prompt again
+                    bra       _3@@                ; Echo "!" & issue sector prompt again
           ;-------------------------------------- ; Prompt for load address offset
-Main6               bsr       Msg                 ; Send offset prompt
+_6@@                bsr       Msg                 ; Send offset prompt
                     fcs       CR,LF,'Ofs:'
 
                     bsr       GetNum$             ; Get offset (4-digit hex)
-                    bcs       Main7               ; Use default offset if <ESC> rec'd
+                    bcs       _7@@                ; Use default offset if <ESC> rec'd
                     stx       offset              ; Save offset entered
           ;--------------------------------------
           ; Send prompt to start sending S-records
           ; Jump to S-record read & program routine
           ;--------------------------------------
-Main7               bsr       Msg$                ; Transmit S-record send prompt
+_7@@                bsr       Msg                 ; Transmit S-record send prompt
                     fcs       CR,LF,'Send!',CR,LF
                     bra       Program$            ; Start S-record read & program routine
 
@@ -467,7 +464,7 @@ Main7               bsr       Msg$                ; Transmit S-record send promp
 CharIn              proc
                     pshb                          ; Save B
 
-Loop@@              ldab      SCSR                ; Get SCI status
+Loop@@              ldb       SCSR                ; Get SCI status
                     bitb      #RDRF.              ; Data ready ?
                     beq       Loop@@              ; No, wait
 
@@ -577,18 +574,18 @@ GetHexD             proc
                     cmpa      #'z'                ; Lowercase?
                     bhi       Go@@                ; No
 
-                    suba      #'a'-'A'            ; Subtract lowercase offset
+                    adda      #'A'-'a'            ; convert to uppercase
 
 Go@@                tab                           ; B <- Character received
 
                     subb      #'0'                ; Subtract ASCII digit offset
-                    blo       Fail@@              ; Exit if not valid digit
+                    bcs       Fail@@              ; Exit if not valid digit
 
                     cmpb      #10                 ; Digit = 0..9 ?
                     blo       Done@@              ; Yes, exit now
 
                     subb      #'A'-'0'-10         ; Subtract alpha offset
-                    blo       Fail@@              ; Exit if underflow (invalid digit)
+                    bcs       Fail@@              ; Exit if underflow (invalid digit)
 
                     cmpb      #10                 ; Valid digit ?
                     blo       Fail@@              ; No, exit
@@ -627,7 +624,7 @@ GetHexB             proc
                     stb       numbuf              ; Save result
                     addb      checksum            ; Add value to checksum
                     stb       checksum
-                    ldab      numbuf              ; Recover converted value
+                    ldb       numbuf              ; Recover converted value
 
                     clc                           ; No errors
 Done@@              rts                           ; Exit
