@@ -1,0 +1,123 @@
+;*******************************************************************************
+;* Subroutine: WriteEE (with compare) and WriteEE_CONFIG (no compare)
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : Self-writing EEPROM code using stack RAM temporarily
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* History   : 02.04.19 v1.00 Original
+;*           : 02.04.21       Protect X from being destroyed
+;*           : 02.04.22       Shortened RAM code to absolute minimum
+;*           : 02.04.23       Changed RAM code for 811E2 compatibility
+;*           : 03.05.23 v1.01 Made smarter: A single call erases and writes
+;*           :                depending on new and current values
+;*           : 11.01.31       Changed some exits to :AnRTS
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+
+                    #ROM
+
+Start               proc
+                    lds       #STACKTOP
+                    clr       BPROT               ;needed to allow writes to EEPROM
+
+                    clrb                          ;(for simulator only)
+                    clry                          ;         -//-
+
+          ;Example calling sequences
+
+                    ldx       #$FF00
+                    lda       #$AA
+                    bsr       WriteEE             ;use WriteEE_CONFIG for CONFIG register
+
+                    bra       *
+
+                    @vector   Vreset,Start        ;to run the demo code
+
+                    end       :s19crc
+
+                    #ROM
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Action: Subroutine that does the actual write/erase to EEPROM is first
+;       : copied to RAM and then executed from there until the EEPROM
+;       : write/erase cycle finishes.
+; Input : X -> EEPROM location to write
+;       : A =  value to write (if A=$FF, an erase will be performed)
+;       : B = $02 to program, $16 to erase
+; Output: All registers except CCR are preserved by parent procedure
+; Notes : Uses 18 bytes of stack RAM
+
+?RAM_Code           proc
+                    stb       PPROG
+                    sta       ,x                  ;for erase, any value will do
+                    inc       PPROG               ;Turn on programming voltage
+
+                    ldx       #DELAY@@            ;10 msec delay constant
+                              #Cycles
+Loop@@              dex
+                    bne       Loop@@
+DELAY@@             equ       10*BUS_KHZ/:cycles
+                    clr       PPROG               ;Turn off programming voltage
+                    rts
+
+                    #size     ?RAM_Code           ;number of RAM bytes needed
+
+;*******************************************************************************
+; Action: Write to EEPROM if value is different from current value
+;       : (not good for CONFIG but good for anything else) preventing
+;       : unnecessary wearout of EEPROM.
+; Input : X -> EEPROM location to write
+;       : A =  value to write
+; Output: All registers except CCR are preserved
+; Notes : Call once with actual value, erase is automatic if required
+;       : Interrupts must be disabled before calling, if so required.
+
+WriteEE             proc
+                    cmpa      ,x                  ;is it the same as written?
+                    beq       Done@@              ;yes, no need to write again
+;                   bra       WriteEE_CONFIG      ;no, so we need to write
+Done@@              equ       :AnRTS
+
+;*******************************************************************************
+; Action: Write to EEPROM without comparing current value
+;       : This is good mostly for changing the CONFIG register,
+;       : prefer WriteEE (above) for writing anything else.
+; Input : X -> EEPROM location to write
+;       : A =  value to write
+; Output: All registers except CCR are preserved
+; Notes : Call once with actual value, erase is automatic if required
+;       : Interrupts must be disabled before calling, if so required.
+
+WriteEE_CONFIG      proc
+                    push                          ;save all registers
+
+                    ldy       #?RAM_Code+::?RAM_Code-1 ;routine to stack
+Loop@@              ldb       ,y                  ;create a RAM copy by
+                    pshb                          ;  pushing each byte to the
+                    dey                           ;  stack in reverse order
+                    cmpy      #?RAM_Code          ;  so it turns out correctly
+                    bhs       Loop@@              ;do for all bytes
+
+                    tsy                           ;Y -> RAM copy of routine
+
+                    ldb       #$16                ;to erase a byte in EEPROM
+
+                    cmpa      #$FF                ;Are we erasing instead of writing?
+                    beq       DoIt@@
+
+                    pshx                          ;protect write address
+                    jsr       ,y                  ;first erase (v1.01) when programming
+                    pulx                          ;restore write address
+
+                    ldb       #$02                ;to program a byte to EEPROM
+DoIt@@              jsr       ,y                  ;call RAM routine
+
+                    givex     #::?RAM_Code        ;de-allocate stacked routine
+
+                    pull                          ;restore all registers
+                    rts

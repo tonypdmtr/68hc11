@@ -1,0 +1,230 @@
+;*******************************************************************************
+;* Module    : DELAYMS.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : Hard delay D msec, regardless of system clock
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Note(s)   : Use: #Include delayms.sub
+;*           :
+;*           : The default version allows to get any msec delay upto 65535 msec
+;*           : using a fixed bus speed defined at assembly time.
+;*           :
+;*           : The number of msec is passed in RegD. (Zero returns immediately.)
+;*           :
+;*           : An alternate version is possible by using the conditional ANY_BUS
+;*           : When ANY_BUS is undefined, the fixed BUS_KHZ value is used.
+;*           : However, when the conditional ANY_BUS is defined, a second
+;*           : parameter is required in RegX, which holds the number of cycles
+;*           : that represent a single millisecond.  This is useful for programs
+;*           : that dynamically change the bus clock speed for different parts
+;*           : of the program.  This one routine can accommodate all delays upto
+;*           : 65535 msec with extreme accuracy for any bus speed upto 65535 KHz.
+;*           :
+;*           : Example calls:
+;*           :                ldd       #MSEC     ;number of milliseconds
+;*           :                jsr       DelayMS
+;*           :
+;*           :                ldd       #MSEC     ;number of milliseconds
+;*           :                ldx       #BUS_KHZ  ;(assemble w/ cond. ANY_BUS)
+;*           :                jsr       DelayMS
+;*           :
+;* History   : 10.01.17 v1.00 Original
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+
+                    #ROM
+
+Start               proc
+                    lds       #STACKTOP
+                    clrd                          ;(to keep simulator happy)
+                    clrx                          ;         -//-
+                    clry                          ;         -//-
+
+                    ldd       #1000               ;sample delay = 1000 msec
+          #ifdef ANY_BUS
+                    ldx       #4000               ;sample bus = 4MHz (=4000 KHz)
+          #endif
+                    bsr       DelayMS
+
+                    bra       *
+
+                    @vector   Vreset,Start
+
+                    end       :s19crc
+
+                    #ROM
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Purpose: Delay upto 65535 msec
+; Input  : D = number of milliseconds (zero returns immediately)
+;        : X = number of cycles that represent a msec for current bus speed
+; Output : None
+; Note(s): X parameter is only required if assembled with conditional ANY_BUS
+
+DelayMS             macro     [#]msec[,[#]BUS_KHZ]
+                    mreq      1:[#]msec - number of milliseconds to delay
+          #ifdef ANY_BUS
+                    mreq      2:[#]BUS_KHZ - current bus speed in KHz
+          #endif
+                    ldd       ~1~       ;number of milliseconds
+          #ifparm ~2~
+                    ldx       ~2~       ;;(if assembled w/ cond. ANY_BUS)
+          #endif
+                    jsr       ~0~
+
+                    endm
+
+;-------------------------------------------------------------------------------
+
+                    #Cycles                       ;reset the cycle counter
+
+?                   equ       0                   ;0 [TSX/TSY]
+?BurnCycles         next      ?,4                 ;32-bit cycle total
+?A                  next      ?                   ;Inside PUSH
+?B                  next      ?                   ;   -//-
+?X                  next      ?,2                 ;   -//-
+?Y                  next      ?,2                 ;   -//-
+?                   set       ?-6                 ;(-6 for PUSH)
+
+DelayMS             proc
+                    cmpd      #0
+                    jeq       Done@@              ;nothing to do, get out
+
+                    push
+                    getx      #?                  ;allocate local variables
+                    tsy
+
+          ;multiply 1ms cycles by number of requested msec [D*BUS_KHZ]
+
+          #ifdef ANY_BUS
+                    #Message  DelayMS requires as parm in X the bus KHz
+
+                    lda       ?X+1,x
+          #else
+                    lda       #[BUS_KHZ
+          #endif
+                    ldb       ?B,x
+                    mul
+                    std       ?BurnCycles+2,x
+                    clrd
+                    std       ?BurnCycles,x
+
+          #ifdef ANY_BUS
+                    lda       ?X,x
+          #else
+                    lda       #]BUS_KHZ
+          #endif
+                    ldb       ?B,x
+                    mul
+                    addd      ?BurnCycles+1,x
+                    std       ?BurnCycles+1,x
+
+                    clra
+                    adca      ?BurnCycles,x
+                    sta       ?BurnCycles,x
+
+          #ifdef ANY_BUS
+                    lda       ?X+1,x
+          #else
+                    lda       #[BUS_KHZ
+          #endif
+                    ldb       ?A,x
+                    mul
+                    addd      ?BurnCycles+1,x
+                    std       ?BurnCycles+1,x
+
+                    clra
+                    adca      ?BurnCycles,x
+                    sta       ?BurnCycles,x
+
+          #ifdef ANY_BUS
+                    lda       ?X,x
+          #else
+                    lda       #]BUS_KHZ
+          #endif
+                    ldb       ?A,x
+                    mul
+                    addd      ?BurnCycles,x
+                    std       ?BurnCycles,x
+
+          ;subtract the overhead cycles
+
+                    ldd       ?BurnCycles+2,x
+                    subd      #?ExtraCycles
+                    std       ?BurnCycles+2,x
+
+                    ldd       ?BurnCycles,x
+                    sbcb      #0
+                    sbca      #0
+                    std       ?BurnCycles,x
+
+          ;divide total burn cycles by loop cycles
+
+                    clra
+                    ldb       ?BurnCycles,x
+                    ldx       #?LoopCycles        ;divisor
+                    idiv                          ;D/X -> X,D
+                    xgdx
+                    stb       ?BurnCycles,y
+                    xgdx
+
+                    tba
+                    ldb       ?BurnCycles+1,y
+                    ldx       #?LoopCycles        ;divisor
+                    idiv                          ;D/X -> X,D
+                    xgdx
+                    stb       ?BurnCycles+1,y
+                    xgdx
+
+                    tba
+                    ldb       ?BurnCycles+2,y
+                    ldx       #?LoopCycles        ;divisor
+                    idiv                          ;D/X -> X,D
+                    xgdx
+                    stb       ?BurnCycles+2,y
+                    xgdx
+
+                    tba
+                    ldb       ?BurnCycles+3,y
+                    ldx       #?LoopCycles        ;divisor
+                    idiv                          ;D/X -> X,D
+                    xgdx
+                    stb       ?BurnCycles+3,y
+
+                    tsx                           ;X -> stack frame
+?ExtraCycles        equ       :cycles
+
+Loop@@              ldd       ?BurnCycles+2,x
+                    decd
+                    std       ?BurnCycles+2,x
+
+                    ldd       ?BurnCycles,x
+                    sbcb      #0
+                    sbca      #0
+                    std       ?BurnCycles,x
+
+                    @cop                          ;in case of many iterations
+
+                    lda       ?BurnCycles,x
+                    ora       ?BurnCycles+1,x
+                    ora       ?BurnCycles+2,x
+                    ora       ?BurnCycles+3,x
+                    bne       Loop@@              ;repeat for all cycles
+
+?LoopCycles         equ       :cycles
+
+                    givex     #?                  ;de-allocate local variables
+                    pull
+Done@@              rts
+
+?ExtraCycles        set       ?ExtraCycles+:cycles
+
+;*******************************************************************************
+                    #Exit
+;*******************************************************************************
+                    #Message  Size: {*-DelayMS} bytes

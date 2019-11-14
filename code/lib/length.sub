@@ -1,0 +1,67 @@
+;*******************************************************************************
+;* Module    : LENGTH.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : Get length of an ASCIZ string
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Note(s)   : Use: #Include length.sub
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+                    #MapOff
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Routine: Length
+; Purpose: Get the length of an ASCIIZ string
+; Input  : X -> string
+; Output : B = length if Carry Clear, error if Carry Set
+; Note(s): Maximum string length is 255 characters
+
+Length              proc
+                    pshx
+                    clrb                          ;initialize length
+Loop@@              tst       ,x                  ;on ASCIZ terminator
+                    clc                           ;assume success
+                    beq       Done@@              ;... exit
+                    inx                           ;X -> next character
+                    incb                          ;one more character counted
+                    bne       Loop@@              ;repeat for all characters
+                    sec                           ;counter overflow error exit
+Done@@              pulx
+                    rts
+
+;*******************************************************************************
+                    #Exit
+;*******************************************************************************
+                    #MapOn
+
+                    #RAM
+
+Buffer              fcs       'Get the length of this string'
+
+                    #MEMORY   Buffer *-1
+
+                    #ROM
+
+Start               proc
+                    lds       #STACKTOP
+                    clrd
+                    clrx
+                    clry
+
+                    ldx       #Buffer
+                    bsr       Length
+                    bcs       Fail@@
+                    cmpb      #::Buffer-1
+                    beq       *                   ;If we get here, it works OK
+Fail@@              bra       *                   ;If we get here, error(s)
+
+;*******************************************************************************
+                    @vector   Vreset,Start
+;*******************************************************************************
+
+                    end       :s19crc

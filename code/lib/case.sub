@@ -1,0 +1,45 @@
+;*******************************************************************************
+;* Module    : CASE.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : Uppercase/Lowercase conversion routines
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Note(s)   : Use: #Include case.sub
+;*******************************************************************************
+
+;*******************************************************************************
+; Purpose: Convert character in A to uppercase
+; Input  : A = character
+; Output : A = CHARACTER
+
+Upcase              proc
+                    cmpa      #'a'                ;less than 'a'?
+                    blo       Done@@              ;yes, skip
+
+                    cmpa      #'z'                ;greater than 'z'?
+                    bhi       Done@@              ;yes, skip
+
+                    adda      #'A'-'a'            ;do the conversion
+Done@@              rts
+
+;*******************************************************************************
+; Purpose: Convert character in A to lowercase
+; Input  : A = CHARACTER
+; Output : A = character
+
+Dncase              proc
+                    cmpa      #'A'                ;less than 'A'?
+                    blo       Done@@              ;yes, skip
+
+                    cmpa      #'Z'                ;greater than 'Z'?
+                    bhi       Done@@              ;yes, skip
+
+                    adda      #'a'-'A'            ;do the conversion
+Done@@              rts
+
+;*******************************************************************************
+; Aliases for routines
+;*******************************************************************************
+
+ToUpper             def       Upcase
+ToLower             def       Dncase

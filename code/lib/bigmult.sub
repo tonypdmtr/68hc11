@@ -1,0 +1,180 @@
+;*******************************************************************************
+;* Module    : BIGMULT.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Purpose   : General-purpose re-entrant multi-byte multiplication (example code)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* History   : 09.06.28 v1.00 Optimized for size and speed
+;*           : 11.02.25 v1.01 Fixed COP reset by using related macro
+;*           : 13.01.27       Moved test code at EOF (for #EXIT optimization)
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Purpose: Multiply two numbers of any byte size (both operands of same size for simplicity)
+; Input  : B = size for Multiplier or Multiplicand (range 1..127)
+;        :      +--------------+------------+---------+
+;        : X -> | Multiplicand | Multiplier | Product |
+;        :      +--------------+------------+---------+
+; Output : Product filled with product of multiplication
+; Size   : 128 bytes
+
+Multiply            proc
+                    #temp
+ix_b@@              next      :temp               ;index B
+ix_a@@              next      :temp               ;index A
+.product@@          next      :temp,2             ;pointer to product
+.multiplier@@       next      :temp,2             ;pointer to multiplier
+.multiplicand@@     next      :temp,2             ;pointer to multiplicand
+op_size@@           next      :temp               ;operand size
+
+                    tstb
+                    beq       Done@@              ;zero size won't work
+                    cmpb      #127
+                    bhi       Done@@              ;over 127-byte number won't work
+
+                    pshy
+                    psha
+
+                    pshb                          ;operand size
+                    pshx                          ;HX -> Multiplicand
+
+                    abx                           ;HX -> Multiplier
+                    pshx
+
+                    abx                           ;HX -> Product
+                    pshx
+
+                    pshb                          ;index to current multiplicand digit
+                    pshb                          ;index to current multiplier digit
+
+                    tsy
+
+                    lslb                          ;product is twice the size
+Zero@@              clr       ,x                  ;initialize product to zero
+                    inx
+                    decb
+                    bne       Zero@@
+
+Loop@@              ldx       .multiplicand@@,y
+                    ldb       ix_a@@,y
+                    abx
+                    dex                           ;zero-based offset
+                    lda       ,x                  ;A = current multiplicand digit
+
+                    ldx       .multiplier@@,y
+                    ldb       ix_b@@,y
+                    abx
+                    dex                           ;zero-based offset
+                    ldb       ,x                  ;X = current multiplier digit
+
+                    mul                           ;XA = sub-product
+                    pshd                          ;save sub-product temporarily
+
+                    ldx       .product@@,y
+                    ldb       ix_a@@,y
+                    addb      ix_b@@,y
+                    abx
+                    dex:2                         ;backup one for word & one for zero-based offset
+
+                    puld                          ;update product with sub-product
+                    addd      ,x
+                    std       ,x
+
+          ;cascade possible Carry all the way to beginning of Product
+
+                    bcc       NextDigit@@         ;skip over Carry cascade
+
+                    ldb       ix_b@@,y
+                    addb      ix_a@@,y
+                    subb      #2                  ;zero-based index & less the one we're at
+                    beq       NextDigit@@         ;skip over Carry cascade
+
+                    sec                           ;always a Carry from here
+Carry@@             dex
+
+                    clra
+                    adca      ,x
+                    sta       ,x
+
+                    decb
+                    bne       Carry@@
+
+          ;done with current multiplier digit
+
+NextDigit@@         @cop                          ;in case of many iterations
+                    dec       ix_b@@,y
+                    bne       Loop@@
+
+                    lda       op_size@@,y         ;restore multiplier...
+                    sta       ix_b@@,y            ; ...digit counter
+
+          ;done with current multiplicand digit
+
+                    dec       ix_a@@,y
+                    bne       Loop@@
+
+                    tsx
+                    ldb       #6                  ;de-allocate local variables
+                    abx
+                    txs
+
+                    pulx                          ;restore caller's registers
+                    pulb
+                    pula
+                    puly
+
+Done@@              rts
+
+;*******************************************************************************
+                    #Exit
+;*******************************************************************************
+                    #Message  Big Multiply is {*-Multiply} bytes long
+
+MULT_OPERAND_SIZE   def       4                   ;default operand size
+
+          #ifz MULT_OPERAND_SIZE
+                    #Error    MULT_OPERAND_SIZE must be non-zero
+          #endif
+
+          #if MULT_OPERAND_SIZE > 127
+                    #Error    Current coding supports up to 127 byte operands
+          #endif
+
+                    #RAM
+MyVars_Begin
+
+Multiplicand        rmb       MULT_OPERAND_SIZE   ;|
+Multiplier          rmb       *-Multiplicand      ; > keep together and in order
+Product             rmb       *-Multiplicand      ;|
+
+MyVars_End
+                    #ROM
+
+Start               proc
+                    @rsp
+
+                    @ClrRange #MyVars_Begin,#MyVars_End
+
+                    ldd       #$1234              ;Multiplicand; $123456
+                    std       Multiplicand
+                    ldd       #$5678
+                    std       Multiplicand+2
+
+                    ldd       #$1234
+                    std       Multiplier          ;Multiplier: $1234
+                    ldd       #$3456
+                    std       Multiplier+2
+
+                    ldx       #Multiplicand
+                    ldb       #MULT_OPERAND_SIZE
+                    jsr       Multiply            ;Product: $14B60AD78
+
+                    bra       *
+
+                    @vector   Vreset,Start

@@ -1,0 +1,33 @@
+;*******************************************************************************
+;* Module    : BSETBCLR.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : General-purpose variable BSET/BCLR equivalents
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Note(s)   : Use: #Include bsetbclr.sub
+;*******************************************************************************
+
+;*******************************************************************************
+; Purpose: Variable BSET/BCLR
+; Input  : A = mask
+;        : X = address
+; Output : None
+
+BSET                proc
+                    psha
+
+                    ora       ,x                  ;get value to update
+                    bra       ?Save
+
+;-------------------------------------------------------------------------------
+
+BCLR                proc
+                    psha
+
+                    coma                          ;complement for ANDing
+                    anda      ,x                  ;get value to update
+
+?Save               sta       ,x
+
+                    pula                          ;restore registers
+                    rts

@@ -1,0 +1,30 @@
+;*******************************************************************************
+;* Purpose   : Swap Nibble i.e $93 to $39
+;* Author    : Tony Papadimitriou <tonyp@acm.org>
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Input     : RegA = byte whose nibbles to swap
+;* Output    : RegA = byte with nibbles swapped
+;* Destroy   : -
+;* Note(s)   : Code: 15, Stack: 1, Cycles: 36
+
+nsa                 macro
+                    pshb
+                    tab
+                    lsla
+                    rord:5
+                    pulb
+                    endm
+
+                    #Cycles
+
+                    org       *
+
+SwapNibble          proc
+                    @nsa
+                    rts
+
+;*******************************************************************************
+                    #Exit
+;*******************************************************************************
+                    #Message  Size: {*-SwapNibble}, Cycles: {:cycles}

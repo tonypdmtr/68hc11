@@ -1,0 +1,242 @@
+;*******************************************************************************
+;* Module    : PRINTINT.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : Print 8-bit or 16-bit integer to output device
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;* Note(s)   : Use: #Include printint.sub
+;*           :
+;*           : Output is sent via the user-supplied "PutChar" macro.
+;*           :
+;*           : PutChar can be made to write to any output device if you use an
+;*           : "OutputDevice" control flag, so that each subroutine can send its
+;*           : output to any device (e.g., LCD, SCI), depending on OutputDevice.
+;*           :
+;*           : To print a plain number (without leading spaces) use the PrintXXX
+;*           : subroutine.
+;*           :
+;*           : To print a number w/ leading blanks/zeros, use the corresponding
+;*           : DispXXX routine (replacing routine name's "Print" with "Disp").
+;*           : For space fill, use CLC (Clear Carry). For zero fill, use SEC.
+;*           : Default width is 3 for bytes and 5 for words.  If you define
+;*           : BYTEWIDTH and WORDWIDTH with another [higher] number you can have
+;*           : extra spaces or zeros for each case.
+;*           :
+;*           : Example calls:
+;*           :                ldd       #1234               ;number to print
+;*           :                clc                           ;use space filler
+;*           :                jsr       DispWord            ;print filled number
+;*           :                ...
+;*           :                ldd       #1234               ;number to print
+;*           :                sec                           ;use zero filler
+;*           :                jsr       DispWord            ;print filled number
+;*           :                ...
+;*           :                ldd       #1234               ;number to print
+;*           :                jsr       PrintWord           ;print plain number
+;*           :
+;* History   : 09.12.10 v1.00 Original (based on 2009.12.10 HC08/9S08 version)
+;*           : 13.01.27       Replaced PutChar subroutine with macro (for flexibility)
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+
+PutChar             macro
+                    @...
+                    endm
+#endif ;------------------------------------------------------------------------
+
+#ifndef NODISP
+BYTEWIDTH           def       3                   ;default width for byte number
+WORDWIDTH           def       5                   ;default width for word number
+
+?                   macro     LABEL,Comparator,VALUE
+                    mset      #' '
+          #if ~1~ ~2~ ~3~
+~1~                 set       ~3~
+          #endif
+                    endm
+
+                    @?        BYTEWIDTH < 3       ;can't allow below minimum
+                    @?        WORDWIDTH < 5       ;can't allow below minimum
+                    @?        BYTEWIDTH > 255     ;can't allow above maximum
+                    @?        WORDWIDTH > 255     ;can't allow above maximum
+          #ifmain
+                    #Message  Byte width: {BYTEWIDTH}, Word width: {WORDWIDTH}
+          #endif
+#endif
+                    #ROM
+
+;*******************************************************************************
+; Purpose: Print a number as decimal ASCII string (two sub-routines combined)
+; Input 1: A =  8-bit number to display as ASCII string (enter from PrintByte)
+; Input 2: D = 16-bit number to display as ASCII string (enter from PrintWord)
+; Output : None
+; Note(s): Leading zeros are suppressed
+
+PrintByte           proc
+                    pshx
+                    pshd
+
+                    tab                           ;B = dividend (LSB)
+                    clra                          ;A = dividend (MSB)
+
+                    bra       ?PrintWord
+
+;-------------------------------------------------------------------------------
+
+PrintWord           proc
+                    pshx
+                    pshd
+
+;===============================================================================
+
+?PrintWord          des
+                    tsx
+                    clr       ,x                  ;ASCIZ terminator
+
+Loop@@              ldx       #10                 ;X = divisor (10)
+                    idiv                          ;D/X -> X,D
+                    addb      #'0'                ;convert to ASCII
+                    pshb                          ;save next result byte (right to left)
+                    xgdx                          ;D = new dividend
+                    cmpd      #0                  ;while dividend not zero...
+                    bne       Loop@@              ;... keep going
+
+Print@@             pula                          ;get next ASCIZ char
+                    tsta
+                    beq       ?Done               ;on terminator, exit
+                    @PutChar
+                    bra       Print@@
+
+          #ifndef NODISP
+                    #Message  DISP (fixed length display) routines included
+
+;*******************************************************************************
+; Purpose: Print a number as decimal ASCII string (two sub-routines combined)
+; Input 1: A =  8-bit number to display as ASCII string (enter from DispByte)
+; Input 2: D = 16-bit number to display as ASCII string (enter from DispWord)
+; Input  : Carry Clear = print leading spaces
+;        : Carry Set   = print leading zeros
+; Output : None
+; Note(s): Leading zeros are NOT suppressed but print as either spaces or zeros
+
+DispByte            proc
+                    bsr       ?DispByte
+                    bra       PrintByte
+
+?DispByte           pshx
+                    pshd
+
+                    tab                           ;B = dividend (LSB)
+                    clra                          ;A = dividend (MSB)
+                    xgdx                          ;X = dividend
+
+                    ldb       #BYTEWIDTH          ;maximum number of ASCII digits
+
+                    bra       ?Disp
+
+;-------------------------------------------------------------------------------
+
+DispWord            proc
+                    bsr       ?DispWord
+                    bra       PrintWord
+
+?DispWord           pshx
+                    pshd
+
+                    xgdx                          ;X = dividend
+                    ldb       #WORDWIDTH          ;maximum number of ASCII digits
+
+;===============================================================================
+
+?Disp               proc
+                    pshb                          ;save fill-width counter
+
+                    tpa                           ;A = caller's CCR
+                    psha                          ;save caller's CCR for later
+
+                    xgdx                          ;D = dividend
+Loop@@              tsx
+                    dec       1,x                 ;one less fill char needed
+
+                    ldx       #10                 ;X = divisor (10)
+                    idiv                          ;D/X -> X,D
+                    xgdx                          ;D = new dividend
+                    cmpd      #0                  ;while dividend not zero...
+                    bne       Loop@@              ;... keep going
+
+                    puld                          ;A = CCR, B = number of blanks/zeros to print
+
+                    tstb
+                    beq       ?Done               ;if counter is zero, done
+
+Print@@             tap                           ;use caller's CCR
+                    psha
+
+                    lda       #' '                ;a space filler
+                    bcc       PutChar@@           ;if user Carry Clear, use this
+
+                    lda       #'0'                ;else, use a zero filler
+PutChar@@           @PutChar                      ;print filler
+
+                    pula
+                    decb
+                    bne       Print@@
+          #endif
+?Done               puld
+                    pulx
+                    rts
+
+;*******************************************************************************
+                    #Exit
+;*******************************************************************************
+                    #Message  Module size: {*-PrintByte} bytes
+
+                    #MapOn
+
+PutChar             equ       :AnRTS              ;(set breakpoint at PutChar, check RegA)
+
+Start               proc
+                    lds       #STACKTOP
+
+                    clrd                          ;(for simulator only)
+                    clrx                          ;         -//-
+                    clry                          ;         -//-
+
+          ;--- test PrintByte
+
+                    lda       #12
+                    bsr       PrintByte
+
+          ;--- test PrintWord
+
+                    ldd       #1234
+                    bsr       PrintWord
+
+#ifndef NODISP
+          ;--- test DispByte
+
+                    lda       #12
+                    clc
+                    bsr       DispByte
+
+          ;--- test DispWord
+
+                    ldd       #1234
+                    clc
+                    bsr       DispWord
+
+          ;--- test DispWord
+
+                    ldd       #1234
+                    sec
+                    bsr       DispWord
+#endif
+                    bra       *
+
+                    @vector   Vreset,Start
+
+                    end       :s19crc

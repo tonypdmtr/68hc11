@@ -1,0 +1,102 @@
+;*******************************************************************************
+;* Module    : ASMCRC.SUB
+;* Programmer: Tony Papadimitriou <tonyp@acm.org>
+;* Purpose   : CRC Calculation
+;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
+;* Status    : FREEWARE Copyright (c) 2018 by Tony Papadimitriou <tonyp@acm.org>
+;*******************************************************************************
+
+#ifmain
+;*******************************************************************************
+; Test the CRC calculation routine
+;*******************************************************************************
+
+CRC_SEED            def       12345
+
+                    #ListOff
+                    #Uses     exp-f1.inc
+                    #ListOn
+
+                    #CRC      CRC_SEED
+
+                    #ROM
+?BEGIN_CRC
+
+Start               proc
+                    lds       #STACKTOP
+
+                    ldd       #CRC_SEED
+                    ldx       #?BEGIN_CRC
+                    ldy       #?END_CRC
+                    bsr       GetAsmCRC
+
+?END_CRC            equ       *-1
+?                   set       :crc
+
+Done                cmpd      #?
+                    bne       Error
+OK                  bra       *
+Error               bra       *
+
+                    @vector   Vreset,Start
+
+                    end       :s19crc
+
+                    #ROM
+#endif
+
+;*******************************************************************************
+; Purpose: Calculate the same user CRC as that produced by ASM11
+; Input  : X -> First byte of block
+;        : Y -> Last byte of block
+;        : D = Initial/Previous CRC
+; Output : D = updated CRC
+; Note(s): Call repeatedly for different address ranges, if skipping sections)
+; Call   :          ldd       #CRC_SEED
+;        :          ldx       #StartAddress
+;        :          ldy       #EndAddress
+;        :          jsr       GetAsmCRC
+
+                    #temp
+?CRC                next      :temp,2
+?StartAddress       next      :temp,2
+?EndAddress         next      :temp,2
+
+GetAsmCRC           proc
+                    pshx
+                    pshy
+
+                    push                          ;CRC, starting, ending address
+                    tsy                           ;Y -> stack frame
+
+Loop@@              cmpx      ?EndAddress,y
+                    bhi       Done@@
+
+                    @cop                          ;in case of many iterations
+
+                    lda       ,x
+                    beq       Skip@@
+
+                    cmpa      #$FF
+                    beq       Skip@@
+
+                    ldb       ?StartAddress+1,y
+                    mul                           ;low address with data byte
+                    addd      ?CRC,y
+                    std       ?CRC,y
+
+                    lda       ,x
+                    ldb       ?StartAddress,y
+                    mul                           ;high address with data byte
+                    addb      ?CRC,y
+                    stb       ?CRC,y
+
+Skip@@              inx
+                    stx       ?StartAddress,y
+                    bra       Loop@@
+
+Done@@              pull
+
+                    puly
+                    pulx
+                    rts
