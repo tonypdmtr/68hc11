@@ -1,0 +1,35 @@
+;*******************************************************************************
+; Init initializes registers critical to SPI operation
+;*******************************************************************************
+
+;*******************************************************************************
+                    #VECTORS
+;*******************************************************************************
+                    org       $FFD8
+                    fdb       SpInt               ; Set SPI interrupt vector to
+                                                  ; point to SPI interrupt service
+                                                  ; routine
+                    org       $FFFE
+                    dw        Start
+
+;*******************************************************************************
+                    #ROM
+;*******************************************************************************
+                    org       $C000               ; Start code at C000
+
+Start               proc
+                    lds       #$00ff              ; Locate Stack at 00FF
+                    lda       #$3b                ; Initialize DDRD Register
+                    sta       DDRD
+                    lda       #$53                ; Initialize SPCR Register
+                    sta       SPCR
+                    clra                          ; Zero out Port D Outputs
+                    sta       PORTD
+                    lda       #$03                ; Set SPI Interrupt to highest priority
+                    sta       HPRIO
+                    ldb       #$c0                ; Turn off global interrupt disable
+                    tap
+                    clra
+                    sta       MESSCT              ; Message count is zero
+                    sta       WRACTV              ; Write not active
+                    !bra      MainLoop
