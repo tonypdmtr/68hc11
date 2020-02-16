@@ -23,7 +23,7 @@
 ;*******************************************************************************
 
 ;*******************************************************************************
-; Copyright (c) 2019 by John Hartman (JLH)
+; Copyright (c) 2020 by John Hartman (JLH)
 ; Modified for ASM11 by Tony G Papadimitriou <tonyp@acm.org>
 ; For use with the ASPiSYS F1 Board or compatible hardware.
 ;===============================================================================
