@@ -1,0 +1,289 @@
+
+*******************************************************
+A 68HC11 Subroutine For Error Control Coding Using The
+CCITT V.41 Polynomial Code
+
+*******************************************************
+
+David Evans, 1999	   Revision 4.
+
+Table of Contents
+==============
+1	Introduction
+
+2	What the Software Computes
+2.1	Encoding Data Frames for Transmission
+2.2	Decoding Received Data Frames
+2.3	CCITT V.41 Performance Characteristics
+
+3	Data Variables and Symbols
+
+4	Encoding Data Blocks for Transmission
+
+5	Decoding Received Data Blocks
+
+
+DISCLAIMER: While all efforts have been made to ensure the
+information contained within this document is accurate and correct,
+the author does not assume liability arising out of the application or
+use of any information or software described herein.  Please
+forward any suggestions or corrections to: arkaydia@hotmail.com
+
+
+1  - INTRODUCTION
+=============
+This document provides a description of error control coding
+software developed as a subroutine for use with the Motorola
+68HC11 microcontroller.  The subroutine described uses a Cyclic
+Redundancy Code (CRC) for the purpose of data error detection
+and conforms to the CCITT recommendation V.41.  The name of
+the subroutine is crc_V41, and has been written in a way that allows
+ it to be tailored to any 68HC11 system quickly and easily by
+changing symbol values at the beginning of the source code.
+
+The following sections of this software guide provide all the
+necessary information to allow the reader to tailor the software to
+their specific system and encode and decode blocks of data.
+
+
+2 - WHAT THE SOFTWARE COMPUTES
+========================
+In this section, what crc_V41 computes is precisely defined.
+Polynomial codes or Cyclic Redundancy Codes as they are commonly
+ referred to, treat bit-strings as polynomials.  However, as binary
+digits may take on only one of two values, the coefficients of
+polynomials used in polynomial codes are either 1 or 0.
+
+Consider a sequence of binary data that is k bits in length.  This
+bit-string may be considered to be the coefficients of a polynomial
+M(x) of degree k - 1, as shown below.
+
+M(x) = x^(k - 1) + x^(k - 2) + x^(k - 3) + . . . + x^(k - k)
+
+As all coefficients will be either 1 or 0, the polynomial arithmetic is
+performed modulo 2.  Addition and subtraction operations using
+modulo 2 have no carries or borrows, respectively.  In fact, both of
+these operations are identical to Exclusive OR logic.  When
+polynomial codes are used as a form of error control, both
+communication end-points must choose a common generator
+polynomial G(x).  Let the generator polynomial be of degree j.
+
+The crc_V41 subroutine uses the generator polynomial specified in
+the CCITT V.41 recommendation.  The generator polynomial used
+is G(x) = x^16+x^12+x^5+1.  This polynomial is represented in
+the crc_V41 subroutine as a string of 17 bits:
+
+G[n] = [1 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 1]
+
+
+2.1 - ENCODING DATA FRAMES FOR TRANSMISSION
+=================================
+To encode a block of data M(x) prior to transmission, j bits having
+a value of 0 are appended to the least significant end of M(x).  The
+ data frame now contains k + j bits and corresponds to the
+polynomial x^(j)M(x).
+
+The polynomial x^(j)M(x) is then divided by the generator polynomial
+G(x) using modulo 2 long division.  When a remainder is produced,
+it is always of length j or fewer bits, and is subtracted from the
+polynomial x^(j)M(x) using modulo 2 subtraction as a final encoding
+step.  The resulting bit-string is the checksummed data frame ready
+ for transmission and as a consequence it is called T(x).
+
+
+2.2 - DECODING RECEIVED DATA FRAMES
+===========================
+To decode a received block of data, the receiving end-point must
+use the same generator polynomial G(x) as the sender, as stated in
+ the previous section.  The processes involved in decoding received
+ data frames using polynomial codes are marginally simpler than
+those needed for encoding.
+
+When the checksummed data frame T(x) is received, it is divided
+by the generator polynomial G(x).  If the remainder of this division
+is non-zero, the received data frame T(x) is assumed to be
+corrupted.
+
+Let E(x) be a polynomial representing a transmission error.  In such
+ a case, crc_V41 will compute [T(x) + E(x)]/G(x) = E(x)/G(x),
+since T(x)/G(x) will always equal zero.
+
+
+2.3 - CCITT V.41 PERFORMANCE CHARACTERISTICS
+================================
+Although the CCITT V.41 recommendation is extremely robust, as
+with all other error control strategies in existence, it is not 100%
+foolproof.  That is, a small chance exists that corrupted data will
+go unnoticed.  However, the chances of this event occurring are
+very remote, as outlined below.
+
+A 16-bit checksum such as that used by CRC-CCITT has the
+following performance characteristics:
+* All single and double bit errors are detected;
+* All errors with an odd number of bits are detected;
+* All burst errors 16 bits or less in length are detected;
+* 99.997% of 17-bit burst errors are detected;
+* 99.998% of all bursts errors of length 18 or longer are detected.
+
+Although outdated by today's standards, the CCITT V.41
+recommendation still provides a very effective technique for
+detecting data errors.
+
+3 - DATA VARIABLES AND SYMBOLS
+=======================
+A number of variables and symbols are used by crc_V41 to allow
+the software to be easily tailored to any 68HC11 system.  It is
+therefore necessary for the user to have a complete understanding
+of these variables and symbols.  The data variables used for this
+software all reside within the on-chip SRAM to exploit the faster
+access time of the direct addressing mode and enhance the
+software's performance.  The addresses of the data variables
+should be checked to ensure they do not contend with other
+variable addresses within the host system.
+
+All variables and symbols used by crc_V41 are listed and explained
+below:
+
+CRC_DIR:  Specifications are made with this variable as to whether
+data frames will be encoded or decoded.  A value must be assigned
+ to this variable before calling the crc_V41 subroutine.  Data frames
+are encoded and decoded by assigning $00 or $01 to this variable,
+ respectively.  If this variable is assigned any number other than
+$00 or $01, the subroutine will immediately return with failure.
+
+CRC_RET:  Calling software can perform simple error checking
+functions using this variable.  On successful execution of the
+crc_V41 subroutine a value of $00 will be assigned to this variable.
+Otherwise a value of $FF will be assigned indicating that the
+subroutine has returned with failure.  Successful execution is
+achieved following the encoding of data frames and the appending
+of the 16-bit checksum, and also following the decoding of a data
+frame containing no errors.  The crc_V41 subroutine returns with
+failure if the CRC_DIR variable has not been assigned a valid value,
+or if a decoded data frame is found to be corrupted.
+
+TEMPOR1:  This variable is used as a temporary data buffer that is
+needed during both the encoding and decoding of data frames.
+
+XOR4RX1, XOR4RX2 & XOR4RX3:   These three variables are
+used to hold the 17-bit result of exclusive OR operations that are
+performed during the decoding process.
+
+XOR4TX1, XOR4TX2 & XOR4TX3:  These three variables are used
+to hold the 17-bit result of exclusive OR operations that are
+performed during the encoding process.
+
+
+TX_DIVIDEND1, TX_DIVIDEND2 & TX_DIVIDEND3:  These three
+variables hold a 24-bit dividend that is used during the encoding
+process.  The dividend contains a section of the data frame that is
+being encoded.
+
+RX_DIVIDEND1, RX_DIVIDEND2 & RX_DIVIDEND3:  These three
+variables hold a 24-bit dividend that is used during the decoding
+process.  The dividend contains a section of the data frame that is
+being decoded.
+
+IN_FOR_COUNT:  During the data encoding and decoding
+processes, 'for' loops are used to exploit the iterative nature of
+these processes.  This variable is used as a counter for one of the
+'for' loops used.
+
+OUT_FOR_COUNT:  Similarly, this variable is also used as a counter
+by one the 'for' loops within the subroutine.
+
+GEN_POLY1, GEN_POLY2 & GEN_POLY3:  Encoding and decoding
+data using CRCs involves treating data as polynomial coefficients
+and dividing this data by a specific generator polynomial.  CCITT
+V.41 uses a generator polynomial G(x) = x^16+x^12+x^5+1.
+These three symbols represent this generator polynomial as a
+string of 17 bits.
+
+TX_BUFF	: This symbol specifies the starting address of a data
+block located in memory that is to be encoded prior to transmission.
+If possible, this data block should be placed within Page0 of the
+68HC11 memory map to enhance the execution time of the
+software.
+
+RX_BUFF:  The starting address of a data block located in memory
+that is to be decoded is specified with this symbol.  Similar to the
+previous symbol, it is recommended that data blocks be placed
+within Page0.  Decoded and encoded data blocks must be the
+same number of bytes in length.
+
+FINAL_CHECK: This variable is used to assist in the sequencing of
+the encoding and decoding processes.
+
+OUTER_COUNT:  During the division steps of the encoding and
+decoding operations, this symbol is used to determine the number
+of certain division steps that are required.  This number will vary
+depending on the length of the data blocks being encoded and
+decoded.  For a given data block length of N bytes, this symbol
+must be assigned a value of N-1.  For simplicity, this symbol should
+be assigned a value in decimal format.
+
+CHKSUM1 & CHKSUM2:  These two symbols specify the location of
+the 16-bit polynomial checksum that is appended to an encoded
+data block.  CHKSUM1 and CHKSUM1 correspond to the most
+significant and least-significant bytes of the checksum, respectively.
+For a given data block length of N bytes, CHKSUM1 must be
+assigned a value of N, and CHKSUM2 must be assigned a value of
+N+1.
+
+
+4 - ENCODING DATA BLOCKS FOR TRANSMISSION
+================================
+The encoding of data frames using the crc_V41 subroutine begins in
+the calling software.  Prior to calling crc_V41 to encode a data block,
+the data must be stored in memory with a starting address defined
+by the TX_BUFF symbol.  A value of $00 must then be assigned to
+the CRC_DIR variable to indicate that data is to be encoded when
+the subroutine is called.  All registers are pushed onto the stack at
+the start subroutine, and pulled from the stack just prior to
+completion.
+
+At the beginning of the encoding process 16 bits, each of them
+being 0, are appended to the end of the data block where the
+polynomial checksum will be attached.  The entire data block is then
+ treated as a polynomial and divided by the generator polynomial
+using modulo 2 long division.
+
+The remainder from this long division process is then attached to
+the end of the data block where the 16 zero bits were appended.
+
+Upon successfully encoding the data block the CRC_RET variable is
+assigned a value of $00 and the crc_V41 subroutine returns.  The
+calling software can check the value of the CRC_RET variable to
+perform a simple form of error checking following the subroutine
+execution.  However, this checking is more applicable to the
+decoding process.
+
+
+5 - DECODING RECEIVED DATA FRAMES
+=========================
+The decoding of data frames using the crc_V41 subroutine begins in
+ the calling software.  Prior to calling crc_V41 to decode a data block,
+ the received data must be placed in memory with a starting
+address defined by the RX_BUFF symbol.  A value of $01 must
+then be assigned to the CRC_DIR variable to indicate that data is to
+be decoded when the subroutine is called.  All registers are pushed
+onto the stack at the beginning of the subroutine, and pulled from
+the stack just prior to completion.
+
+The decoding steps that follow are identical to the steps used to
+compute the remainder in the encoding process.  However, instead
+appending 16 zero bits to the end of the data block and attaching
+the remainder to the end of the data block as was done for
+encoding, the value of the remainder is checked.  A remainder of
+zero indicates that the received data frame contains no errors.  In
+such cases crc_V41 will then assign a value of $00 to the CRC_RET
+variable to indicate successful completion with no detected data
+corruption, and then return.
+
+If however the remainder is checked and found to be non-zero, the
+ received data frame will be corrupt.  The crc_V41 subroutine will
+then assign a value of $FF to the CRC_RET variable and return.
+The calling software will then be able to determine that the received
+data is corrupted, and take further action.  For example, in some
+systems a request for re-transmission of the data block found to
+be corrupted may be made.
