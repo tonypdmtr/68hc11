@@ -18,7 +18,7 @@
 ; 25-Feb-98 JLH assemble with either Motorola or Dunfield
 ; 21-Jul-00 JLH change FN_MIN from F7 to F0
 ; 12-Mar-01 JLH V3.0: improve text about paging, formerly called 'mapping'
-; 10-Nov-19 AGP Ported to ASM11 by Tony Papadimitriou, and optimized a bit
+; 10-Nov-19 TGP Ported to ASM11 by Tony Papadimitriou, and optimized a bit
 ;===============================================================================
 ; This version of MONHC11 has been customized to work with Marvin Green's
 ; BOTBoard2 using a 68HC11E2 processor.

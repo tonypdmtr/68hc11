@@ -15,7 +15,7 @@
 ;  1-May-95 JLH correct error in RAMVEC usage (v1.3)
 ; 19-Aug-97 JLH correct bug in COP and Clock Monitor handling
 ; 25-Feb-98 JLH assemble with either Motorola or Dunfield
-; 10-Nov-19 AGP Ported to ASM11 by Tony Papadimitriou, and optimized a bit
+; 10-Nov-19 TGP Ported to ASM11 by Tony Papadimitriou, and optimized a bit
 ;===============================================================================
 ; To customize for a given target, you must change code in the
 ; hardware equates, the string TSTG, and the routines Start and REWDT.
