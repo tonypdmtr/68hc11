@@ -1,0 +1,33 @@
+<!-- This document was created with HomeSite v2.5 -->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+
+<HTML>
+<HEAD><TITLE>68HC11 AD-DA-Converter</TITLE></HEAD>
+
+<BODY>
+
+<FONT FACE="arial">
+<HR>
+<CENTER><H2>MC68HC11 A/D Converter with MAXIM 512 D/A Converter</H2></CENTER>
+<HR>
+The converter was designed as a template for a professional design on Marvin Green's BOTBoard.<BR>
+The Maxim 512 chip makes the wiring and programming easy, although there were some 'confusing&nbsp;§_!#!**' around the SPCR and SPSR in the Motorola Handbooks.<BR>
+Port C drives 8 LED's just as a trace, to see if the program is running.<BR>
+The speed for this application will be around 8 kHz, I did not try to optimize it, because the final application will need only very slow A-outputs. If you think it must be faster, you could start the converter after fetching the A/D data from the previous conversion. If the program becomes too big, the SPI-transmitter could be realized in realtime ...<BR>
+<HR>
+<TABLE BORDER=0 CELLPADDING=1>
+<TR><TD><IMG SRC="addac.jpg" WIDTH=650><TD></TR>
+<TR><TH>PROTOTYPE</TH></TR>
+</TABLE>
+<HR>
+<TABLE BORDER=0 CELLPADDING=1>
+<TR><TD><IMG SRC="addas.jpg" WIDTH=650></TD></TR>
+<TR><TH>SCHEMATIC</TH></TR>
+<TR><TH>Download the <A HREF="addac.a11">PROGRAM LISTING</A> (1 kByte)</TH></TR>
+</TABLE>
+<HR>
+
+</FONT>
+
+</BODY>
+</HTML>
