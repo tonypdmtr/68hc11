@@ -6,39 +6,35 @@
 ;              P. Topping 21st August '95
 ;                       AN1597
 ;
-; (Typed from AN1597.PDF and corrected syntax errors
-; by Tony Papadimitriou to assemble with ASM11)
+; (Typed from AN1597.PDF and converted syntax to ASM11 by Tony Papadimitriou)
 ;*******************************************************************************
 
 HC11                def       2                   ; 2 FOR E2, 4 FOR K4
 
-REGS                equ       $1000
-PORTA               equ       $00                 ; PORT A ADDRESS
-PORTB               equ       $04                 ; B
-PORTC               equ       $03                 ; C
-PORTD               equ       $08                 ; D
-PORTE               equ       $0A                 ; E
+REGS                equ       $1000               ; REGISTER BASE
+PORTA               equ       REGS+$00            ; PORT A ADDRESS
+PORTB               equ       REGS+$04            ; B
+PORTC               equ       REGS+$03            ; C
+PORTD               equ       REGS+$08            ; D
+PORTE               equ       REGS+$0A            ; E
 
-PORTCD              equ       $07                 ; PORT C DATA DIRECTION REG.
-PORTDD              equ       $09                 ; D
+PORTCD              equ       REGS+$07            ; PORT C DATA DIRECTION REG.
+PORTDD              equ       REGS+$09            ; D
 
-TCNT                equ       $0E
-TMSK2               equ       $24
-PACTL               equ       $26
-SPCR                equ       $28
-ADCTL               equ       $30
-ADR1                equ       $31
-ADR2                equ       $32
-ADR4                equ       $34
-OPTION              equ       $39
-INIT                equ       $3D
-
-RBO                 equ       $1000               ; REGISTER BLOCK OFFSET
+TCNT                equ       REGS+$0E
+TMSK2               equ       REGS+$24
+PACTL               equ       REGS+$26
+SPCR                equ       REGS+$28
+ADCTL               equ       REGS+$30
+ADR1                equ       REGS+$31
+ADR2                equ       REGS+$32
+ADR4                equ       REGS+$34
+OPTION              equ       REGS+$39
+INIT                equ       REGS+$3D
 
 ;*******************************************************************************
-;                   RAM allocation  status flags
+                    #RAM                          ; RAM allocation
 ;*******************************************************************************
-
                     org       $0000
 
 stat1               rmb       1                   ; 0: VALID CRC
@@ -54,8 +50,6 @@ stat2               rmb       1                   ; 0: DISPLAY TRANSIENT
                                                   ; 6: ALARM HOURS (SETUP)
                                                   ; 7: ALTERNATIVE DISPLAY
 
-;*******************************************************************************
-;                        RAM allocation
 ;*******************************************************************************
 
 DOY                 rmb       2                   ; DAY OF YEAR
@@ -101,35 +95,37 @@ KEY                 rmb       1                   ; CODE OF PRESSED KEY
 KOUNT               rmb       1                   ; KEYBOARD COUNTER
 ADIS                rmb       1                   ; ALTERNATIVE DISPLAY TYPE
 
+;*******************************************************************************
+                    #ROM
+;*******************************************************************************
                     org       $F800               ; .ROM1
 
 ;*******************************************************************************
-;                     Reset & initialisation
-;*******************************************************************************
+; Reset & initialisation
 
 Start               proc
                     lds       #$00FF              ; INITIALISE STACK POINTER
                     lda       #$40                ; ENABLE REAL TIME INTERRUPTS
-                    sta       TMSK2+RBO
+                    sta       TMSK2
                     lda       #$B0                ; IRQ EDGE SENSETIVE, A/D ON
-                    sta       OPTION+RBO
+                    sta       OPTION
                     lda       #$0B                ; 133072 us WITH A 2.0 MHz XTAL
-                    sta       PACTL+RBO
+                    sta       PACTL
                     lda       #$34                ; ENABLE CONTINUOUS A/D
-                    sta       ADCTL+RBO
+                    sta       ADCTL
                     ldy       #$1000
 
                     ldd       #$003C              ; 0,1: SCI (PCBUG11), 24: not used
-                    std       PORTD,y             ; 5: CONTROL OUTPUT
+                    std       [PORTD,y            ; 5: CONTROL OUTPUT
                                                   ; PORTE 4: BATTERY (A/D), 5: TUNING (A/D)
                                                   ; PORTE 7: KEYBOARD INHIBIT,0,1,2,3,6: not used
 LCDB                equ       PORTC
 LCDBDD              equ       PORTCD
 
                     lda       #$FF
-                    sta       LCDBDD,y
+                    sta       [LCDBDD,y
 LCDC                equ       PORTB
-                    clr       LCDC,y              ; LCD CONTROL BITS: 5(RS), 6(R/W),7(E)
+                    clr       [LCDC,y             ; LCD CONTROL BITS: 5(RS), 6(R/W),7(E)
 KEYP                equ       PORTA               ; 0,1: KEY INS, 3,4: KEY OUTS
 R1                  equ       $08                 ; ROW 1 BIT 3
 R2                  equ       $10                 ; ROW 2 BIT 4
@@ -152,11 +148,10 @@ Loop@@              jsr       CLRAM               ; CLEAR RAM
 ;                   bra       IDLE
 
 ;*******************************************************************************
-;                        Idle loop
-;*******************************************************************************
+; Idle loop
 
 IDLE                proc
-                    brclr     TCNT,y,$1F,_1@@     ; 64 Hz
+                    brclr     [TCNT,y,$1F,_1@@    ; 64 Hz
                     bra       IDLE
 
 _1@@                brclr     stat2,$01,_2@@      ; DISPLAY TRANSIENT?
@@ -184,31 +179,30 @@ ITOK@@              cpd       AMIN                ; ALARM TIME
                     lda       QSEC                ; WAKEUP TWO SECONDS EARLY
                     cmpa      #218
                     bne       CHSLP@@             ; TO PREVENT SWITCHOFF LOCKOUT
-                    bclr      PORTD,y,$20         ; YES, SWITCH ON
+                    bclr      [PORTD,y,$20        ; YES, SWITCH ON
                     jsr       INSLP               ; START SLEEP TIMER
                     inc       SLEPT               ; 61 TO COMPENSATE FOR IMMEDIATE DECREMENT
 CHSLP@@             brclr     stat2,$02,FLN@@     ; SLEEP TIMER RUNNING?
                     lda       SLEPT               ; YES
                     bne       FLN@@               ; TIME TO FINISH?
                     bclr      stat2,$02           ; YES, CLEAR FLAG
-                    bset      PORTD,y,$20         ; AND SWITCH OFF
-FLN@@               brclr     ADR4,y,$80,SKBD@@   ; KEYBOARD ENABLED?
+                    bset      [PORTD,y,$20        ; AND SWITCH OFF
+FLN@@               brclr     [ADR4,y,$80,SKBD@@  ; KEYBOARD ENABLED?
                     bsr       KBD                 ; YES, READ KEYBOARD
 SKBD@@              bra       IDLE
 
 ;*******************************************************************************
-;                      Keyboard routine
-;*******************************************************************************
+; Keyboard routine
 
 KBD                 proc
-                    bset      KEYP,y,R1           ; ROW 1
-                    bclr      KEYP,y,R2
-                    lda       KEYP,y              ; READ KEYBOARD
+                    bset      [KEYP,y,R1          ; ROW 1
+                    bclr      [KEYP,y,R2
+                    lda       [KEYP,y             ; READ KEYBOARD
                     bita      #KINS               ; ANY INPUT LINE HIGH?
                     bne       _1@@
-                    bset      KEYP,y,R2           ; ROW 2
-                    bclr      KEYP,y,R1
-                    lda       KEYP,y              ; READ KEYBOARD
+                    bset      [KEYP,y,R2          ; ROW 2
+                    bclr      [KEYP,y,R1
+                    lda       [KEYP,y             ; READ KEYBOARD
                     bita      #KINS               ; ANY INPUT LINE HIGH?
                     bne       _1@@
                     clr       KEY                 ; NO KEY PRESSED
@@ -237,8 +231,7 @@ _2@@                inc       KOUNT               ; YES, THE SAME
 Done@@              equ       :AnRTS
 
 ;*******************************************************************************
-;                         On/off key
-;*******************************************************************************
+; On/off key
 
 ONOFF               proc
                     brclr     stat2,$08,NOTALR    ; ALARM DISPLAY?
@@ -261,11 +254,11 @@ Min@@               bclr      stat2,$40           ; YES, MAKE IT MINUTES
 NOTALR              proc
                     bsr       CLTR
                     bclr      stat2,$02           ; CANCEL SLEEP TIMER
-                    brclr     PORTD,y,$20,On@@    ; ON?
-SODM                bclr      PORTD,y,$20         ; NO, SWITCH ON
+                    brclr     [PORTD,y,$20,On@@   ; ON?
+SODM                bclr      [PORTD,y,$20        ; NO, SWITCH ON
                     rts
 
-On@@                bset      PORTD,y,$20         ; YES, SWITCH OFF
+On@@                bset      [PORTD,y,$20        ; YES, SWITCH OFF
                     rts
 
 ;*******************************************************************************
@@ -276,8 +269,7 @@ CLTR                proc
                     rts
 
 ;*******************************************************************************
-;                      Alarm key
-;*******************************************************************************
+; Alarm key
 
 ALARM               proc
                     brclr     stat2,$08,On@@      ; ALARM DISPLAY?
@@ -302,8 +294,7 @@ TRAN                sta       DIST
                     rts
 
 ;*******************************************************************************
-;                   Alternative displays key
-;*******************************************************************************
+; Alternative displays key
 
 DCK                 proc
                     brset     stat2,$20,PINC      ; ALARM SETUP?
@@ -321,8 +312,7 @@ NEXTD               proc
                     rts
 
 ;*******************************************************************************
-;                        Sleep key
-;*******************************************************************************
+; Sleep key
 
 SLEEP               proc
                     brset     stat2,$20,PDEC      ; ALARM SETUP?
@@ -349,8 +339,7 @@ SLPTOK@@            bsr       T25
                     bra       SODM
 
 ;*******************************************************************************
-;                     Increment alarm time
-;*******************************************************************************
+; Increment alarm time
 
 PINC                proc
                     brset     stat2,$40,_1@@      ; SETUP HOURS?
@@ -371,8 +360,7 @@ _2@@                sta       AOUR
 T5S                 jmp       A5SD                ; 10 SECOND TIMEOUT
 
 ;*******************************************************************************
-;                   Decrement alarm time
-;*******************************************************************************
+; Decrement alarm time
 
 PDEC                proc
                     brset     stat2,$40,_1@@      ; SETUP HOURS?
@@ -388,8 +376,7 @@ _1@@                dec       AOUR
                     bra       T5S
 
 ;*******************************************************************************
-;                 Timer interrupt routine
-;*******************************************************************************
+; Timer interrupt routine
 
 TINTB               proc
                     ldy       #REGS
@@ -403,9 +390,7 @@ Done@@              rti
 Quart@@             clr       TH8
                     dec       DIST                ; DECREMENT TRANSIENT DISPLAY TIMER
                     bset      stat1,$08           ; UPDATE DISPLAY
-          ;--------------------------------------
-          ; Update clock
-          ;--------------------------------------
+          ;-------------------------------------- ; Update clock
                     inc       QSEC                ; UPDATE QUARTER SECONDS
                     ldb       QSEC
                     lda       M9                  ; 9 MINUTE COUNTER
@@ -437,8 +422,7 @@ _3@@                sta       M9
 ;                   bra       TEST1
 
 ;*******************************************************************************
-;                        Update date
-;*******************************************************************************
+; Update date
 
 TEST1               proc
                     inc       DOW+1               ; NEXT DAY
@@ -496,7 +480,7 @@ B1                  long      $F004E009,$C013751B,$1F0A3E14,$8914E715
 QBP                 equ       20                  ; MSB COUNTS FOR 10 ms (BIT PERIOD/4)
 
 SDATA               proc
-                    ldd       TCNT+RBO            ; READ TIMER
+                    ldd       TCNT                ; READ TIMER
                     std       W1                  ; SAVE IT
                     subd      W2                  ; SUBTRACT PREVIOUS
                     std       W3                  ; AND SAVE DELTA
@@ -536,8 +520,7 @@ FINV                bclr      stat1,$01           ; AND FORCE RESYNC
                     rti
 
 ;*******************************************************************************
-;                   Shift in bit and calculate CRC
-;*******************************************************************************
+; Shift in bit and calculate CRC
 
 MULT                proc
                     sta       TEMP
@@ -596,8 +579,7 @@ TRY2                brclr     DAT,$02,NOTV        ; PREBIT SHOULD BE A 1
 Done@@              equ       :AnRTS
 
 ;*******************************************************************************
-;                 CRC check and confidence handling
-;*******************************************************************************
+; CRC check and confidence handling
 
 FIN                 proc
                     cpd       #0
@@ -652,8 +634,7 @@ SHFT                proc
                     rts
 
 ;*******************************************************************************
-;                      Process time block
-;*******************************************************************************
+; Process time block
 
 TIME                proc
                     ldd       BLOCK+2
@@ -703,8 +684,7 @@ TIME                proc
 Done@@              equ       :AnRTS
 
 ;*******************************************************************************
-;                      Calculate offset
-;*******************************************************************************
+; Calculate offset
 
 CDATE               proc
                     ldd       MIN                 ; XFER MINUTES AND HOURS
@@ -716,8 +696,7 @@ CDATE               proc
 ;                   bra       LOCAL
 
 ;*******************************************************************************
-;              Local time difference adjustment (neg.)
-;*******************************************************************************
+; Local time difference adjustment (neg.)
 
 LOCAL               proc
                     ldb       OFSET               ; CHECK FOR OFFSET
@@ -752,8 +731,7 @@ Save@@              sta       DMIN
 Done@@              rts
 
 ;*******************************************************************************
-;                Local time difference adjustment (pos)
-;*******************************************************************************
+; Local time difference adjustment (pos)
 
 POS                 proc
                     lsrb                          ; HOURS IN B
@@ -778,8 +756,7 @@ TFIN                proc
 ;                   bra       DATE
 
 ;*******************************************************************************
-;                Calculate date (month & dayofmonth)
-;*******************************************************************************
+; Calculate date (month & dayofmonth)
 
 DATE                proc
                     lda       DWEEK               ; WEEK NUMBER ADJUSTED FOR LOCAL OFFSET
@@ -814,8 +791,7 @@ Table@@             fdb       30,31               ; NOVEMBER, DECEMBER
                     fdb       31                  ; JANUARY
 
 ;*******************************************************************************
-;                      Display type selection
-;*******************************************************************************
+; Display type selection
 
 MOD                 proc
                     brset     stat2,$04,Sleep@@   ; SLEEP DISPLAY?
@@ -841,7 +817,7 @@ _3@@                deca
 Sleep@@             jsr       SLEEPD              ; SLEEP TIMER DISPLAY?
                     bra       Row@@
 
-Normal@@            brset     PORTD,y,$20,StandBy@@ ; STANDBY?
+Normal@@            brset     [PORTD,y,$20,StandBy@@ ; STANDBY?
                     bsr       NORMD               ; NORMAL DISPLAY
                     bra       Row@@
 
@@ -867,7 +843,7 @@ DIFF                proc
                     jsr       CLOCK               ; LATCH IT
                     ldx       #DISP
 Loop@@              jsr       WAIT
-                    bset      LCDC,y,$20          ; WRITE DATA
+                    bset      [LCDC,y,$20         ; WRITE DATA
                     lda       ,x                  ; GET A BYTE
                     sta       16,x
                     jsr       CLOCK               ; SEND IT TO MODULE
@@ -875,12 +851,10 @@ Loop@@              jsr       WAIT
                     cpx       #DISP+16            ; DONE?
                     bne       Loop@@
                     rts                           ; REMOVE FOR /16 DISPLAY
-
-;*******************************************************************************
-;                   Additional code for /16 LCD modules
-;                    (also change CLOCK3 to lda  #$38)
-;*******************************************************************************
 #ifdef
+;*******************************************************************************
+; Additional code for /16 LCD modules (also change CLOCK3 to lda  #$38)
+
 LCD16               proc
                     jsr       WAIT
                     lda       #$A8                ;ADDRESS 40
@@ -900,8 +874,7 @@ Loop@@              jsr       WAIT
                     rts
 #endif
 ;*******************************************************************************
-;               Normal and Standby (alarm armed) displays
-;*******************************************************************************
+; Normal and Standby (alarm armed) displays
 
 NORMD               proc
                     bsr       STIME
@@ -943,8 +916,7 @@ SUBSP               proc
 Done@@              rts
 
 ;*******************************************************************************
-;                 Standby display (alarm not armed)
-;*******************************************************************************
+; Standby display (alarm not armed)
 
 STBYD               proc
                     bsr       STIME
@@ -981,8 +953,7 @@ T3X                 proc
                     rts
 
 ;*******************************************************************************
-;              LW data, confidence & seconds display
-;*******************************************************************************
+; LW data, confidence & seconds display
 
 ALTD1               proc
                     lda       #' '
@@ -1048,9 +1019,7 @@ MOVEIT              proc
                     rts
 
 ;*******************************************************************************
-;                   LW data year & week display
-;*******************************************************************************
-
+; LW data year & week display
 
 ALTD2               proc
                     ldx       #ALT2ST
@@ -1093,9 +1062,7 @@ Table@@             fcb       1,13,25,9,21,5,17   ; TABLE CONTAINING OFFSET RELA
                     fcb       12,24,8,20,4,16,0   ; (17) ACROSS TABLE
 
 ;*******************************************************************************
-;                        Alarm display
-;*******************************************************************************
-
+; Alarm display
 
 ALRMD               proc
                     ldx       #ALARMS
@@ -1142,8 +1109,7 @@ Loop@@              lda       ,x
                     rts
 
 ;*******************************************************************************
-;                       Sleep display
-;*******************************************************************************
+; Sleep display
 
 SLEEPD              proc
                     ldx       #SLPST
@@ -1154,14 +1120,13 @@ SLEEPD              proc
                     rts
 
 ;*******************************************************************************
-;                       Voltage display
-;*******************************************************************************
+; Voltage display
 
 ALTD3               proc
                     ldx       #ADST
                     bsr       XFER16
 
-                    lda       ADR1+RBO            ; VDD/4 (PE4)
+                    lda       ADR1                ; VDD/4 (PE4)
                     inca
                     ldb       #200                ; SCALE AND RETURN WITH UP TO 99 (9.9v) IN ACCA
                     bsr       CSUB                ; AND 10s OF VOLTS IN TEMP
@@ -1174,7 +1139,7 @@ ALTD3               proc
 Ascii@@             adda      #'0'                ; CONVERT TO ASCII
                     sta       DISP+3              ; 10s OF VOLTS
 
-                    lda       ADR2+RBO            ; RSSI (PE5)
+                    lda       ADR2                ; RSSI (PE5)
                     inca
                     ldb       #250                ; SCALE AND RETURN WITH UP TO 99 (1.98v) IN ACCA
                     bsr       CSUB                ; AND UP TO 2 (4v) IN TEMP (MAX: 249 OR 4.98V)
@@ -1206,11 +1171,8 @@ Loop@@              cmpa      #100                ; ONLY ACCA AS RESULT)
 Done@@              equ       :AnRTS
 
 ;*******************************************************************************
-;           ACCA Hex>BCD conversion
-;                      &
-;         Split nibbles into ACCA (MS) and
-;          ACCB (LS) and convert to ASCII.
-;*******************************************************************************
+; ACCA Hex>BCD conversion &
+; Split nibbles into ACCA (MS) and ACCB (LS) and convert to ASCII.
 
 CBCD                proc                          ; (ADDED BY TONYP BECAUSE IT WAS MISSING)
                     tab                           ; HEX IN A & B
@@ -1225,9 +1187,7 @@ Loop@@              subb      #$10                ; DECREMENT MSB
                     bra       Loop@@              ; TRY AGAIN
 
 ;*******************************************************************************
-;        Split ACCA nibbles into ACCA (MS) and
-;         ACCB (LS) and convert both to ASCII.
-;*******************************************************************************
+; Split ACCA nibbles into ACCA (MS) and ACCB (LS) and convert both to ASCII.
 
 SPLIT               proc
                     tab                           ; MSD INTO A, LSD INTO B
@@ -1247,10 +1207,7 @@ Ok@@                andb      #$0F
 Done@@              rts
 
 ;*******************************************************************************
-;         Send and clock data to LCD module.
-;
-;         Check to see if LCD module is busy.
-;*******************************************************************************
+; Send and clock data to LCD module. Check to see if LCD module is busy.
 
 CLOCK3              proc
                     lda       #$30                ; $38 FOR /16 DISPLAYS
@@ -1259,27 +1216,27 @@ CLOCK3              proc
 ;*******************************************************************************
 
 CLOCK               proc
-                    sta       LCDB,y
-                    bset      LCDC,y,$80
-                    bclr      LCDC,y,$80          ; CLOCK IT
+                    sta       [LCDB,y
+                    bset      [LCDC,y,$80
+                    bclr      [LCDC,y,$80         ; CLOCK IT
                     rts
 
 ;*******************************************************************************
 
 WAIT                proc
-                    bclr      LCDC,y,$A0          ; READ LCD BUSY FLAG
-                    bset      LCDC,y,$40
-                    clr       LCDBDD,y            ; INPUT ON LCD BUS
-Loop@@              bset      LCDC,y,$80          ; CLOCK HIGH
-                    lda       LCDB,y              ; READ MODULE
-                    bclr      LCDC,y,$80          ; CLOCK LOW
+                    bclr      [LCDC,y,$A0         ; READ LCD BUSY FLAG
+                    bset      [LCDC,y,$40
+                    clr       [LCDBDD,y           ; INPUT ON LCD BUS
+Loop@@              bset      [LCDC,y,$80         ; CLOCK HIGH
+                    lda       [LCDB,y             ; READ MODULE
+                    bclr      [LCDC,y,$80         ; CLOCK LOW
                     bmi       Loop@@              ; BUSY?
-                    com       LCDBDD,y            ; OUTPUT ON LCD BUS
-                    bclr      LCDC,y,$40
+                    com       [LCDBDD,y           ; OUTPUT ON LCD BUS
+                    bclr      [LCDC,y,$40
                     rts
 
 ;*******************************************************************************
-;                    Strings.
+; Strings
 ;*******************************************************************************
 
 ADST                fcb       'B: --.- T: -.'
@@ -1293,8 +1250,7 @@ ALARMS              fcb       ' Alarm - Off '
 SLPST               fcb       ' Sleep 0 min. '
 
 ;*******************************************************************************
-;                          RAM clear
-;*******************************************************************************
+; RAM clear
 
 CLRAM               proc
                     ldx       #stat1              ; INITIALISE RAM
@@ -1305,8 +1261,7 @@ Loop@@              clr       ,x
                     rts
 
 ;*******************************************************************************
-;         LINK batch files (LWRD.BAT & LWRD.LD)
-;                 and PCBUG11 Vectors.
+; LINK batch files (LWRD.BAT & LWRD.LD) and PCBUG11 Vectors.
 ;
 ; ILD11 LWRD.O -MKUF LWRD.MAP -G LWRD -O LWRD.OUT
 ; IHEX LWRD.OUT -O LWRD.0
@@ -1320,18 +1275,15 @@ Loop@@              clr       ,x
 ;*******************************************************************************
 
 ;*******************************************************************************
-;              MC68HC811E2 Vectors.
+                    #VECTORS                      ; MC68HC811E2 Vectors.
 ;*******************************************************************************
-
                     org       $FFF0               ; SECTION .VECTOR
 
-                    fdb       TINTB               ; RTI
-                    fdb       SDATA               ; IRQ
-                    fdb       Start               ; XIRQ
-                    fdb       Start               ; SWI
-                    fdb       Start               ; ILLEGAL OP CODE
-                    fdb       Start               ; COP
-                    fdb       Start               ; CLOCK MONITOR
-                    fdb       Start               ; RESET
-
-                    end
+                    dw        TINTB               ; RTI
+                    dw        SDATA               ; IRQ
+                    dw        Start               ; XIRQ
+                    dw        Start               ; SWI
+                    dw        Start               ; ILLEGAL OP CODE
+                    dw        Start               ; COP
+                    dw        Start               ; CLOCK MONITOR
+                    dw        Start               ; RESET
