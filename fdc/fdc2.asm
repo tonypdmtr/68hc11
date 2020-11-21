@@ -11,7 +11,14 @@
 ;*******************************************************************************
 ;Note: In memory of Denis Forde who died on Sunday, May 8, 2005.
 ;(https://notices.irishtimes.com/acknowledgement/forde/2371077)
-                    #OptRelOff
+;*******************************************************************************
+
+;*******************************************************************************
+; Macros
+;*******************************************************************************
+
+                    #Macro
+
 ;*******************************************************************************
 ; AND Immediate
 
@@ -44,7 +51,7 @@ tim                 macro
                     pula
                     endm
 
-;********************************************************
+;*******************************************************************************
 ;      FDC2.SRC
 ;
 ;      HD63B03YP ASSEMBLY CODE FOR FLOPPY DISK DRIVE
@@ -53,10 +60,10 @@ tim                 macro
 ;
 ;      DATE: 27 April 1994
 ;
-;********************************************************
+;*******************************************************************************
 ;           HITACHI 6303Y MPU I/O PORTS
-;********************************************************
-; PORT 2 ($0003) --------------------------------------
+;*******************************************************************************
+; PORT 2 ($0003) ---------------------------------------------------------------
 ;   9 ICAPT     PORT2-0
 ;  10 OCR1      PORT2-1
 ;  11 SCLK      PORT2-2
@@ -65,8 +72,8 @@ tim                 macro
 ;  14 OCR2      PORT2-5
 ;  15 PORT26    PORT2-6
 ;  16 PORT27    PORT2-7
-; PORT 5 ($0015) --------------------------------------
-;  17 IRQ1      PORT5-0 FDC 1 Interupt
+; PORT 5 ($0015) ---------------------------------------------------------------
+;  17 IRQ1      PORT5-0 FDC 1 Interrupt
 ;  18 IRQ2      PORT5-1
 ;  19 MR        PORT5-2 MFM/FM mode
 ;  20 HALT      PORT5-3 MINI floppy mode
@@ -74,7 +81,7 @@ tim                 macro
 ;  22 OS for P6 PORT5-5 High Density disk signal
 ;  23 PORT56    PORT5-6 FDC RESET signal
 ;  24 PORT57    PORT5-7 FDC Terminal Count signal
-; PORT 6 ($0017)---------------------------------------
+; PORT 6 ($0017)----------------------------------------------------------------
 ;  25 PORT60    PORT6-0
 ;  26 PORT61    PORT6-1
 ;  27 PORT62    PORT6-2
@@ -83,9 +90,9 @@ tim                 macro
 ;  30 PORT65    PORT6-5
 ;  31 PORT66    PORT6-6
 ;  32 PORT67    PORT6-7
-;********************************************************
-;       HITACHI 6303Y MPU REGISTERS
-;********************************************************
+;*******************************************************************************
+; HITACHI 6303Y MPU REGISTERS
+;*******************************************************************************
 
 P2DDR               equ       $0001               ; Port 2 Data Direction (0-7)
 PORT2               equ       $0003               ; "  2 Data (0-7)
@@ -113,23 +120,24 @@ TRCSR2              equ       $001E               ; "    Transmit/Receive CSR 2
 RDR                 equ       $0012               ; "    Receive  Data Reg.
 TDR                 equ       $0013               ; "    Transmit Data Reg.
 
-MAXFAT              equ       $0B40               ; FAT entries max (+1 for easy checking)
+MAXFAT              equ       $0B40               ; fat entries max (+1 for easy checking)
 
-;*********************************************************
-;       FLOPPY DISK DRIVE CONTROLLER ADDRESSES
-;*********************************************************
+;*******************************************************************************
+; FLOPPY DISK DRIVE CONTROLLER ADDRESSES
+;*******************************************************************************
 
 FDCMSR              equ       $4000               ; FDC Master Status Register
 FDCDR               equ       $4001               ; FDC Data Register
 
-;*********************************************************
-;       BUFFER AND VARIABLES DEFINITIONS
-;*********************************************************
+;*******************************************************************************
+; BUFFER AND VARIABLES DEFINITIONS
+;*******************************************************************************
 
                     org       $0060
-
 BOTTOM_RAM
-;               FDD parameter variables
+;-------------------------------------------------------------------------------
+; FDD parameter variables
+;-------------------------------------------------------------------------------
 
 MLTITRK             rmb       1                   ; multi track access variable
 MFM                 rmb       1                   ; FM or MFM mode variable
@@ -146,14 +154,16 @@ DTL                 rmb       1                   ; data field length variable
 SRT                 rmb       1                   ; step rate time
 HUT                 rmb       1                   ; head unload time
 HLT                 rmb       1                   ; head load time
-SECBYTES                                          ; Missing variable (added by <tonyp@acm.org>). Is it the same as SECBYTS?
 SECBYTS             rmb       1                   ; bytes per sector variable
+SECBYTES            def       SECBYTS
 TRKSCS              rmb       1                   ; sectors per track variable
 SDTRKS              rmb       1                   ; tracks per side variable
 DMA                 rmb       1                   ; DMA or non DMA mode variable
 FDCCMND             rmb       1                   ; FDC command number variable
 
-;                        FILE HANDLE STRUCTURE
+;-------------------------------------------------------------------------------
+; FILE HANDLE STRUCTURE
+;-------------------------------------------------------------------------------
 
 FNAME               rmb       11                  ; filename buffer
 FSIZE               rmb       4                   ; file size variable
@@ -162,15 +172,17 @@ BOF                 rmb       2                   ; begining of file sector vari
 EOF                 rmb       2                   ; end of file sector variable
 OLDEOF              rmb       2                   ; old end of file sector variable
 FDIRNM              rmb       1                   ; file directory entry number variable
-CENTRY              rmb       2                   ; current FAT entry variable
-NENTRY              rmb       2                   ; next FAT entry variable
-CENUM               rmb       2                   ; current FAT entry number variable
-LFFAT               rmb       2                   ; last free FAT location variable
+CENTRY              rmb       2                   ; current fat entry variable
+NENTRY              rmb       2                   ; next fat entry variable
+CENUM               rmb       2                   ; current fat entry number variable
+LFFAT               rmb       2                   ; last free fat location variable
 NFBS                rmb       2                   ; number of free bytes left in sector var
 CTRLCD              rmb       1                   ; control code file access mode flag
 FHANDLE             rmb       1                   ; File handle code var
 
-;               THE OTHERS
+;-------------------------------------------------------------------------------
+; THE OTHERS
+;-------------------------------------------------------------------------------
 
 APNDF               rmb       1
 ABSSEC              rmb       2                   ; absolute sector variable
@@ -197,10 +209,10 @@ BUFFX               rmb       2
 SRCX                rmb       2
 DSTX                rmb       2
 MVCOUNT             rmb       2
-INTCNT              rmb       1                   ; interupt counter for formating
+INTCNT              rmb       1                   ; interrupt counter for formating
 FATNUM              rmb       2                   ; FAT number variable
 FDRNUM              rmb       2                   ; File Dir. number variable
-NXTFAT              rmb       2                   ; next FAT number variable
+NXTFAT              rmb       2                   ; next fat number variable
 NXTFDR              rmb       1                   ; next file dir variable
 NXTFNM              rmb       1                   ; next filename variable
 EXIST               rmb       1                   ; file existence flag
@@ -212,7 +224,9 @@ DSKCHNG             rmb       1                   ; gets set if the disk is chan
 DSKPRS              rmb       1                   ; gets set if a disk is in the drive
 DISKIN              rmb       1
 
-;               THE BUFFERS
+;-------------------------------------------------------------------------------
+; THE BUFFERS
+;-------------------------------------------------------------------------------
 
 BUFFER              rmb       513                 ; 513 byte sector content buffer
 FILEDR              rmb       32                  ; 32 byte file dir content buffer
@@ -230,9 +244,9 @@ FDIREND             rmb       1
 DATA                rmb       2560                ; the data buffer - 5 sectors worth
 TOPRAM              rmb       1                   ; last byte of ram used
 
-;*********************************************************
-;       FBUG3Y MACROS
-;*********************************************************
+;*******************************************************************************
+; FBUG3Y MACROS
+;*******************************************************************************
 
 COLD                equ       $F000
 WARM                equ       $F003
@@ -243,28 +257,26 @@ OUTHR               equ       $F234
 
                     org       $8000
 
-;*********************************************************
-;       INITIALIZE ALL REGISTERS
-;*********************************************************
+;*******************************************************************************
+; INITIALIZE ALL REGISTERS
+;*******************************************************************************
 
-STOP                jsr       STOP0
+STOP                bsr       STOP0
                     cli                           ; Enable all IRQs
                     rts
 
-
 STOP0               sei                           ; first Disable all IRQs
-                    jsr       INITP2              ; Initialize Port 2
-                    jsr       INITP5              ; "      Port 5 & RAM
-                    jsr       INITP6              ; "      Port 6  (//H'shake)
-                    jsr       INITT1              ; "      Timer 1 (OCI,ICI)
+                    bsr       INITP2              ; Initialize Port 2
+                    bsr       INITP5              ; "      Port 5 & RAM
+                    bsr       INITP6              ; "      Port 6  (//H'shake)
+                    bsr       INITT1              ; "      Timer 1 (OCI,ICI)
                     jsr       INITS               ; "      serial port
                     jsr       RSTFDC              ; reset disk controller
                     lda       DBUGF
                     anda      #%00000001
-                    bne       STOP09
+                    bne       :AnRTS
                     jsr       CLRRAM
-STOP09              rts                           ; ---------->
-
+                    rts                           ; ---------->
 
                     fcc       'COPYRIGHT (C) 1994 FORDE ELECTRONICS LTD.'
 
@@ -290,7 +302,6 @@ INITP2              lda       #%11110011
                     sta       PORT2               ; Port 2 Data Reg.
                     rts
 
-
 ; *--------------------------------------------------------
 ;       INITIALIZE PORT 5                               -
 ; *--------------------------------------------------------
@@ -306,7 +317,7 @@ INITP2              lda       #%11110011
 ; STBYP 7 = 1  Flag for Vcc Retention                   -
 ;                                                       -
 ;       PORT5 DDR ($0020) & DATA REG. ($0015)           -
-; IRQ1  0 = 0  IN  - FDC 1 Interupt                     -
+; IRQ1  0 = 0  IN  - FDC 1 Interrupt                    -
 ; IRQ2  1 = 1  OUT -                                    -
 ; MR    2 = 0  IN  - MFM/FM mode                        -
 ; HALT  3 = 1  OUT - MINI floppy mode                   -
@@ -325,20 +336,17 @@ INITP5              lda       #%11100000
                     sta       PORT5               ; Port 5 Data Reg.
                     rts
 
-
 ;       ----- ENABLE IRQ1 -------
 
 IRQON               lda       #%11100001
                     sta       RP5CR               ; RAM / Port5 Cntl. Reg.
                     rts
 
-
 ;       ----- DISABLE IRQ1 -------
 
 IRQOFF              lda       #%11100000
                     sta       RP5CR               ; RAM / Port5 Cntl. Reg.
                     rts
-
 
 ; *--------------------------------------------------------
 ;       INITIALIZE PORT 6                               -
@@ -372,7 +380,6 @@ INITP6              lda       #%00000111
                     sta       P6DDR               ; Port 6 DDR
                     lda       #%11111111
                     rts
-
 
 ; *--------------------------------------------------------
 ;       INITIALIZE TIMER 1                              -
@@ -409,22 +416,21 @@ INITT1              lda       #%00000000
                     stx       OCR2                ; Timer-1 OCR-2 ($0019) 100 mS
                     rts
 
-
-;********************************************************
-;       INITIALIZE SERIAL-1 (MPU) - AS PER MONEYCHANGER*
-;********************************************************
-
+;*******************************************************************************
+;       INITIALIZE SERIAL-1 (MPU) - AS PER MONEYCHANGER
+;*******************************************************************************
+;
 ;       TIMER 2 CNTL / STATUS REG.-3 ($001B)
 ; CKS0  0 = 0  Input Clock Select : 00 = E~
 ; CKS1  1 = 0    "     "     "    : 01 = E~/128
 ; TOS0  2 = 0  Timer 2 Output Select
-; TOS1  3 = 0    "   "   "      " 00 = Output Inhibited*
+; TOS1  3 = 0    "   "   "      " 00 = Output Inhibited
 ; T2E   4 = 1  Timer 2 Enable, allow T2CNT to count
 ; ....  5 = 1  not used
 ; ECMI  6 = 0  Disable Counter Match Interrupt (CMI)
 ; CMF   7 = X  Flag: Counter Match
 ;              Set by T2CNT = TCONR. to Clear write 0.
-
+;
 ;       RATE / MODE CONTROL REG. ($0010)
 ; SS0   0 = 0  Baud Rate from Timer 1 /N
 ; SS1   1 = 0    "    "    "    "   " /N
@@ -434,45 +440,51 @@ INITT1              lda       #%00000000
 ; SS2   5 = 1  Baud Rate from Timer 2 /N
 ; ....  6 = 1  not used
 ; ....  7 = 1  not used
-
+;
 ;       TRANSMIT / RCV. CNTL./STATUS REG.1 ($0011)
 ; WU    0 = 0  Disable Wake Up
 ; TE    1 = 1  Enable  Tx on P24
 ; TIE   2 = 0  Disable Transmit Interrupt (toggled ON)
 ; RE    3 = 0  Disable Rx on P23           ==========
 ; RIE   4 = 1  Enable  Receive  Interrupt
-; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####*
-; ORFE  6 = X  Flag: Overrun/Framing Error        #####*
-; RDRF  7 = X  Flag: Rx Data Reg. Full            #####*
-
+; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####
+; ORFE  6 = X  Flag: Overrun/Framing Error        #####
+; RDRF  7 = X  Flag: Rx Data Reg. Full            #####
+;
 ;       TRANSMIT / RCV. CNTL./STATUS REG.2 ($001E)
 ; SBL   0 = 0  One Stop Bit
 ; EOP   1 = 0  Even Parity
 ; PEN   2 = 1  Enable Parity
 ; ....  3 = 1  not used
 ; PER   4 = X  Flag: Parity Error
-; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####*
-; ORFE  6 = X  Flag: Overrun/Framing Error        #####*
-; RDRF  7 = X  Flag: Rx Data Reg. Full            #####*
-
-;********************************************************
+; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####
+; ORFE  6 = X  Flag: Overrun/Framing Error        #####
+; RDRF  7 = X  Flag: Rx Data Reg. Full            #####
+;
+;*******************************************************************************
 ; Count = 2MHz/32*BAUD     - 1
 ;       = (10^6 / 16*BAUD) - 1
 ;       = (62,500/BAUD)    - 1
 
-BAUD1T              fcb       3,207               ; 300 Baud Rate
-                    fcb       6,103               ; 600 "   "
-                    fcb       12,51               ; 1200 "   "
-                    fcb       24,25               ; 2400 "   "
-                    fcb       48,12               ; 4800 "   "
-                    fcb       96,5                ; 9600 "   "
+?                   macro     BAUD
+                    mreq      1:BAUD
+                    fcb       ~1~/100,62500/~1~-1
+                    endm
 
-;       Initialize Serial-1 Port (A = Baud Rate)
+BAUD1T              @?        300
+                    @?        600
+                    @?        1200
+                    @?        2400
+                    @?        4800
+                    @?        9600
+
+;*******************************************************************************
+; Initialize Serial-1 Port (A = Baud Rate)
 
 INTS1P              psha
                     lda       TRCSR2              ; Transmit/Receive CSR-2
                     lda       RDR                 ; clear old Receive flags
-                    lda       #0                  ; and Disable Serial I/O
+                    clra                          ; and Disable Serial I/O
                     sta       TRCSR1              ; Transmit/Receive CSR-1
 
                     lda       #%11110100          ; 7 data bits, use Timer 2
@@ -485,8 +497,7 @@ INTS1P              psha
                     ldx       #BAUD1T             ; Baud Rate Table
 SP11                cmpa      ,x
                     beq       SP12
-                    inx
-                    inx
+                    inx:2
                     cpx       #BAUD1T+12
                     bne       SP11
                     ldx       #BAUD1T+4           ; default is 1200 baud
@@ -500,75 +511,73 @@ SP12                ldb       1,x
                     sta       TRCSR1              ; Transmit/Receive CSR-1
                     rts                           ; Bit 2 = TIE, 1 = TE
 
+; Subroutine to INITIALIZE SERIAL-1 (MPU)
 
-;       Subroutine to INITIALIZE SERIAL-1 (MPU)
-
-INITS1              lda       #0                  ; first disable SIO
+INITS1              clra                          ; first disable SIO
                     sta       TRCSR1              ; Transmit / Receive CSR-1
                     clr       S1ERR               ; no Error
                     lda       #2
-                    jsr       INTS1P              ; Initialize Serial-1 Port
+                    bsr       INTS1P              ; Initialize Serial-1 Port
                     rts
 
-
-; *--------------------------------------------------------
-;       INITIALIZE SERIAL TRANSMIT/RECEIVE              -
-; *--------------------------------------------------------
-;  AS PER LSI CARD                                      -
-;       TIMER 2 CNTL / STATUS REGISTER-3 ($001B)        -
-; CKS0  0 = 0  Input Clock Select: <00=E~>,   01=E/8    -
-; CKS1  1 = 0    "     "     "   : 01=E~/128, 11=EXT    -
-; TOS0  2 = 0  Timer 2 Output Select                    -
-; TOS1  3 = 0    "   "   "      " 00 = Output Inhibited -
-; T2E   4 = 1  Timer 2 Enable, allow T2CNT to count     -
-; ....  5 = 1  not used                                 -
-; ECMI  6 = 0  Disable Counter Match Interrupt (CMI)    -
-; CMF   7 = X  Flag: Counter Match                      -
-;              Set by T2CNT = TCONR, to Clear write 0.  -
-;                                                       -
-;       RATE / MODE CONTROL REGISTER ($0010)            -
-; SS0   0 = 0  Baud Rate from Timer-1 /N (n = 16, <128> -
-; SS1   1 = 0    "    "    "     "    /N (1024, 4096)   -
-; CC0   2 = 1  Clock Control & Format Select            -
-; CC1   3 = 0    001: 8 Bit Async, Internal Clk.        -
-; CC2   4 = 0         Clock on P22 not used             -
-; SS2   5 = 0  Baud Rate from Timer-1                   -
-; ....  6 = 1  not used                                 -
-; ....  7 = 1  not used                                 -
-;                                                       -
-;       TRANSMIT / RCV. CNTL./STATUS REGISTER-1 ($0011) -
-; WU    0 = 0  Disable Wake Up                          -
-; TE    1 = 1  Enable  Tx on P24                        -
-; TIE   2 = 0  Disable Transmit Interrupt               -
-; RE    3 = 1  Enable  Rx on P23                        -
-; RIE   4 = 0  Disable Receive  Interrupt               -
-; TDRE  5 = X  Flag: Tx Data Reg. Empty           ##### -
-; ORFE  6 = X  Flag: Overrun/Framing Error        ##### -
-; RDRF  7 = X  Flag: Rx Data Reg. Full            ##### -
-;                                                       -
-;       TRANSMIT / RCV. CNTL./STATUS REGISTER-2 ($001E) -
-; SBL   0 = 0  One Stop Bit                             -
-; EOP   1 = 0  Even Parity (not used)                   -
-; PEN   2 = 0  Disable Parity                           -
-; ....  3 = 1  not used                                 -
-; PER   4 = X  Flag: Parity Error (not used)            -
-; TDRE  5 = X  Flag: Tx Data Reg. Empty           ##### -
-; ORFE  6 = X  Flag: Overrun/Framing Error        ##### -
-; RDRF  7 = X  Flag: Rx Data Reg. Full            ##### -
-;                                                       -
-; *--------------------------------------------------------
-;                   XTAL:       8 MHz                   -
-;  SS2  SS1  SS0     E:         2 MHz                   -
-; -------------------------------------------------------
-;   0    0    0     E/16         8 uS  (12.5 K byte/sec)-
+;*******************************************************************************
+;       INITIALIZE SERIAL TRANSMIT/RECEIVE
+;*******************************************************************************
+;  AS PER LSI CARD
+;       TIMER 2 CNTL / STATUS REGISTER-3 ($001B)
+; CKS0  0 = 0  Input Clock Select: <00=E~>,   01=E/8
+; CKS1  1 = 0    "     "     "   : 01=E~/128, 11=EXT
+; TOS0  2 = 0  Timer 2 Output Select
+; TOS1  3 = 0    "   "   "      " 00 = Output Inhibited
+; T2E   4 = 1  Timer 2 Enable, allow T2CNT to count
+; ....  5 = 1  not used
+; ECMI  6 = 0  Disable Counter Match Interrupt (CMI)
+; CMF   7 = X  Flag: Counter Match
+;              Set by T2CNT = TCONR, to Clear write 0.
+;
+;       RATE / MODE CONTROL REGISTER ($0010)
+; SS0   0 = 0  Baud Rate from Timer-1 /N (n = 16, <128>
+; SS1   1 = 0    "    "    "     "    /N (1024, 4096)
+; CC0   2 = 1  Clock Control & Format Select
+; CC1   3 = 0    001: 8 Bit Async, Internal Clk.
+; CC2   4 = 0         Clock on P22 not used
+; SS2   5 = 0  Baud Rate from Timer-1
+; ....  6 = 1  not used
+; ....  7 = 1  not used
+;
+;       TRANSMIT / RCV. CNTL./STATUS REGISTER-1 ($0011)
+; WU    0 = 0  Disable Wake Up
+; TE    1 = 1  Enable  Tx on P24
+; TIE   2 = 0  Disable Transmit Interrupt
+; RE    3 = 1  Enable  Rx on P23
+; RIE   4 = 0  Disable Receive  Interrupt
+; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####
+; ORFE  6 = X  Flag: Overrun/Framing Error        #####
+; RDRF  7 = X  Flag: Rx Data Reg. Full            #####
+;
+;       TRANSMIT / RCV. CNTL./STATUS REGISTER-2 ($001E)
+; SBL   0 = 0  One Stop Bit
+; EOP   1 = 0  Even Parity (not used)
+; PEN   2 = 0  Disable Parity
+; ....  3 = 1  not used
+; PER   4 = X  Flag: Parity Error (not used)
+; TDRE  5 = X  Flag: Tx Data Reg. Empty           #####
+; ORFE  6 = X  Flag: Overrun/Framing Error        #####
+; RDRF  7 = X  Flag: Rx Data Reg. Full            #####
+;
+;*******************************************************************************
+;                   XTAL:       8 MHz
+;  SS2  SS1  SS0     E:         2 MHz
+;-------------------------------------------------------------------------------
+;   0    0    0     E/16         8 uS  (12.5 K byte/sec)
 ;   0    0    1     E/128       64 uS  (1.56 K byte /sec)
-;   0    1    0     E/1024     512 uS                   -
-;   0    1    1     E/4096    2048 uS                   -
-; -------------------------------------------------------
+;   0    1    0     E/1024     512 uS
+;   0    1    1     E/4096    2048 uS
+;*******************************************************************************
 
 INITS               lda       TRCSR2              ; Transmit/Receive CSR-2
                     lda       RDR                 ; clear old Receive flags
-                    lda       #0                  ; and Disable Serial I/O
+                    clra                          ; and Disable Serial I/O
                     sta       TRCSR1              ; Transmit/Receive CSR-1
                     clr       S1ERR               ; no Error
                     lda       #%11000100          ; 8 data bits, use Timer-1
@@ -581,18 +590,20 @@ INITS               lda       TRCSR2              ; Transmit/Receive CSR-2
                     sta       TRCSR1              ; Transmit/Receive CSR-1
                     rts
 
+;*******************************************************************************
+; FDC CONTROL FUNCTION ROUTINES
+;*******************************************************************************
 
 ;*********************************************************
-;       FDC CONTROL FUNCTION ROUTINES
+;       ROUTINE TO SEE IF THE FDC IS READY FOR COMMANDS  *
 ;*********************************************************
-
-;*********************************************************
-;       ROUTINE TO SEE IF THE FDC IS READY FOR COMMANDS
-;*********************************************************
-;  PARAMETERS : -----
-;  MODIFIES   : A
-;  CALLS      : -----
-;  RETURNS    : returns when FDC is ready
+;  PARAMETERS : -----                                    *
+;                                                        *
+;  MODIFIES   : A                                        *
+;                                                        *
+;  CALLS      : -----                                    *
+;                                                        *
+;  RETURNS    : returns when FDC is ready                *
 ;*********************************************************
 
 CMNDRDY             lda       FDCMSR              ; read main status register
@@ -601,14 +612,16 @@ CMNDRDY             lda       FDCMSR              ; read main status register
                     bne       CMNDRDY
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO SEE IF THE FDC IS READY WITH RESULTS
+;       ROUTINE TO SEE IF THE FDC IS READY WITH RESULTS *
 ;*********************************************************
-;  PARAMETERS : -----
-;  MODIFIES   : A
-;  CALLS      : -----
-;  RETURNS    : returns when FDC is ready
+;  PARAMETERS : -----                                   *
+;                                                       *
+;  MODIFIES   : A                                       *
+;                                                       *
+;  CALLS      : -----                                   *
+;                                                       *
+;  RETURNS    : returns when FDC is ready               *
 ;*********************************************************
 
 RESRDY              lda       FDCMSR              ; read main status register
@@ -617,14 +630,16 @@ RESRDY              lda       FDCMSR              ; read main status register
                     bne       RESRDY
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO SEND THE PARAMETERS TO THE FDC
+;       ROUTINE TO SEND THE PARAMETERS TO THE FDC       *
 ;*********************************************************
-;  PARAMETERS : PRMBUF, B (num params)
-;  MODIFIES   : A, B
-;  CALLS      : CMNDRDY, WAIT12
-;  RETURNS    : FDCCMND
+;  PARAMETERS : PRMBUF, B (num params)                  *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : CMNDRDY, WAIT12                         *
+;                                                       *
+;  RETURNS    : FDCCMND                                 *
 ;*********************************************************
 
 SNDPRMS             pshx
@@ -632,7 +647,7 @@ SNDPRMS             pshx
                     lda       ,x
                     anda      #%00011111
                     sta       FDCCMND             ; save the command number
-SNDP1               jsr       CMNDRDY             ; wait till FDC is ready
+SNDP1               bsr       CMNDRDY             ; wait till FDC is ready
                     lda       ,x
                     sta       FDCDR               ; give next param
                     jsr       WAIT12              ; 12 uSec delay neccessary
@@ -642,35 +657,39 @@ SNDP1               jsr       CMNDRDY             ; wait till FDC is ready
 SNDP2               pulx
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO GET THE RESULTS FROM THE FDC
+;       ROUTINE TO GET THE RESULTS FROM THE FDC         *
 ;*********************************************************
-;  PARAMETERS : B (num results)
-;  MODIFIES   : A, B, X
-;  CALLS      : RESRDY, WAIT12
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : B (num results)                         *
+;                                                       *
+;  MODIFIES   : A, B, X                                 *
+;                                                       *
+;  CALLS      : RESRDY, WAIT12                          *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 GETRSLT             ldx       #RESBUF
-GETR1               jsr       RESRDY              ; wait till FDC is ready
+GETR1               bsr       RESRDY              ; wait till FDC is ready
                     lda       FDCDR
                     sta       ,x                  ; get next result
                     jsr       WAIT12              ; 12 uSec delay neccessary
                     inx
                     decb
                     bne       GETR1               ; go again
-GETR2               rts
-
+                    rts
 
 ;*********************************************************
-;       ROUTINE TO SETUP THE PARAMETERS FOR A FUNCTION
+;       ROUTINE TO SETUP THE PARAMETERS FOR A FUNCTION  *
 ;*********************************************************
-;  PARAMETERS : MLTITRK, MFM, SKIP, USO, US1, HEAD,
-;             TRACK, SECTOR, SECBYTS, EOTSEC, GAP3, DTL
-;  MODIFIES   : B, X
-;  CALLS      : ------
-;  RETURNS    : PRMBUF is setup with the above values
+;  PARAMETERS : MLTITRK, MFM, SKIP, USO, US1, HEAD,     *
+;             TRACK, SECTOR, SECBYTS, EOTSEC, GAP3, DTL *
+;                                                       *
+;  MODIFIES   : B, X                                    *
+;                                                       *
+;  CALLS      : ------                                  *
+;                                                       *
+;  RETURNS    : PRMBUF is setup with the above values   *
 ;*********************************************************
 
 SETPRMS             ldx       #PRMBUF             ; set up parameter buffer
@@ -702,14 +721,16 @@ SETPRMS             ldx       #PRMBUF             ; set up parameter buffer
                     stb       8,x                 ; 9th parameter done
                     rts
 
-
 ;*********************************************************
-;  ROUTINE TO SET THE CORRECT INTERUPT JUMP ADDRESS
+;  ROUTINE TO SET THE CORRECT INTERRUPT JUMP ADDRESS    *
 ;*********************************************************
-;  PARAMETERS : FDCCMND IN PRMBUF
-;  MODIFIES   : --------
-;  CALLS      : -------
-;  RETURNS    : X = address of interupt service routine
+;  PARAMETERS : FDCCMND IN PRMBUF                       *
+;                                                       *
+;  MODIFIES   : --------                                *
+;                                                       *
+;  CALLS      : -------                                 *
+;                                                       *
+;  RETURNS    : X = address of interrupt service routine*
 ;*********************************************************
 
 SETJMP              lda       PRMBUF              ; extract command number
@@ -718,34 +739,31 @@ SETJMP              lda       PRMBUF              ; extract command number
                     cmpa      #%00000110          ; READ DATA COMMAND
                     bne       SETJ1
                     ldx       #IRQRD
-                    bra       SETJ9
-
+                    rts
 
 SETJ1               cmpa      #%00000101          ; WRITE DATA COMMAND
                     bne       SETJ2
                     ldx       #IRQWR
-                    bra       SETJ9
-
+                    rts
 
 SETJ2               cmpa      #%00001101          ; FORMAT TRACK COMMAND
                     bne       SETJ8
                     ldx       #IRQF0
-                    bra       SETJ9
+                    rts
 
-
-SETJ8               ldx       #IRQSNS             ; unknown interupt source
-SETJ9               rts
-
+SETJ8               ldx       #IRQSNS             ; unknown interrupt source
+                    rts
 
 ;*********************************************************
-;       ROUTINE TO EXECUTE A COMMAND ON THE FDC
+;       ROUTINE TO EXECUTE A COMMAND ON THE FDC         *
 ;*********************************************************
-;  PARAMETERS : BSIZE, PRMBUF, A (num results), B (num
+;  PARAMETERS : BSIZE, PRMBUF, A (num results), B (num  *
 ;               PTRX, ENDX.                      params)*
-;  MODIFIES   : A, B, X, ERRNUM
-;  CALLS      : PCMND, SETJMP, SNDPRMS, IRQSERVICE,
-;               GETRSLTS, ERROR
-;  RETURNS    : results in RESBUF
+;  MODIFIES   : A, B, X, ERRNUM                         *
+;                                                       *
+;  CALLS      : PCMND, SETJMP, SNDPRMS, IRQSERVICE,     *
+;               GETRSLTS, ERROR                         *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 DOCMND              psha                          ; save num results
@@ -753,31 +771,32 @@ DOCMND              psha                          ; save num results
 
                     jsr       PCMND               ; print command name if debugging
 
-DOC1                jsr       SETJMP
+DOC1                bsr       SETJMP
                     pulb
                     jsr       SNDPRMS             ; send the parameters
 
-DOC2                @aim      PORT5,#%01111111    ; ensure terminal count is inactive
+DOC2                aim       PORT5,#%01111111    ; ensure terminal count is inactive
                     jsr       ,x                  ; jump to correct service depending on command
 
 DOC3                pulb                          ; retrieve num results
                     pshb                          ; save for testing
-                    jsr       GETRSLTS            ; get the results
+                    bsr       GETRSLTS            ; get the results
 
                     pulb                          ; retrieve num results
                     clr       ERRNUM              ; => error value for FDC function
                     jsr       ERROR
-
-DOC9                rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO SEEK A TRACK
+;       LOW LEVEL ROUTINE TO SEEK A TRACK               *
 ;*********************************************************
-;  PARAMETERS : US0, US1, HEAD, TRACK
-;  MODIFIES   : B, X, A
-;  CALLS      : PCMND, SNDPRMS, IRQSNS
-;  RETURNS    : NONE, BUT AN INTERUPT IS GENERATED
+;  PARAMETERS : US0, US1, HEAD, TRACK                   *
+;                                                       *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : PCMND, SNDPRMS, IRQSNS                  *
+;                                                       *
+;  RETURNS    : NONE, BUT AN INTERRUPT IS GENERATED     *
 ;*********************************************************
 
 SEEK                ldx       #PRMBUF             ; set the correct command
@@ -796,16 +815,18 @@ SEEK                ldx       #PRMBUF             ; set the correct command
 SEEK1               ldb       #3
                     jsr       SNDPRMS             ; send the parameters
                     jsr       IRQSNS              ; get result
-SEEK9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO RECALLIBRATE THE FDD
+;       LOW LEVEL ROUTINE TO RECALLIBRATE THE FDD       *
 ;*********************************************************
-;  PARAMETERS : US0, US1
-;  MODIFIES   : B
-;  CALLS      : PCMND, SNDPRMS, IRQSNS
-;  RETURNS    : NONE, BUT AN INTERUPT IS GENERATED
+;  PARAMETERS : US0, US1                                *
+;                                                       *
+;  MODIFIES   : B                                       *
+;                                                       *
+;  CALLS      : PCMND, SNDPRMS, IRQSNS                  *
+;                                                       *
+;  RETURNS    : NONE, BUT AN INTERRUPT IS GENERATED     *
 ;*********************************************************
 
 RECAL               ldx       #PRMBUF             ; set the correct command
@@ -821,16 +842,18 @@ RECAL               ldx       #PRMBUF             ; set the correct command
 RCAL1               ldb       #2
                     jsr       SNDPRMS             ; send the parameters
                     jsr       IRQSNS              ; get result
-RCAL9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO SENSE THE INTERUPT STATUS
+;       LOW LEVEL ROUTINE TO SENSE THE INTERRUPT STATUS *
 ;*********************************************************
-;  PARAMETERS : ------
-;  MODIFIES   : B, X, A
-;  CALLS      : PCMND, SNDPRMS, GETRSLT, ERROR
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : ------                                  *
+;                                                       *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : PCMND, SNDPRMS, GETRSLT, ERROR          *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 SNSINT              ldx       #PRMBUF             ; set the correct command
@@ -846,16 +869,18 @@ SNS1                ldb       #1
 
                     clr       ERRNUM
                     jsr       ERROR               ; => error value for FDC function
-SNS9                rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO SPECIFY AN FDD PARAMETER
+;       LOW LEVEL ROUTINE TO SPECIFY AN FDD PARAMETER   *
 ;*********************************************************
-;  PARAMETERS : SRT, HUT, HLT, DMA
-;  MODIFIES   : B, X, A
-;  CALLS      : PCMND, SNDPRMS
-;  RETURNS    : NONE
+;  PARAMETERS : SRT, HUT, HLT, DMA                      *
+;                                                       *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : PCMND, SNDPRMS                          *
+;                                                       *
+;  RETURNS    : NONE                                    *
 ;*********************************************************
 
 SPECIFY             ldx       #PRMBUF             ; set the correct command
@@ -876,14 +901,16 @@ SPECY1              ldb       #3
                     jsr       SNDPRMS             ; send the parameters
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO SENSE THE DRIVE STATUS
+;       LOW LEVEL ROUTINE TO SENSE THE DRIVE STATUS     *
 ;*********************************************************
-;  PARAMETERS : HEAD, US0, US1
-;  MODIFIES   : B, A, X
-;  CALLS      : PCMND, SNDPRMS, GETRSLTS, ERROR
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : HEAD, US0, US1                          *
+;                                                       *
+;  MODIFIES   : B, A, X                                 *
+;                                                       *
+;  CALLS      : PCMND, SNDPRMS, GETRSLTS, ERROR         *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 SNSDRV              ldx       #PRMBUF             ; set the correct command
@@ -904,18 +931,18 @@ SNSD1               ldb       #2
 
                     clr       ERRNUM              ; => error value for FDC function
                     jsr       ERROR
-
-SNSD9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO READ FROM A DISK
+;       LOW LEVEL ROUTINE TO READ FROM A DISK           *
 ;*********************************************************
-;  PARAMETERS : MT, MF, SK, HD, US0, US1, C, H, R, N,
-;               EOT, GPL, DTL, PTRX, ENDX
-;  MODIFIES   : B, X, A
-;  CALLS      : SETPRMS, DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MT, MF, SK, HD, US0, US1, C, H, R, N,   *
+;               EOT, GPL, DTL, PTRX, ENDX               *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : SETPRMS, DOCMND                         *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 RDLOW               jsr       SETPRMS             ; set up the parameter buffer
@@ -923,21 +950,21 @@ RDLOW               jsr       SETPRMS             ; set up the parameter buffer
                     ldb       #%00000110
                     orb       ,x
                     stb       ,x
-                    lda       #7                  ; 7 results
-                    ldb       #9                  ; 9 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND              ; read the data
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO READ DELETED DATA
-;                   FROM A DISK
+;       LOW LEVEL ROUTINE TO READ DELETED DATA          *
+;                   FROM A DISK                         *
 ;*********************************************************
-;  PARAMETERS : MT, MF, SK, HD, US0, US1, C, H, R, N,
-;               EOT, GPL, DTL, PTRX, ENDX
-;  MODIFIES   : B, X, A
-;  CALLS      : SETPRMS,DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MT, MF, SK, HD, US0, US1, C, H, R, N,   *
+;               EOT, GPL, DTL, PTRX, ENDX               *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : SETPRMS,DOCMND                          *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 RDDLTD              jsr       SETPRMS             ; set up the parameter buffer
@@ -945,20 +972,20 @@ RDDLTD              jsr       SETPRMS             ; set up the parameter buffer
                     ldb       #%00001100
                     orb       ,x
                     stb       ,x
-                    lda       #7                  ; 7 results
-                    ldb       #9                  ; 9 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO READ A TRACK ON A DISK
+;       LOW LEVEL ROUTINE TO READ A TRACK ON A DISK     *
 ;*********************************************************
-;  PARAMETERS : MF, HD, US0, US1, C, H, R, N, EOT, GPL
-;               DTL, PTRX, ENDX
-;  MODIFIES   : B, X, A
-;  CALLS      : SETPRMS, DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MF, HD, US0, US1, C, H, R, N, EOT, GPL  *
+;               DTL, PTRX, ENDX                          *
+;  MODIFIES   : B, X, A                                 *
+;                                                       *
+;  CALLS      : SETPRMS, DOCMND                         *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 RTRACK              clr       MLTITRK             ; mltitrk funtion not allowed
@@ -968,20 +995,20 @@ RTRACK              clr       MLTITRK             ; mltitrk funtion not allowed
                     ldb       #%00000010
                     orb       ,x
                     stb       ,x
-                    lda       #7                  ; 7 results
-                    ldb       #9                  ; 9 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO READ A DISK ID
+;       LOW LEVEL ROUTINE TO READ A DISK ID             *
 ;*********************************************************
-;  PARAMETERS : HEAD, US0, US1
-;  MODIFIES   : B, A, X
-;  CALLS      : PCMND, MTRON, SNDPRMS, GETRSLT, MTROFF,
-;               ERROR
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : HEAD, US0, US1                          *
+;                                                       *
+;  MODIFIES   : B, A, X                                 *
+;                                                       *
+;  CALLS      : PCMND, MTRON, SNDPRMS, GETRSLT, MTROFF, *
+;               ERROR                                   *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 RDID                clr       MLTITRK             ; mltitrk funtion not allowed
@@ -1005,18 +1032,18 @@ RDID1               jsr       MTRON
 
                     clr       ERRNUM              ; => error value for FDC function
                     jsr       ERROR
-
-RDID9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO WRITE TO A DISK
+;       LOW LEVEL ROUTINE TO WRITE TO A DISK            *
 ;*********************************************************
-;  PARAMETERS : MT, MF, HD, US0, US1, C, H, R, N ,EOT,
-;               GPL, DTL, PTRX, ENDX
-;  MODIFIES   : B, A, X
-;  CALLS      : SETPRMS, DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MT, MF, HD, US0, US1, C, H, R, N ,EOT,  *
+;               GPL, DTL, PTRX, ENDX                    *
+;  MODIFIES   : B, A, X                                 *
+;                                                       *
+;  CALLS      : SETPRMS, DOCMND                         *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 WRLOW               clr       SKIP                ; skip function not allowed
@@ -1025,21 +1052,21 @@ WRLOW               clr       SKIP                ; skip function not allowed
                     ldb       #%00000101
                     orb       ,x
                     stb       ,x
-                    lda       #7                  ; 7 results
-                    ldb       #9                  ; 9 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO WRITE DELETED DATA
-;                 TO A DISK
+;       LOW LEVEL ROUTINE TO WRITE DELETED DATA         *
+;                 TO A DISK                             *
 ;*********************************************************
-;  PARAMETERS : MT, MF, HD, US0, US1, C, H, R, N ,EOT,
-;               GPL, DTL, PTRX, ENDX
-;  MODIFIES   : B, A, X
-;  CALLS      : SETPRMS, DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MT, MF, HD, US0, US1, C, H, R, N ,EOT,  *
+;               GPL, DTL, PTRX, ENDX                    *
+;  MODIFIES   : B, A, X                                 *
+;                                                       *
+;  CALLS      : SETPRMS, DOCMND                         *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 WRDLTD              clr       SKIP                ; skip function not allowed
@@ -1048,19 +1075,20 @@ WRDLTD              clr       SKIP                ; skip function not allowed
                     ldb       #%00001001
                     orb       ,x
                     stb       ,x
-                    lda       #7                  ; 7 results
-                    ldb       #9                  ; 9 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO FORMAT A TRACK ON A DISK
+;       LOW LEVEL ROUTINE TO FORMAT A TRACK ON A DISK   *
 ;*********************************************************
-;  PARAMETERS : MF, HD, US0, US1, N, SC, GPL
-;  MODIFIES   : B, A, X
-;  CALLS      : DOCMND
-;  RETURNS    : results in RESBUF
+;  PARAMETERS : MF, HD, US0, US1, N, SC, GPL            *
+;                                                       *
+;  MODIFIES   : B, A, X                                 *
+;                                                       *
+;  CALLS      : DOCMND                                  *
+;                                                       *
+;  RETURNS    : results in RESBUF                       *
 ;*********************************************************
 
 FRMTTRK             ldb       HEAD
@@ -1091,100 +1119,100 @@ FRMTTRK             ldb       HEAD
 
                     pulb
                     stb       HEAD
-                    lda       #7                  ; 7 results
-                    ldb       #6                  ; 6 params
+                    ldd       #7<8|9              ; 7 results, 9 params
                     jsr       DOCMND
                     rts
 
-
 ;*********************************************************
-;       IRQ SERVICE ROUTINES
+;       IRQ SERVICE ROUTINES                            *
 ;*********************************************************
 
-QIRQ                @tim      PORT5,#1            ; check for IRQ
+QIRQ                tim       PORT5,#1            ; check for IRQ
                     rts
 
 ;*********************************************************
-;         SERVICE READ DATA INTERUPT
+;         SERVICE READ DATA INTERRUPT                    *
 ;*********************************************************
+
 IRQRD               ldx       PTRX
-IRQRD1              @tim      PORT5,#1
-                    bne       IRQRD1              ; wait for interupt (it goes LO)
-                    lda       FDCMSR              ; check first interupt for end of execution
+IRQRD1              tim       PORT5,#1
+                    bne       IRQRD1              ; wait for interrupt (it goes LO)
+                    lda       FDCMSR              ; check first interrupt for end of execution
                     anda      #%00100000
                     bne       IRQRD3
                     lda       #$FF                ; read next byte from data bus
                     sta       DBUGF               ; save it in the next location
-                    bra       IRQRD9              ; point to the next location
+                    rts                           ; point to the next location
 
-
-IRQRD2              @tim      PORT5,#1
-                    bne       IRQRD2              ; wait for interupt (it goes LO)
+IRQRD2              tim       PORT5,#1
+                    bne       IRQRD2              ; wait for interrupt (it goes LO)
 IRQRD3              lda       FDCDR               ; read next byte from data bus
                     sta       ,x                  ; save it in the next location
                     inx                           ; point to the next location
                     cpx       ENDX
                     bne       IRQRD2              ; are all bytes read yet ?
 
-                    @oim      PORT5,#%10000000    ; issue a terminal count
+                    oim       PORT5,#%10000000    ; issue a terminal count
                     stx       PTRX
-IRQRD9              rts
+                    rts
 
 ;*********************************************************
-;       SERVICE WRITE DATA INTERUPT
+;       SERVICE WRITE DATA INTERRUPT                     *
 ;*********************************************************
+
 IRQWR               ldx       PTRX
-IRQWR1              @tim      PORT5,#1
-                    bne       IRQWR1              ; wait for interupt
-                    lda       FDCMSR              ; check first interupt for end of execution
+IRQWR1              tim       PORT5,#1
+                    bne       IRQWR1              ; wait for interrupt
+                    lda       FDCMSR              ; check first interrupt for end of execution
                     anda      #%00100000
                     bne       IRQWR3
                     lda       #$FF                ; get next byte from buffer
                     sta       DBUGF               ; write it to disk
-                    bra       IRQWR9              ; point to the next location
+                    rts                           ; point to the next location
 
-IRQWR2              @tim      PORT5,#1
-                    bne       IRQWR2              ; wait for interupt
+IRQWR2              tim       PORT5,#1
+                    bne       IRQWR2              ; wait for interrupt
 IRQWR3              lda       ,x                  ; get next byte from buffer
                     sta       FDCDR               ; write it to disk
                     inx                           ; point to the next location
                     cpx       ENDX
                     bne       IRQWR2              ; are all bytes written yet ?
 
-                    @oim      PORT5,#%10000000    ; issue a terminal count
+                    oim       PORT5,#%10000000    ; issue a terminal count
                     stx       PTRX
-IRQWR9              rts
+                    rts
 
 ;*********************************************************
-;       SERVICE FORMAT A TRACK INTERUPT
+;       SERVICE FORMAT A TRACK INTERRUPT                 *
 ;*********************************************************
+
 IRQF0               lda       SECTOR
                     ldb       SECBYTES
                     xgdx
                     lda       TRACK
                     ldb       HEAD
 
-IRQF1               @tim      PORT5,#1            ; wait for TRACK interupt
-                    bne       IRQF1               ; wait for the interupt
+IRQF1               tim       PORT5,#1            ; wait for TRACK interrupt
+                    bne       IRQF1               ; wait for the interrupt
                     sta       FDCDR               ; send current track number to fdc
-IRQF1A              @tim      PORT5,#1            ; wait for interupt to go away
+IRQF1A              tim       PORT5,#1            ; wait for interrupt to go away
                     beq       IRQF1A
 
-IRQF2               @tim      PORT5,#1            ; wait for HEAD interupt
-                    bne       IRQF2               ; wait for the interupt
+IRQF2               tim       PORT5,#1            ; wait for HEAD interrupt
+                    bne       IRQF2               ; wait for the interrupt
                     stb       FDCDR               ; send current head number to fdc
-IRQF2A              @tim      PORT5,#1            ; wait for interupt to go away
+IRQF2A              tim       PORT5,#1            ; wait for interrupt to go away
                     beq       IRQF2A
 
                     xgdx
-IRQF3               @tim      PORT5,#1            ; wait for SECTOR interupt
-                    bne       IRQF3               ; wait for the interupt
+IRQF3               tim       PORT5,#1            ; wait for SECTOR interrupt
+                    bne       IRQF3               ; wait for the interrupt
                     sta       FDCDR               ; send current sector number to fdc
-IRQF3A              @tim      PORT5,#1            ; wait for interupt to go away
+IRQF3A              tim       PORT5,#1            ; wait for interrupt to go away
                     beq       IRQF3A
 
-IRQF4               @tim      PORT5,#1            ; wait for BYTES PER SECTOR interupt
-                    bne       IRQF4               ; wait for the interupt
+IRQF4               tim       PORT5,#1            ; wait for BYTES PER SECTOR interrupt
+                    bne       IRQF4               ; wait for the interrupt
                     stb       FDCDR               ; send current bytes per sector number to fdc
 
                     inc       SECTOR              ; inc current sector value
@@ -1193,32 +1221,30 @@ IRQF4               @tim      PORT5,#1            ; wait for BYTES PER SECTOR in
                     cmpa      SECTOR              ; check if all sectors are formated
                     bne       IRQF0
 
-                    @oim      PORT5,#%10000000    ; issue a terminal count
-IRQF9               rts
-
-
-;*********************************************************
-;       SERVICE AN UNKNOWN INTERUPT
-;*********************************************************
-IRQSNS              @tim      PORT5,#1
-                    bne       IRQSNS              ; wait for interupt (it goes low)
-                    jsr       SNSINT              ; unknown interupt - better see what it is
-IRQSN9              rts
-
-
-;*********************************************************
-;       MISCELLANEOUS ROUTINES
-;*********************************************************
-
-;*********************************************************
-;      ROUTINE TO TURN THE FDD MOTOR ON/OFF
-;*********************************************************
-
-MTROFF              @aim      PORT5,#%11101111    ; motor off
+                    oim       PORT5,#%10000000    ; issue a terminal count
                     rts
 
+;*********************************************************
+;       SERVICE AN UNKNOWN INTERRUPT                     *
+;*********************************************************
 
-MTRON               @oim      PORT5,#%00010000    ; motor on
+IRQSNS              tim       PORT5,#1
+                    bne       IRQSNS              ; wait for interrupt (it goes low)
+                    jsr       SNSINT              ; unknown interrupt - better see what it is
+                    rts
+
+;*********************************************************
+;       MISCELLANEOUS ROUTINES                          *
+;*********************************************************
+;                                                       *
+;*********************************************************
+;      ROUTINE TO TURN THE FDD MOTOR ON/OFF             *
+;*********************************************************
+
+MTROFF              aim       PORT5,#%11101111    ; motor off
+                    rts
+
+MTRON               oim       PORT5,#%00010000    ; motor on
                     lda       #25                 ; wait 500mSecs
                     jsr       DLY1
                     rts
@@ -1232,27 +1258,23 @@ SWAPAB              psha
                     pulb
                     rts
 
-
-
 ; *--------------------------------------------------------
 ;         ROUTINE TO ROTATE D TO THE RIGHT              -
 ; *--------------------------------------------------------
 
 RORD                lsrd
-                    bcc       RORD1
+                    bcc       :AnRTS
                     ora       #80
-RORD1               rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO ROTATE D TO THE LEFT                 -
 ; *--------------------------------------------------------
 
 ROLD                asld
-                    bcc       ROLD1
+                    bcc       :AnRTS
                     orb       #1
-ROLD1               rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;     ROUTINE TO COMPARE 2 DOUBLE BYTE WORDS            -
@@ -1264,18 +1286,20 @@ ROLD1               rts
 ; *--------------------------------------------------------
 
 CMPD                cmpa      TEMPD
-                    bne       CMPD1
+                    bne       :AnRTS
                     cmpb      TEMPD+1
-CMPD1               rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;        ROUTINE TO COMPARE TWO FILENAMES               -
 ; *--------------------------------------------------------
 ;  PARAMETERS : Master filename must be in FNAME        -
 ;               Trial filename must be pointed to SRCX  -
+;                                                       -
 ;  MODIFIES   : A, B, X,TEMPX, TEMPA, SRCX              -
+;                                                       -
 ;  CALLS      : -----                                   -
+;                                                       -
 ;  RETURNS    : TEMPA = 00 for a match                  -
 ;                 "   = FF for no match                 -
 ; *--------------------------------------------------------
@@ -1295,45 +1319,48 @@ CMP1                ldx       TEMPX
                     stx       SRCX
                     decb
                     bne       CMP1                ; continue until end of master FILENAME
-                    bra       CMP3                ; they match !!
+                    rts                           ; they match !!
 
 CMP2                lda       #$FF                ; no match return value
                     sta       TEMPA
-CMP3                rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;  ROUTINE TO COMPARE THE NEXT FILENAME TO FNAME        -
 ; *--------------------------------------------------------
 ;  PARAMETERS : filename to check against the master filename
 ;               should be in the filename field of FILEDR
+;                                                       -
 ;  MODIFIES   : SRCX                                    -
+;                                                       -
 ;  CALLS      : CMPFNM                                  -
+;                                                       -
 ;  RETURNS    : A = 00 for match, A = FF for no match   -
 ; *--------------------------------------------------------
 
 CMPNFNM             ldx       #FILEDR             ; point to trial filename
                     stx       SRCX
-                    jsr       CMPFNM              ; compare the two filenames
+                    bsr       CMPFNM              ; compare the two filenames
                     lda       TEMPA
                     rts
-
-
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO CONVERT A FAT ENTRY OFFSET TO        -
 ;       A FAT LOCATION WITHIN BUFFER                    -
 ; *--------------------------------------------------------
-;  PARAMETERS : FAT entry number is passed through FATNUM
+;  PARAMETERS : fat entry number is passed through FATNUM
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : The location of this entry within the FAT
 ;               is returned through TEMPX               -
 ; *--------------------------------------------------------
 ; FAT LOCATION = (FATNUM * 3)/2 + #FATBUF               -
 ; *--------------------------------------------------------
 
-FNUMLOC             ldd       FATNUM              ; FAT location = fatnum * 3/2
+FNUMLOC             ldd       FATNUM              ; fat location = fatnum * 3/2
                     addd      FATNUM
                     addd      FATNUM
                     lsrd
@@ -1341,19 +1368,21 @@ FNUMLOC             ldd       FATNUM              ; FAT location = fatnum * 3/2
                     std       TEMPX
                     rts
 
-
 ;*********************************************************
-;     BUFFER MANIPULATION ROUTINES
+;     BUFFER MANIPULATION ROUTINES                      *
 ;*********************************************************
-
+;                                                       *
 ; *--------------------------------------------------------
 ;  ROUTINE TO MOVE B BYTES OF DATA FROM SRCX TO DSTX    -
 ; *--------------------------------------------------------
 ;  PARAMETERS : SRCX   = source address                 -
 ;               DSTX   = destination address            -
 ;               B      = count of bytes to move         -
+;                                                       -
 ;  MODIFIES   : A, B, X, SRCX, DSTX                     -
+;                                                       -
 ;  CALLS      : --------                                -
+;                                                       -
 ;  RETURNS    : data is moved from SRCX to DSTX         -
 ; *--------------------------------------------------------
 
@@ -1380,7 +1409,6 @@ MOVE                ldx       SRCX                ; moves the data from SRCX to 
                     bne       MOVE                ; repeat if block not finished
                     rts
 
-
 DMOVE               std       MVCOUNT             ; save counter value
                     ldx       SRCX                ; moves the data from SRCX to DSTX
                     lda       ,x                  ; fetch next byte
@@ -1395,14 +1423,16 @@ DMOVE               std       MVCOUNT             ; save counter value
                     bne       DMOVE               ; repeat if block not finished
                     rts
 
-
 ; *--------------------------------------------------------
 ; ROUTINE TO CLEAR A REGION OF MEMORY                   -
 ; *--------------------------------------------------------
 ;  PARAMETERS : X   = source address                    -
 ;               B   = count of bytes to move            -
+;                                                       -
 ;  MODIFIES   : A, B, X, BSIZE                          -
+;                                                       -
 ;  CALLS      : -------                                 -
+;                                                       -
 ;  RETURNS    : X to X+B is filled with 00              -
 ; *--------------------------------------------------------
 
@@ -1413,14 +1443,12 @@ CLBF1               clr       ,x                  ; clear current byte
                     bne       CLBF1               ; repeat if block not finished
                     rts
 
-
 CLRBPB              ldx       #BPBBUF             ; special routine to clear BPB
 CLB1                clr       ,x                  ; clear current byte
                     inx                           ; move on to next byte
                     cpx       #BPBEND
                     bne       CLB1                ; repeat if block not finished
                     rts
-
 
 CLRFAT              ldx       #FATBUF             ; special routine to clear FAT
 CLF1                clr       ,x                  ; clear current byte
@@ -1429,14 +1457,12 @@ CLF1                clr       ,x                  ; clear current byte
                     bne       CLF1                ; repeat if block not finished
                     rts
 
-
 CLRFDR              ldx       #FDIRBUF            ; special routine to clear FDIR
 CLFD1               clr       ,x                  ; clear current byte
                     inx                           ; move on to next byte
                     cpx       #FDIREND
                     bne       CLFD1               ; repeat if block not finished
                     rts
-
 
 CLRDTA              ldx       #DATA               ; special routine to clear DATA
 CLD1                clr       ,x                  ; clear current byte
@@ -1445,31 +1471,28 @@ CLD1                clr       ,x                  ; clear current byte
                     bne       CLD1                ; repeat if block not finished
                     rts
 
-
 CLRSBF              ldx       #SBUFF              ; clears the serial buffer
                     ldb       #12
                     bra       CLRXB
-
 
 CLRPRM              ldx       #PRMBUF             ; clears the parameter buffer
                     ldb       #9
                     bra       CLRXB
 
-
 CLRRES              ldx       #RESBUF             ; clears the results buffer
                     ldb       #7
                     bra       CLRXB
 
-
 CLRSEC              ldx       #SECBUF             ; clears the sector buffer
                     ldb       #20
-;                         ;clears B bytes from X to X + B
+
+          ; clears B bytes from X to X + B
+
 CLRXB               clr       ,x                  ; clear current byte
                     inx                           ; move on to next byte
                     decb                          ; update the counter
                     bne       CLRXB               ; repeat if block not finished
                     rts
-
 
 ; *--------------------------------------------------------
 ;  ROUTINE TO CLEAR ALL RAM                             -
@@ -1482,17 +1505,19 @@ CLRAM1              clr       ,x
                     bne       CLRAM1
                     rts
 
-
 ; *--------------------------------------------------------
 ;  A SIMPLE DELAY ROUTINE                               -
 ; *--------------------------------------------------------
 ;  PARAMETERS : B = delay as a multiple of 20 clicks    -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : Program execution is suspended for B*20 clicks
 ; *--------------------------------------------------------
 
-WAIT12              jsr       WAIT1               ; 7.5uS
+WAIT12              bsr       WAIT1               ; 7.5uS
                     nop:4                         ; 9.5
                     rts                           ; 12uS
 
@@ -1500,7 +1525,7 @@ W400                ldb       #40                 ; 400uS delay
                     bra       WAIT
 
 W200                ldb       #20                 ; 200uS delay
-WAIT                jsr       WAIT1               ; 15
+WAIT                bsr       WAIT1               ; 15
                     decb                          ; 1
                     bne       WAIT                ; 3
                     rts                           ; 5 = 20.T = 10uSecs
@@ -1509,29 +1534,32 @@ WAIT1               nop:5                         ; 5
                     rts                           ; 5
 
 W20MS               lda       #100                ; 20mS delay routine
-W20MS1              jsr       W200                ; wait 200uS
+W20MS1              bsr       W200                ; wait 200uS
                     deca
                     bne       W20MS1
                     rts
 
 DELAY               lda       #50                 ; DELAY 1 SEC
 DLY1                psha                          ; delay 20 ms approx
-                    jsr       W20MS               ; wait a while
+                    bsr       W20MS               ; wait a while
                     pula
                     deca
                     bne       DLY1
                     rts
 
 ;*********************************************************
-;       MATH ROUTINES
+;       MATH ROUTINES                                   *
 ;*********************************************************
-
+;                                                       *
 ; *--------------------------------------------------------
 ;     ROUTINE TO MULTIPLY 2 DOUBLE BYTE WORDS           -
 ; *--------------------------------------------------------
 ;  PARAMETERS : (TEMPD) * (TEMPA, TEMPB)                -
+;                                                       -
 ;  MODIFIES   : PP, B, A, X                             -
+;                                                       -
 ;  CALLS      : -----                                   -
+;                                                       -
 ;  RETURNS    : (msb) TEMPA, TEMPB, TEMPD (lsb)         -
 ; *--------------------------------------------------------
 ; PP     MULTIPLIER      MULTPLICAND                    -
@@ -1572,8 +1600,11 @@ MUL3                ror       ,x                  ; right shift PP (ms)
 ; ROUTINE TO DIVIDE A QUAD BY A DOUBLE                  -
 ; *--------------------------------------------------------
 ;  PARAMETERS : TEMPA = divisor, TEMPD TEMPX = dividend -
+;                                                       -
 ;  MODIFIES   : X, A, B                                 -
+;                                                       -
 ;  CALLS      : -----                                   -
+;                                                       -
 ;  RETURNS    : TEMPX = quotient, TEMPD = remainder     -
 ; *--------------------------------------------------------
 ;    DIVISOR            DIVIDEND                        -
@@ -1596,30 +1627,28 @@ DV4B23              std       2,x
 DV4B24              rol       5,x
                     rol       4,x
                     dec       PP
-                    beq       DV4B29
+                    beq       :AnRTS
                     rol       3,x
                     rol       2,x
 ;                   bcs       DV4B22
                     bra       DV4B21
 
-DV4B29              rts
-
-
 ;*********************************************************
-;      ERROR HANDLING ROUTINE
+;      ERROR HANDLING ROUTINE                           *
 ;*********************************************************
-;  PARAMETERS : RESBUF, FDCCMND, ERRNUM (0 = FDC,
-;                                        !0 = OTHER)
-;  MODIFIES   :
-;  CALLS      : PERROR
-;  RETURNS    : -----
+;  PARAMETERS : RESBUF, FDCCMND, ERRNUM (0 = FDC,       *
+;                                        !0 = OTHER)    *
+;  MODIFIES   :                                         *
+;                                                       *
+;  CALLS      : PERROR                                  *
+;                                                       *
+;  RETURNS    : -----                                   *
 ;*********************************************************
 
 ERROR               lda       ERRNUM
                     beq       FDCER0              ; test for FDC error
                     nop
-                    jmp       ERR9
-
+                    rts
 
 FDCER0              jsr       PRSLT
                     lda       FDCCMND
@@ -1628,8 +1657,8 @@ FDCER0              jsr       PRSLT
                     jmp       FDCER3
 
 FERR1               lda       RESBUF              ; extract errors for status reg. 0
-                    anda      #%11000000          ; extract interupt code
-                    ldb       #0                  ; interupt code error
+                    anda      #%11000000          ; extract interrupt code
+                    ldb       #$00                ; interrupt code error
                     jsr       PERROR
                     lda       RESBUF
                     anda      #%00100000          ; extract seek end bit - 1 => OK
@@ -1646,9 +1675,9 @@ FERR1A              lda       RESBUF
                     jsr       PERROR
 
 FDCER1              lda       FDCCMND
-                    cmpa      #%00001000          ; check for sense interupt status command
+                    cmpa      #%00001000          ; check for sense interrupt status command
                     bne       FERR2
-                    jmp       ERR9
+                    rts
 
 FERR2               lda       RESBUF+1            ; extract errors for status reg. 1
                     anda      #%10000000          ; extract end of track code
@@ -1703,8 +1732,7 @@ FDCER2              lda       RESBUF+2            ; extract errors for status re
                     anda      #%00000001          ; extract missing address mark in data field bit
                     ldb       #$26                ; missing address mark in data field code error
                     jsr       PERROR
-                    jmp       ERR9
-
+                    rts
 
 FDCER3              lda       RESBUF              ; extract errors for status reg. 3
                     anda      #%10000000          ; extract fault code
@@ -1730,22 +1758,22 @@ FDCER3              lda       RESBUF              ; extract errors for status re
                     anda      #%00000100          ; extract head address bit
                     ldb       #$35                ; head address code error
                     jsr       PERROR
-
-ERR9                rts
-
+                    rts
 
 ;*********************************************************
-;       DISK ACCESS ROUTINES  (LOW LEVEL)
+;       DISK ACCESS ROUTINES  (LOW LEVEL)               *
 ;*********************************************************
-
+;                                                       *
 ;*********************************************************
-;       ROUTINE TO READ BSIZE BYTES FROM A SECTOR
+;       ROUTINE TO READ BSIZE BYTES FROM A SECTOR       *
 ;*********************************************************
-;  PARAMETERS : ABSSEC, PTRX, BSIZE
-;  MODIFIES   : A, B
-;  CALLS      : STOTRK, TRKTHD, TRKSEC, SPEC, SEEK,
-;               RDLOW
-;  RETURNS    : SECTOR contents at PTRX
+;  PARAMETERS : ABSSEC, PTRX, BSIZE                     *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : STOTRK, TRKTHD, TRKSEC, SPEC, SEEK,     *
+;               RDLOW                                   *
+;  RETURNS    : SECTOR contents at PTRX                 *
 ;*********************************************************
 ; the motor should be on before calling this routine
 ;*********************************************************
@@ -1781,38 +1809,42 @@ RBSIZE              clr       MLTITRK             ; single sided access only
                     jsr       RDLOW
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO READ A SECTOR
+;       ROUTINE TO READ A SECTOR                        *
 ;*********************************************************
-;  PARAMETERS : SECTOR, PTRX
-;  MODIFIES   : A, B
-;  CALLS      : RBSIZE
-;  RETURNS    : SECTOR contents at PTRX
+;  PARAMETERS : SECTOR, PTRX                            *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : RBSIZE                                  *
+;                                                       *
+;  RETURNS    : SECTOR contents at PTRX                 *
 ;*********************************************************
 ; the motor should be on before calling this routine
 ;*********************************************************
 
 RSECTOR             ldd       #512                ; read a full sector
                     std       BSIZE
-                    jsr       RBSIZE
+                    bsr       RBSIZE
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO READ B CONTIGOUS SECTORS
+;       ROUTINE TO READ B CONTIGOUS SECTORS             *
 ;*********************************************************
-;  PARAMETERS : ABSSEC, B, PTRX
-;  MODIFIES   : A, B
-;  CALLS      : RSECTOR, MTRON, MTROFF
-;  RETURNS    : B sectors of data at PTRX
+;  PARAMETERS : ABSSEC, B, PTRX                         *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : RSECTOR, MTRON, MTROFF                  *
+;                                                       *
+;  RETURNS    : B sectors of data at PTRX               *
 ;*********************************************************
 
 RBSECS              pshb
                     jsr       MTRON
                     pulb
 RBSEC1              pshb
-                    jsr       RSECTOR             ; read it
+                    bsr       RSECTOR             ; read it
                     ldd       ABSSEC
                     addd      #1
                     std       ABSSEC
@@ -1823,12 +1855,15 @@ RBSEC1              pshb
                     rts
 
 ;*********************************************************
-;       ROUTINE TO READ B NONCONTIGUOUS SECTORS
+;       ROUTINE TO READ B NONCONTIGUOUS SECTORS         *
 ;*********************************************************
-;  PARAMETERS : B, PTRX, SECBUF
-;  MODIFIES   : A, B, X, ABSSEC
-;  CALLS      : RSECTOR, MTRON, MTROFF
-;  RETURNS    : B sectors of data at PTRX
+;  PARAMETERS : B, PTRX, SECBUF                             *
+;                                                       *
+;  MODIFIES   : A, B, X, ABSSEC                         *
+;                                                       *
+;  CALLS      : RSECTOR, MTRON, MTROFF                  *
+;                                                       *
+;  RETURNS    : B sectors of data at PTRX               *
 ;*********************************************************
 
 RBNSEC              pshb
@@ -1839,7 +1874,7 @@ RBN1                pshb
                     pshx
                     ldd       ,x                  ; get next sector num to be read
                     std       ABSSEC
-                    jsr       RSECTOR             ; read it
+                    bsr       RSECTOR             ; read it
                     pulx                          ; point to next sector num entry
                     inx
                     inx
@@ -1849,15 +1884,16 @@ RBN1                pshb
                     jsr       MTROFF
                     rts
 
-
 ;*********************************************************
-;      ROUTINE TO WRITE BSIZE BYTES TO A SECTOR
+;      ROUTINE TO WRITE BSIZE BYTES TO A SECTOR         *
 ;*********************************************************
-;  PARAMETERS : ABSSEC, PTRX, BSIZE
-;  MODIFIES   : A, B
-;  CALLS      : STOTRK, TRKTHD, TRKSEC, SPEC, SEEK,
-;               WRLOW
-;  RETURNS    : ------
+;  PARAMETERS : ABSSEC, PTRX, BSIZE                     *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : STOTRK, TRKTHD, TRKSEC, SPEC, SEEK,     *
+;               WRLOW                                   *
+;  RETURNS    : ------                                  *
 ;*********************************************************
 ; the motor should be on before calling this routine
 ;*********************************************************
@@ -1891,31 +1927,35 @@ WBSIZE              clr       MLTITRK             ; single sided access only
                     jsr       WRLOW
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE A SECTOR
+;       ROUTINE TO WRITE A SECTOR                       *
 ;*********************************************************
-;  PARAMETERS : ABSSEC, PTRX
-;  MODIFIES   : A, B
-;  CALLS      : WBSIZE
-;  RETURNS    : ----
+;  PARAMETERS : ABSSEC, PTRX                            *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : WBSIZE                                  *
+;                                                       *
+;  RETURNS    : ----                                    *
 ;*********************************************************
 ; the motor should be on before calling this routine
 ;*********************************************************
 
 WSECTOR             ldd       #512                ; read a full sector
                     std       BSIZE
-                    jsr       WBSIZE
+                    bsr       WBSIZE
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE B CONTIGOUS SECTORS
+;       ROUTINE TO WRITE B CONTIGOUS SECTORS            *
 ;*********************************************************
-;  PARAMETERS : ABSSEC, B, PTRX
-;  MODIFIES   : A, B
-;  CALLS      : WSECTOR, MTRON, MTROFF
-;  RETURNS    : ------
+;  PARAMETERS : ABSSEC, B, PTRX                         *
+;                                                       *
+;  MODIFIES   : A, B                                    *
+;                                                       *
+;  CALLS      : WSECTOR, MTRON, MTROFF                  *
+;                                                       *
+;  RETURNS    : ------                                  *
 ;*********************************************************
 
 WBSECS              pshb
@@ -1923,7 +1963,7 @@ WBSECS              pshb
                     pulb
 
 WBSEC1              pshb
-                    jsr       WSECTOR             ; read it
+                    bsr       WSECTOR             ; read it
                     ldd       ABSSEC
                     addd      #1
                     std       ABSSEC
@@ -1933,14 +1973,16 @@ WBSEC1              pshb
                     jsr       MTROFF
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE TO B NONCONTIGUOUS SECTORS
+;       ROUTINE TO WRITE TO B NONCONTIGUOUS SECTORS     *
 ;*********************************************************
-;  PARAMETERS : B, PTRX, SECBUF
-;  MODIFIES   : A, B, X, ABSSEC
-;  CALLS      : WSECTOR, MTRON, MTROFF
-;  RETURNS    :  -----
+;  PARAMETERS : B, PTRX, SECBUF                         *
+;                                                       *
+;  MODIFIES   : A, B, X, ABSSEC                         *
+;                                                       *
+;  CALLS      : WSECTOR, MTRON, MTROFF                  *
+;                                                       *
+;  RETURNS    :  -----                                  *
 ;*********************************************************
 
 WBNSEC              pshb
@@ -1951,7 +1993,7 @@ WBN1                pshb
                     pshx
                     ldd       ,x                  ; get next sector num to be read
                     std       ABSSEC
-                    jsr       WSECTOR             ; read it
+                    bsr       WSECTOR             ; read it
                     pulx                          ; point to next sector num entry
                     inx
                     inx
@@ -1961,18 +2003,20 @@ WBN1                pshb
                     jsr       MTROFF
                     rts
 
-
 ;*********************************************************
-;       DISK ACCESS ROUTINES (OBJECT LEVEL)
+;       DISK ACCESS ROUTINES (OBJECT LEVEL)             *
 ;*********************************************************
-
+;                                                       *
 ;*********************************************************
-;       ROUTINE TO READ THE BPB
+;       ROUTINE TO READ THE BPB                         *
 ;*********************************************************
-;  PARAMETERS : ------
-;  MODIFIES   : PTRX, ABSSEC, X
-;  CALLS      : RSECTOR, MTRON, MTROFF, PBPB
-;  RETURNS    : BPB at BPBBUF
+;  PARAMETERS : ------                                  *
+;                                                       *
+;  MODIFIES   : PTRX, ABSSEC, X                         *
+;                                                       *
+;  CALLS      : RSECTOR, MTRON, MTROFF, PBPB            *
+;                                                       *
+;  RETURNS    : BPB at BPBBUF                           *
 ;*********************************************************
 
 RBPB                clr       ABSSEC
@@ -1985,17 +2029,19 @@ RBPB                clr       ABSSEC
                     jsr       PBPB
                     rts
 
+;*********************************************************
+;       ROUTINE TO READ THE FAT                         *
+;*********************************************************
+;  PARAMETERS : ------                                  *
+;                                                       *
+;  MODIFIES   : A, B, X, PTRX, ABSSEC                   *
+;                                                       *
+;  CALLS      : RBSECS, FRDFAT, PFAT                    *
+;                                                       *
+;  RETURNS    : FAT at FATBUF                           *
+;*********************************************************
 
-;*********************************************************
-;       ROUTINE TO READ THE FAT
-;*********************************************************
-;  PARAMETERS : ------
-;  MODIFIES   : A, B, X, PTRX, ABSSEC
-;  CALLS      : RBSECS, FRDFAT, PFAT
-;  RETURNS    : FAT at FATBUF
-;*********************************************************
-
-RFAT                ldd       #1
+RFAT                ldd       #$0001
                     std       ABSSEC
                     ldx       #FATBUF
                     stx       PTRX
@@ -2005,14 +2051,16 @@ RFAT                ldd       #1
                     jsr       PFAT
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO READ THE FILE DIRECTORY
+;       ROUTINE TO READ THE FILE DIRECTORY              *
 ;*********************************************************
-;  PARAMETERS : ------
-;  MODIFIES   : A, B, X, PTRX, ABSSEC
-;  CALLS      : RBSECS, PFDIR
-;  RETURNS    : FILE DIRECTORY at FDIRBUF
+;  PARAMETERS : ------                                  *
+;                                                       *
+;  MODIFIES   : A, B, X, PTRX, ABSSEC                   *
+;                                                       *
+;  CALLS      : RBSECS, PFDIR                           *
+;                                                       *
+;  RETURNS    : FILE DIRECTORY at FDIRBUF               *
 ;*********************************************************
 
 RFDIR               ldd       #19                 ; and read the file dir
@@ -2024,15 +2072,17 @@ RFDIR               ldd       #19                 ; and read the file dir
                     jsr       PFDIR
                     rts
 
-
 ;*********************************************************
-;    ROUTINE TO READ THE NEXT 5 SECTORS OF DATA FROM
-;       CURRENT PAGENUM
+;    ROUTINE TO READ THE NEXT 5 SECTORS OF DATA FROM    *
+;       CURRENT PAGENUM                             *
 ;*********************************************************
-;  PARAMETERS : PAGENUM
-;  MODIFIES   : A, B, X, PTRX, ABSSEC
-;  CALLS      : RBSECS
-;  RETURNS    : DATA at DATA
+;  PARAMETERS : PAGENUM                                 *
+;                                                       *
+;  MODIFIES   : A, B, X, PTRX, ABSSEC                   *
+;                                                       *
+;  CALLS      : RBSECS                                  *
+;                                                       *
+;  RETURNS    : DATA at DATA                            *
 ;*********************************************************
 
 RDATA               ldd       PAGENUM             ; ABSSEC = PAGENUM * 5
@@ -2053,14 +2103,16 @@ RDATA               ldd       PAGENUM             ; ABSSEC = PAGENUM * 5
                     jsr       RBSECS
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE THE BPB
+;       ROUTINE TO WRITE THE BPB                        *
 ;*********************************************************
-;  PARAMETERS : BPB IN BPBBUF
-;  MODIFIES   : PTRX, ABSSEC, X
-;  CALLS      : RSECTOR, MTRON, MTROFF
-;  RETURNS    : BPB at BPBBUF
+;  PARAMETERS : BPB IN BPBBUF                           *
+;                                                       *
+;  MODIFIES   : PTRX, ABSSEC, X                         *
+;                                                       *
+;  CALLS      : RSECTOR, MTRON, MTROFF                  *
+;                                                       *
+;  RETURNS    : BPB at BPBBUF                           *
 ;*********************************************************
 
 WBPB                clr       ABSSEC
@@ -2072,24 +2124,26 @@ WBPB                clr       ABSSEC
                     jsr       MTROFF
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE THE FAT
+;       ROUTINE TO WRITE THE FAT                        *
 ;*********************************************************
-;  PARAMETERS : FAT at FATBUF
-;  MODIFIES   : A, B, X, PTRX, ABSSEC
-;  CALLS      : WBSECS, DOSFAT
-;  RETURNS    : ----
+;  PARAMETERS : FAT at FATBUF                           *
+;                                                       *
+;  MODIFIES   : A, B, X, PTRX, ABSSEC                   *
+;                                                       *
+;  CALLS      : WBSECS, DOSFAT                          *
+;                                                       *
+;  RETURNS    : ----                                    *
 ;*********************************************************
 
 WFAT                jsr       DOSFAT
-                    ldd       #1
+                    ldd       #$0001
                     std       ABSSEC
                     ldx       #FATBUF
                     stx       PTRX
                     ldb       #9
                     jsr       WBSECS
-                    ldd       #10
+                    ldd       #0010
                     std       ABSSEC
                     ldx       #FATBUF
                     stx       PTRX
@@ -2097,14 +2151,16 @@ WFAT                jsr       DOSFAT
                     jsr       WBSECS
                     rts
 
-
 ;*********************************************************
-;       ROUTINE TO WRITE THE FILE DIRECTORY
+;       ROUTINE TO WRITE THE FILE DIRECTORY             *
 ;*********************************************************
-;  PARAMETERS : FILE DIRECTORY at FDIRBUF
-;  MODIFIES   : PTRX, B, ABSSEC, A, X
-;  CALLS      : WBSECS
-;  RETURNS    : --------
+;  PARAMETERS : FILE DIRECTORY at FDIRBUF               *
+;                                                       *
+;  MODIFIES   : PTRX, B, ABSSEC, A, X                   *
+;                                                       *
+;  CALLS      : WBSECS                                  *
+;                                                       *
+;  RETURNS    : --------                                *
 ;*********************************************************
 
 WFDIR               ldd       #19
@@ -2115,15 +2171,17 @@ WFDIR               ldd       #19
                     jsr       WBSECS
                     rts
 
-
 ;*********************************************************
-;    ROUTINE TO WRITE THE NEXT 5 SECTORS OF DATA TO
-;       CURRENT PAGENUM
+;    ROUTINE TO WRITE THE NEXT 5 SECTORS OF DATA TO     *
+;       CURRENT PAGENUM                             *
 ;*********************************************************
-;  PARAMETERS : PAGENUM
-;  MODIFIES   : PTRX, B, ABSSEC, A, X
-;  CALLS      : WBSECS
-;  RETURNS    : --------
+;  PARAMETERS : PAGENUM                                 *
+;                                                       *
+;  MODIFIES   : PTRX, B, ABSSEC, A, X                   *
+;                                                       *
+;  CALLS      : WBSECS                                  *
+;                                                       *
+;  RETURNS    : --------                                *
 ;*********************************************************
 
 WDATA               ldd       PAGENUM             ; ABSSEC = PAGENUM * 5
@@ -2144,15 +2202,17 @@ WDATA               ldd       PAGENUM             ; ABSSEC = PAGENUM * 5
                     jsr       WBSECS
                     rts
 
-
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO WRITE TO A FILE
+;       LOW LEVEL ROUTINE TO WRITE TO A FILE            *
 ;*********************************************************
-;  PARAMETERS : BSIZE, PTRADR
-;  MODIFIES   : A, B, X, SRCX, DSTX, PAGENUM, BADDR
+;  PARAMETERS : BSIZE, PTRADR                           *
+;                                                       *
+;  MODIFIES   : A, B, X, SRCX, DSTX, PAGENUM, BADDR     *
+;                                                       *
 ;  CALLS      : BLKADR, MOVE, WDATA, RDATA, CHKSUM, UDFSZ
+;                                                       *
 ;  RETURNS    : FSIZE is incremented by the number of bytes written
-;               BSIZE = numbytes written
+;               BSIZE = numbytes written                *
 ;*********************************************************
 
 WFLOW               ldd       BSIZE
@@ -2169,7 +2229,7 @@ WFLOW               ldd       BSIZE
                     ldd       BSIZE
                     jsr       DMOVE
 
-WFL2                jsr       WDATA               ; write the current 8k block
+WFL2                bsr       WDATA               ; write the current 8k block
                     ldd       PAGENUM
                     addd      #1
                     std       PAGENUM
@@ -2187,7 +2247,6 @@ WFL2                jsr       WDATA               ; write the current 8k block
                     std       BSIZE
                     bra       WFL3
 
-
 WFL1                ldd       BSTEMP
                     std       BSIZE
                     ldx       #BUFFER             ; write from start of buffer
@@ -2196,20 +2255,24 @@ WFL3                ldx       BADDR
                     stx       DSTX                ; write remainder of block
                     ldd       BSIZE
                     jsr       DMOVE
-;                         update file size field
+
+          ; update file size field
+
                     ldd       BSTEMP
                     std       BSIZE
                     jsr       UDFSZ
                     rts
 
-
 ;*********************************************************
-;       MID LEVEL ROUTINE TO WRITE TO A FILE
+;       MID LEVEL ROUTINE TO WRITE TO A FILE            *
 ;*********************************************************
-;  PARAMETERS : CTRLCD (P, N, A), BSIZE
-;  MODIFIES   : A
-;  CALLS      : WPTR, APPEND
-;  RETURNS    : ----
+;  PARAMETERS : CTRLCD (P, N, A), BSIZE                 *
+;                                                       *
+;  MODIFIES   : A                                       *
+;                                                       *
+;  CALLS      : WPTR, APPEND                            *
+;                                                       *
+;  RETURNS    : ----                                    *
 ;*********************************************************
 
 WFMID               lda       #'P'                ; check ctrl cd values
@@ -2221,25 +2284,27 @@ WFMID               lda       #'P'                ; check ctrl cd values
                     lda       #'A'
                     cmpa      CTRLCD
                     beq       WFM3                ; append to end of file
-                    bra       WFM9
+                    rts
 
 WFM1                jsr       WPTR
-                    bra       WFM9
+                    rts
 
 WFM2                jsr       WPTR
-                    bra       WFM9
+                    rts
 
-WFM3                jsr       APPEND
-WFM9                rts
-
+WFM3                bsr       APPEND
+                    rts
 
 ;*********************************************************
-;      ROUTINE TO APPEND TO A FILE
+;      ROUTINE TO APPEND TO A FILE                      *
 ;*********************************************************
-;  PARAMETERS : BSIZE
-;  MODIFIES   : A, B, FPTR, PTRADR, ADDR3,2,1, NFBS
+;  PARAMETERS : BSIZE                                   *
+;                                                       *
+;  MODIFIES   : A, B, FPTR, PTRADR, ADDR3,2,1, NFBS     *
+;                                                       *
 ;  CALLS      : PNTRADR, MOVE, UDEOF, WFLOW, UDFPTR, FFFAT,
-;  RETURNS    : ----
+;                                                       *
+;  RETURNS    : ----                                    *
 ;*********************************************************
 
 APPEND              ldd       BSIZE               ; save bsize first
@@ -2251,7 +2316,9 @@ APP1                ldd       FSIZE+1             ; set file pointer to file siz
 
                     lda       EOFFLG
                     beq       APP2
-;                       INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+
+          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+
                     ldd       FPTR+1              ; dec file pntr by one so that EOF gets over written
                     subd      #1
                     std       FPTR+1
@@ -2259,36 +2326,39 @@ APP1                ldd       FSIZE+1             ; set file pointer to file siz
                     dec       FPTR
 
 APP2                jsr       PNTRADR             ; convert to address
-;                        check for enough room in sector
+
+          ; check for enough room in sector
+
 APP3                ldd       NFBS
                     subd      BSTEMP              ; check if there is enough room left in current EOFS
                     bcc       APP8
-;                        ;not enough room in current sector
+
+          ; not enough room in current sector
+
                     ldd       BSTEMP
                     psha
                     pshb
                     ldd       NFBS
-                    std       BSIZE               ; set bsize to num bytes availible
+                    std       BSIZE               ; set bsize to num bytes available
                     jsr       WFLOW               ; fill remainder of sector
                     pulb
                     pula
                     subd      BSIZE               ; sub amount written thus far
                     std       BSTEMP              ; save updated bsize
-
+;
                     ldd       #BUFFER             ; put remainder of block at start of buffer
                     std       DSTX                ; srcx is still set from wflow
                     addd      BSIZE
                     std       SRCX
                     ldd       BSTEMP              ; set num bytes to be moved
                     jsr       DMOVE
-
+;
                     jsr       UDFPTR              ; and update the file pointer
                     jsr       FFFAT               ; find another sector
                     cmpa      #$FF
                     beq       APPER1
                     jsr       UDEOF               ; up date new EOF location for the file
                     bra       APP1
-
 
 APP8                ldd       BSTEMP
                     std       BSIZE               ; save the block size
@@ -2301,30 +2371,31 @@ APP8                ldd       BSTEMP
                     jsr       UDFPTR              ; and update the file pointer
 
                     lda       EOFFLG
-                    beq       APP9
-;                       INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+                    beq       :AnRTS
+
+          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+
                     ldd       FSIZE+2             ; sub 1 from fsize to adjust for decrementing
                     subd      #1                  ; the file pointer above
                     std       FSIZE+2
-                    bcc       APP9
+                    bcc       :AnRTS
                     ldd       FSIZE
                     subd      #1
                     std       FSIZE
-                    bra       APP9                ; and quit
-
+                    rts                           ; and quit
 
 APPER1              jmp       FW85                ; FAT ERROR -----> ACCESS DENIED AND REBOOT
 
-APP9                rts
-
-
 ;*********************************************************
-;      ROUTINE TO OVERWRITE A FILE
+;      ROUTINE TO OVERWRITE A FILE                      *
 ;*********************************************************
-;  PARAMETERS : BSIZE
-;  MODIFIES   : A, B, FPTR, PTRADR, ADDR3,2,1, NFBS
+;  PARAMETERS : BSIZE                                   *
+;                                                       *
+;  MODIFIES   : A, B, FPTR, PTRADR, ADDR3,2,1, NFBS     *
+;                                                       *
 ;  CALLS      : PNTRADR, MOVE, UDFPTR, WFLOW, UDFPTR, FFFAT,
-;  RETURNS    : ----
+;                                                       *
+;  RETURNS    : ----                                    *
 ;*********************************************************
 
 WPTR                ldd       BSIZE
@@ -2345,17 +2416,16 @@ WPTR2               ldd       NFBS
                     pula
                     subd      BSIZE               ; and up date num bytes to be written
                     std       BSTEMP
-
+;
                     ldd       #BUFFER             ; put remainder of block at start of buffer
                     std       DSTX                ; srcx is still set from wflow
                     addd      BSIZE
                     std       SRCX
                     ldd       BSTEMP              ; set num bytes to be moved
                     jsr       DMOVE
-
+;
                     jsr       UDFPTR              ; and up date the file pointer position
-                    jmp       WPTR1               ; go again
-
+                    bra       WPTR1               ; go again
 
 WPTR3               ldd       BSTEMP
                     std       BSIZE
@@ -2366,31 +2436,32 @@ WPTR3               ldd       BSTEMP
                     pula
                     std       BSIZE
                     jsr       UDFPTR              ; and up date the file pointer
-                    jmp       WPTR9               ; end
+                    rts                           ; end
 
 WPTRER              nop
-
-WPTR9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL ROUTINE TO READ A FILE
+;       LOW LEVEL ROUTINE TO READ A FILE                *
 ;*********************************************************
-;  PARAMETERS : BSIZE, PTRADR
-;  MODIFIES   : A, B, X, SRCX, DSTX, PAGENUM, BADDR
-;  CALLS      : BLKADR, MOVE, RDATA
-;  RETURNS    : Outputs BSIZE bytes to moneychanger
-;               BSIZE = numbytes read
+;  PARAMETERS : BSIZE, PTRADR                           *
+;                                                       *
+;  MODIFIES   : A, B, X, SRCX, DSTX, PAGENUM, BADDR     *
+;                                                       *
+;  CALLS      : BLKADR, MOVE, RDATA                     *
+;                                                       *
+;  RETURNS    : Outputs BSIZE bytes to moneychanger     *
+;               BSIZE = numbytes read                   *
 ;*********************************************************
 
 RFLOW               ldd       BSIZE
-                    beq       RFL9
+                    beq       :AnRTS
                     std       BSTEMP              ; save bsize
 
                     jsr       BLKADR              ; get block address and see if bsize is ok
                     beq       RFL1
                     ldd       BSIZE               ; bsize was too big
-                    beq       RFL9                ; check bsize does not equal zero
+                    beq       :AnRTS              ; check bsize does not equal zero
                     ldx       BUFFX
                     stx       DSTX
                     ldx       BADDR
@@ -2409,10 +2480,9 @@ RFL2                ldd       PAGENUM
                     std       DSTX                ; point to next byte to be read
                     ldd       BSTEMP
                     subd      BSIZE
-                    beq       RFL9
+                    beq       :AnRTS
                     std       BSIZE
                     bra       RFL3
-
 
 RFL1                ldd       BSTEMP
                     subd      BSIZE               ; set bsize to remainder of block
@@ -2422,17 +2492,18 @@ RFL3                ldx       BADDR
                     stx       SRCX                ; read remainder of block
                     ldd       BSIZE
                     jsr       DMOVE
-RFL9                rts
-
+                    rts
 
 ;*********************************************************
-;       MID LEVEL ROUTINE TO READ A FILE
+;       MID LEVEL ROUTINE TO READ A FILE                *
 ;*********************************************************
-;  PARAMETERS : CTRLCD (N, P), BSIZE
+;  PARAMETERS : CTRLCD (N, P), BSIZE                    *
+;                                                       *
 ;  MODIFIES   : A, B, BSIZE, SECTOR, FPTR, ADDR3,2,1, PTRADR,
-;               NFBS
-;  CALLS      : PNTRADR, RFLOW, UDFPTR
-;  RETURNS    : -------
+;               NFBS                                    *
+;  CALLS      : PNTRADR, RFLOW, UDFPTR                  *
+;                                                       *
+;  RETURNS    : -------                                 *
 ;*********************************************************
 
 RFMID               lda       #'P'                ; check ctrl codes first
@@ -2443,7 +2514,6 @@ RFMID               lda       #'P'                ; check ctrl codes first
                     beq       RFM1                ; read next block
                     bra       RFMERR              ; illegal ctrl code
 
-
 RFM1                ldd       #512
                     std       BSIZE               ; set block size to 128 bytes
 
@@ -2451,7 +2521,7 @@ RFM2A               ldx       #BUFFER
                     stx       BUFFX
 
 RFM2                ldd       BSIZE               ; save bsize
-                    beq       RFM9
+                    beq       :AnRTS
                     std       BSTEMP
                     jsr       PNTRADR             ; convert to address
 
@@ -2466,7 +2536,7 @@ RFM3                ldd       NFBS
                     std       BSIZE
                     psha                          ; save new bsize
                     pshb
-                    jsr       RFLOW               ; read permissable block size
+                    bsr       RFLOW               ; read permissable block size
                     pulb                          ; retrieve new bsize
                     pula
                     std       BSIZE
@@ -2479,7 +2549,6 @@ RFM3                ldd       NFBS
                     std       BSIZE
                     bra       RFM2                ; go again
 
-
 RFM8                ldd       BSTEMP
                     std       BSIZE
                     psha
@@ -2489,20 +2558,19 @@ RFM8                ldd       BSTEMP
                     pula
                     std       BSIZE
                     jsr       UDFPTR              ; and up date the file pointer
-                    bra       RFM9                ; end
+                    rts                           ; end
 
 RFMERR              jmp       FR85                ; illegal CTRLCD, ----> access denied, REBOOT
-
-
-RFM9                rts
-
 
 ; *--------------------------------------------------------
 ;  ROUTINE TO GET PHYSICAL TRACK SECTOR FROM ABSSEC     -
 ; *--------------------------------------------------------
 ;  PARAMETERS : ABSSEC                                  -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : DIV4B2                                  -
+;                                                       -
 ;  RETURNS    : SECTOR                                  -
 ; *--------------------------------------------------------
 
@@ -2519,13 +2587,15 @@ TRKSEC              ldb       TRKSCS              ; set up params for division
                     stb       SECTOR              ; sector is one byte only
                     rts
 
-
 ; *--------------------------------------------------------
 ;  ROUTINE TO GET PHYSICAL TRACK NUMBER FROM ABSSEC     -
 ; *--------------------------------------------------------
 ;  PARAMETERS : ABSSEC                                  -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : DIV4B2                                  -
+;                                                       -
 ;  RETURNS    : TRACK                                   -
 ; *--------------------------------------------------------
 
@@ -2542,13 +2612,15 @@ STOTRK              ldb       TRKSCS              ; set up params for division
                     stb       TRACK               ; track is one byte only
                     rts
 
-
 ; *--------------------------------------------------------
 ;  ROUTINE TO GET PHYSICAL HEAD NUMBER FROM TRACK       -
 ; *--------------------------------------------------------
 ;  PARAMETERS : TRACK                                   -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : HEAD                                    -
 ; *--------------------------------------------------------
 
@@ -2572,25 +2644,29 @@ TRKTHD              ldb       TRKSCS              ; set up params for division
                     ldd       TEMPX
                     aslb                          ; get head bit to correct position
                     aslb
-;       EORB    #%00000100      ;toggle head value
+;                   eorb      #%00000100          ; toggle head value
                     stb       HEAD
                     rts
-
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO CALCULATE THE FILE POINTER ADDRESS   -
 ; *--------------------------------------------------------
 ;  PARAMETERS : filepointer value is passed through FPTR-
+;                                                       -
 ;  MODIFIES   : X, A, B, TEMPD, TEMPX, TEMPA, TEMPB, SECTOR,
 ;               FATNUM                                  -
+;                                                       -
 ;  CALLS      : DIV4B2, GENTRY, SECADR                  -
+;                                                       -
 ;  RETURNS    : SECNUM & SECOFF are set to corresponding-
 ;               disk address.                           -
 ; *--------------------------------------------------------
 
 PNTRADR             ldx       BSIZE               ; preserve bsize
                     pshx
-;                         get num sectors to file pointer position
+
+          ; get num sectors to file pointer position
+
                     ldb       FPTR                ; fptr / 512 = sector + offset
                     clra
                     std       TEMPD
@@ -2609,24 +2685,23 @@ PNTRADR             ldx       BSIZE               ; preserve bsize
                     std       NFBS
 
                     ldd       BOF                 ; trace through FAT until the Nth entry is found
-                    beq       PADRER              ; no FAT entry can = 00
+                    beq       PADRER              ; no fat entry can = 00
                     std       FATNUM              ; where N = value now stored in PTRADR
 PADR1               ldd       SECNUM
                     beq       PADR2               ; finished ?
-                    jsr       GENTRY              ; get the FAT entry
+                    jsr       GENTRY              ; get the fat entry
 
                     ldd       FATNUM
-                    beq       PADRER              ; no FAT entry can = 00
+                    beq       PADRER              ; no fat entry can = 00
                     std       TEMPD
                     ldd       #$0FFF
                     jsr       CMPD
-                    beq       PADRER              ; IF FAT entry = FFFh we've gone too far
+                    beq       PADRER              ; IF fat entry = FFFh we've gone too far
 
                     ldd       SECNUM              ; dec counter
                     subd      #1
                     std       SECNUM
                     bra       PADR1
-
 
 PADR2               ldd       FATNUM              ; save last entry read to sector
                     subd      #2                  ; adjustment for correct addressing
@@ -2635,34 +2710,37 @@ PADR2               ldd       FATNUM              ; save last entry read to sect
                     stx       BSIZE               ; retrieve bsize
                     rts
 
-
 PADRER              jmp       FR85                ; FAT ERROR ---> ACCESS DENIED, REBOOT
-
 
 ; *--------------------------------------------------------
 ;  ROUTINE TO UPDATE THE FILE POINTER TO THE LAST       -
 ;        LOCATION ACCESSED ON THE DISK                  -
 ; *--------------------------------------------------------
 ;  PARAMETERS : FPTR and BSIZE                          -
+;                                                       -
 ;  MODIFIES   : ----                                    -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : FPTR+BSIZE                              -
 ; *--------------------------------------------------------
 
 UDFPTR              ldd       BSIZE
                     addd      FPTR+1              ; update file pointer location
                     std       FPTR+1
-                    bcc       UDFP1
+                    bcc       :AnRTS
                     inc       FPTR
-UDFP1               rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ; ROUTINE CONVERT PTRADR TO A DATA BLOCK OFFSET ADDRESS -
 ; *--------------------------------------------------------
 ;  PARAMETERS : PTRADR, WFLAG                           -
+;                                                       -
 ;  MODIFIES   : A, B, TEMPX, TEMPD, TEMPA, TEMPB        -
+;                                                       -
 ;  CALLS      : DIV4B2, WDATA, RDATA, CHKSUM, CHKBLK    -
+;                                                       -
 ;  RETURNS    : BADDR = data block address              -
 ;               PAGENUM = page containing that(file pointer)
 ;               address                                 -
@@ -2709,17 +2787,19 @@ BLKA8               pulx
                     jsr       RDATA
 BLKA9               pulx
                     stx       BSIZE
-                    jsr       CHKBLK
+                    bsr       CHKBLK
                     rts
-
 
 ; *--------------------------------------------------------
 ; ROUTINE TO CHECK THAT BSIZE WONT PUT US BEYOND THE END-
 ;  OF THE DATA BUFFER                                   -
 ; *--------------------------------------------------------
 ;  PARAMETERS : BSIZE, BADDR                            -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : A = 00 if ok,                           -
 ;               A = FF if not and BSIZE is set to numbytes
 ;                      to end of data block             -
@@ -2734,20 +2814,21 @@ CHKB2               ldd       #TOPRAM             ; bsize too big => reset it
                     subd      BADDR
                     std       BSIZE
                     lda       #$FF
-                    bra       CHKB9
-
+                    rts
 
 CHKB8               clra
-CHKB9               rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO GET A FAT ENTRY                      -
 ; *--------------------------------------------------------
 ;  PARAMETERS : entry number to get = FATNUM            -
+;                                                       -
 ;  MODIFIES   : A, B, X                                 -
+;                                                       -
 ;  CALLS      : -----                                   -
-;  RETURNS    : FATNUM returns with FAT entry contents  -
+;                                                       -
+;  RETURNS    : FATNUM returns with fat entry contents  -
 ;               TEMPA = FF if there are no more entries -
 ;                       in the FAT                      -
 ; *--------------------------------------------------------
@@ -2767,34 +2848,33 @@ GENTRY              clr       TEMPA               ; reset TEMPA first
                     pulb
                     lsrd                          ; check for even or odd location
                     bcs       GEODD               ; ODD ?
-;                        ;EVEN!
+          ; EVEN!
                     ldd       ,x                  ; get the location contents
-                    lsrd                          ; fix it up
-                    lsrd
-                    lsrd
-                    lsrd
+                    lsrd:4                        ; fix it up
                     std       FATNUM              ; save it
-                    bra       GE9
+                    rts
 
-;                        ;ODD !
+          ; ODD !
+
 GEODD               ldd       ,x                  ; get location contents
                     anda      #$0F                ; fix it up
                     std       FATNUM              ; save it
-                    bra       GE9
+                    rts
 
-GEERR               pula                          ; no more entries error
-                    pulb
+GEERR               puld                          ; no more entries error
                     lda       #$FF
                     sta       TEMPA
-GE9                 rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ; ROUTINE TO READ THE NEXT FILE DIR TO FILEDR BUFFER    -
 ; *--------------------------------------------------------
 ;  PARAMETERS : NXTFDR (0 - 40) = file dir number to read
+;                                                       -
 ;  MODIFIES   : A, B, TEMPA, TEMPB, TEMPD, SRCX, DSTX   -
+;                                                       -
 ;  CALLS      : MOVE                                    -
+;                                                       -
 ;  RETURNS    : File dir is returned in FILEDR buffer   -
 ;               NXTFDR is incremented to next file dir number
 ; *--------------------------------------------------------
@@ -2805,11 +2885,7 @@ RNFDIR              lda       #$29
                     clr       NXTFDR              ; must reset the file dir vars
 RNFD1               clra                          ; Offset into file dir buffer = (32*nxtfdr)+ #FDIR
                     ldb       NXTFDR
-                    asld                          ; 32 = 2 to the 5 => shift 5 times
-                    asld
-                    asld
-                    asld
-                    asld
+                    asld:5                        ; 32 = 2 to the 5 => shift 5 times
                     addd      #FDIRBUF            ; = (32*NXTFDR)+#FDIR
                     std       SRCX                ; move file dir to FILEDR
                     ldx       #FILEDR
@@ -2819,24 +2895,26 @@ RNFD1               clra                          ; Offset into file dir buffer 
                     lda       NXTFDR
                     sta       FDIRNM              ; Set file dir num for file handle
                     inc       NXTFDR              ; inc NXTFDR
-RNFD9               rts
-
+                    rts
 
 ;*********************************************************
-;       LOW LEVEL FILE MANIPULATION ROUTINES
+;       LOW LEVEL FILE MANIPULATION ROUTINES            *
 ;*********************************************************
-
+;                                                       *
 ; *--------------------------------------------------------
 ;  ROUTINE TO CONVERT FAT TO A FORDE COMAPTIBLE FORM    -
 ; *--------------------------------------------------------
 ;  PARAMETERS : Fat entries must be in the FAT buffer   -
+;                                                       -
 ;  MODIFIES   : FAT buffer, A, B, X                     -
+;                                                       -
 ;  CALLS      : ROLD                                    -
-;  RETURNS    : FORDE form FAT at #FAT                  -
+;                                                       -
+;  RETURNS    : FORDE form fat at #FAT                  -
 ; *--------------------------------------------------------
-; DOS FAT looks like the following :                    -
+; DOS fat looks like the following :                    -
 ;        12 34 56 .. .. .. ..                           -
-; FORDE FAT looks like the following :                  -
+; FORDE fat looks like the following :                  -
 ;        41 25 63 .. .. .. ..                           -
 ; This routine performs the transition.                 -
 ; See notes at end of file for further FAT information. -
@@ -2878,23 +2956,19 @@ RNFD9               rts
 ; *--------------------------------------------------------
 
 FRDFAT              ldx       #FATBUF
-;                        FIX UP NEXT 3 BYTES
+
+          ; FIX UP NEXT 3 BYTES
+
 FRDFT1              ldb       ,x                  ; 1st byte ok
                     lda       1,x
                     anda      #$0F                ; prepare 2nd byte
                     clc
-                    jsr       ROLD                ; complete final form
-                    jsr       ROLD
-                    jsr       ROLD
-                    jsr       ROLD
+                    jsr:4     ROLD                ; complete final form
                     pshb                          ; save final form
                     psha
                     ldd       1,x
                     clc
-                    jsr       ROLD                ; complete final form
-                    jsr       ROLD
-                    jsr       ROLD
-                    jsr       ROLD
+                    jsr:4     ROLD                ; complete final form
                     anda      #$0F                ; fix up first byte
                     std       1,x                 ; SAVE FIXED BYTE (3rd ONE)
                     pula                          ; retrieve 1st byte
@@ -2902,66 +2976,62 @@ FRDFT1              ldb       ,x                  ; 1st byte ok
                     pulb                          ; retrieve 2nd byte
                     orb       1,x
                     stb       1,x                 ; SAVE FIXED BYTE (2nd one)
-                    inx                           ; point to next 3 bytes
-                    inx
-                    inx
+                    inx:3                         ; point to next 3 bytes
                     cpx       #FATEND             ; check for END OF FAT
                     bne       FRDFT1
                     rts
 
-
 ; *--------------------------------------------------------
 ;  ROUTINE TO CONVERT FAT TO A DOS COMAPTIBLE FORM      -
 ; *--------------------------------------------------------
-;  PARAMETERS : FAT entries must be in the FAT buffer   -
+;  PARAMETERS : fat entries must be in the FAT buffer   -
+;                                                       -
 ;  MODIFIES   : --                                      -
+;                                                       -
 ;  CALLS      : FRDFAT                                  -
+;                                                       -
 ;  RETURNS    : DOS form of FAT at #FAT                 -
 ; *--------------------------------------------------------
-; FORDE FAT looks like the following :                  -
+; FORDE fat looks like the following :                  -
 ;        41 25 63 .. .. .. ..                           -
-; DOS FAT looks like the following :                    -
+; DOS fat looks like the following :                    -
 ;        12 34 56 .. .. .. ..                           -
 ; This routine performs the transition.                 -
 ; See notes at end of file for further FAT information. -
 ; *--------------------------------------------------------
 
-DOSFAT              jsr       FRDFAT
-                    jsr       FRDFAT
-                    jsr       FRDFAT
-                    jsr       FRDFAT
-                    jsr       FRDFAT
+DOSFAT              bsr:5     FRDFAT
                     rts
-
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO UPDATE A FILES EOF LOCATION          -
 ; *--------------------------------------------------------
-;  PARAMETERS : current EOF in EOFS, free FAT location in FATNUM
+;  PARAMETERS : current EOF in EOFS, free fat location in FATNUM
+;                                                       -
 ;  MODIFIES   : A, B, X, TEMPX                          -
+;                                                       -
 ;  CALLS      : FNUMLOC, WFAT, RFAT                     -
+;                                                       -
 ;  RETURNS    : FAT is updated and stored in ram        -
 ; *--------------------------------------------------------
 
 UDFAT               ldd       OLDEOF              ; get old eof location
                     std       FATNUM
-;                         update old location
+
+          ; update old location
+
                     lsrd                          ; check for an even or odd location first
                     bcs       UDFAT1
                     jsr       FNUMLOC             ; convert to location address in FAT buffer
                     ldx       TEMPX
                     ldd       EOF                 ; reset FATNUM variable
                     std       FATNUM
-                    asld                          ; format for correct storage
-                    asld
-                    asld
-                    asld
+                    asld:4                        ; format for correct storage
                     sta       ,x                  ; update the old EOF location
                     orb       #$0F                ; with a pointer to the new EOF location
                     andb      1,x
                     stb       1,x
                     bra       UDFAT2
-
 
 UDFAT1              jsr       FNUMLOC             ; its an odd location
                     ldx       TEMPX
@@ -2971,26 +3041,27 @@ UDFAT1              jsr       FNUMLOC             ; its an odd location
                     anda      ,x                  ; update the old EOF location
                     sta       ,x
                     stb       1,x
-;                        NOW MARK NEW EOF LOCATION
+
+          ; NOW MARK NEW EOF LOCATION
+
 UDFAT2              ldd       FATNUM
                     lsrd                          ; check for even or odd entry number
                     bcs       UDFAT3              ; its an odd location
-                    jsr       FNUMLOC             ; convert to location address in FAT buffer
+                    jsr       FNUMLOC             ; convert to location address in fat buffer
                     ldx       TEMPX
                     ldd       #$FFF0              ; save EOF marker there
                     sta       ,x                  ; update the new EOF location
                     orb       1,x
                     stb       1,x
-                    bra       UDFAT9
+                    rts
 
-UDFAT3              jsr       FNUMLOC             ; convert to location address in FAT buffer
+UDFAT3              jsr       FNUMLOC             ; convert to location address in fat buffer
                     ldx       TEMPX
                     ldd       #$0FFF              ; save EOF marker there
                     ora       ,x                  ; update the new EOF location
                     sta       ,x
                     stb       1,x
-UDFAT9              rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO FIND A FREE FAT LOCATION             -
@@ -2998,7 +3069,9 @@ UDFAT9              rts
 ;  PARAMETERS : FAT contents must be present in the FAT -
 ;               buffer.                                 -
 ;  MODIFIES   : A, B, TEMPD                             -
+;                                                       -
 ;  CALLS      : GENTRY                                  -
+;                                                       -
 ;  RETURNS    : FATNUM, TEMPA = FF for error            -
 ; *--------------------------------------------------------
 
@@ -3012,7 +3085,7 @@ FFFAT1              ldd       TEMPD
                     beq       FATERR
                     ldd       FATNUM
                     beq       FFFAT2              ; check if it`s free
-                    ldd       TEMPD               ; inc FAT location number
+                    ldd       TEMPD               ; inc fat location number
                     addd      #1
                     std       TEMPD
                     ldd       #MAXFAT             ; Have we come to the end of the fat
@@ -3023,41 +3096,40 @@ FFFAT1              ldd       TEMPD
 ;                   ldd       LFFAT               ; have we checked all locations
 ;                   jsr       CMPD
 ;                   bne       FFFAT1              ; go again
-                    !bra      FATERR
-
 
 FATERR              jmp       FR85                ; FAT ERROR -----> ACCESS DENIED, REBOOT
 
                     lda       #$FF                ; no free FAT error
                     sta       TEMPA
-                    bra       FFFAT9
+                    rts
 
 FFFAT2              ldd       TEMPD
-                    std       LFFAT               ; set last free FAT location
+                    std       LFFAT               ; set last free fat location
                     std       FATNUM              ; set correct FAT number
-FFFAT9              rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO EXPAND A FILES SPACE IN THE FAT      -
 ; *--------------------------------------------------------
 ;  PARAMETERS : -------                                 -
+;                                                       -
 ;  MODIFIES   : A, B, X, TEMPX                          -
+;                                                       -
 ;  CALLS      : FNUMLOC, WFAT, RFAT                     -
+;                                                       -
 ;  RETURNS    : FAT is updated in ram                   -
 ; *--------------------------------------------------------
 
-UDEOF               jsr       FFFAT               ; find free FAT location
+UDEOF               bsr       FFFAT               ; find free fat location
                     lda       TEMPA               ; any found ?
                     cmpa      #$FF
-                    beq       UDEOF1
+                    beq       :AnRTS
                     ldd       EOF
                     std       OLDEOF
                     ldd       FATNUM
                     std       EOF
-                    jsr       UDFAT               ; update the FAT in ram
-UDEOF1              rts
-
+                    jsr       UDFAT               ; update the fat in ram
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO FIND A FILE                          -
@@ -3065,7 +3137,9 @@ UDEOF1              rts
 ;  PARAMETERS : File name to search for is passed through
 ;               FNAME                                   -
 ;  MODIFIES   : A, NXTFDR                               -
+;                                                       -
 ;  CALLS      : RNFDIR, CMPNFNM                         -
+;                                                       -
 ;  RETURNS    : EXIST = 00 if file is found             -
 ;                 "   = FF if file is not found.        -
 ; *--------------------------------------------------------
@@ -3075,23 +3149,25 @@ FFILE               lda       #$FF
                     clr       NXTFDR              ; start at the start
 FF1                 jsr       RNFDIR              ; read the first file dir
 FF2                 jsr       CMPNFNM             ; compare next file name
-                    cmpa      #0                  ; A = 00 for match
+                    cmpa      #$00                ; A = 00 for match
                     beq       FF3
                     lda       #$29                ; see it was the last one
                     cmpa      NXTFDR
                     bne       FF1                 ; check if any file dirs left to be read
-                    bra       FF9
+                    rts
 
 FF3                 clr       EXIST               ; file found
-FF9                 rts
-
+                    rts
 
 ; *--------------------------------------------------------
 ;       ROUTINE TO FIND THE END OF A FILE               -
 ; *--------------------------------------------------------
 ;  PARAMETERS : first cluster field is passed through BOF
+;                                                       -
 ;  MODIFIES   : A, B, TEMPD,FATNUM                      -
+;                                                       -
 ;  CALLS      : CMPD, GENTRY                            -
+;                                                       -
 ;  RETURNS    : last cluster of file is returned in EOF -
 ;               EOF = 0000 if EOF mark not found        -
 ; *--------------------------------------------------------
@@ -3105,11 +3181,11 @@ FEOF                ldd       BOF                 ; get start of file sector num
                     jsr       CMPD                ; check if its the last cluster in file chain marker
                     beq       FEOF2
 FEOF1               ldd       TEMPD               ; preserve fatnum value on stack
-                    beq       FEOFER              ; no FAT entry can = 00
+                    beq       FEOFER              ; no fat entry can = 00
                     psha
                     pshb
                     std       FATNUM
-                    jsr       GENTRY              ; get that FAT entry
+                    jsr       GENTRY              ; get that fat entry
                     ldd       FATNUM
                     beq       FEOF4
                     std       TEMPD
@@ -3125,30 +3201,31 @@ FEOF1               ldd       TEMPD               ; preserve fatnum value on sta
 
 FEOF2               ldd       BOF                 ; EOF = BOF condition
                     std       EOF
-                    bra       FEOF9
+                    rts
 
 FEOF3               pulb                          ; EOF found
                     pula
                     std       EOF
-                    bra       FEOF9
+                    rts
 
 FEOF4               clr       EOF
                     clr       EOF+1
                     pulb
                     pula
-FEOF9               rts
-
+                    rts
 
 FEOFER              jmp       FR85                ; FAT ERROR -----> ACCESS DENIED, REBOOT
-
 
 ; *--------------------------------------------------------
 ; ROUTINE TO UPDATE THE FILE DIR  AS STORED ON THE      -
 ;               DISK                                    -
 ; *--------------------------------------------------------
 ;  PARAMETERS : FSIZE,FDIRNM                            -
+;                                                       -
 ;  MODIFIES   : A, B, X, TEMPA, TEMPB, TEMPD            -
+;                                                       -
 ;  CALLS      : ----                                    -
+;                                                       -
 ;  RETURNS    : ------                                  -
 ; *--------------------------------------------------------
 
@@ -3167,40 +3244,43 @@ UDFDIR              ldb       FDIRNM              ; FDIR location = FDIRNUM * 32
                     sta       3,x
                     rts
 
-
 ; *--------------------------------------------------------
 ; ROUTINE TO UPDATE THE FILE SIZE AS STORED IN RAM      -
 ; *--------------------------------------------------------
 ;  PARAMETERS : FSIZE                                   -
+;                                                       -
 ;  MODIFIES   : A, B                                    -
+;                                                       -
 ;  CALLS      : ------                                  -
+;                                                       -
 ;  RETURNS    : FSIZE                                   -
 ; *--------------------------------------------------------
 
 UDFSZ               lda       CTRLCD
                     cmpa      #'A'
-                    bne       UDF9
+                    bne       :AnRTS
                     ldd       FSIZE+2             ; convert to DOS form first
                     addd      BSIZE
                     std       FSIZE+2             ; from FPTR = FSIZE-1
-                    bcc       UDF9
+                    bcc       :AnRTS
                     ldd       FSIZE
                     addd      #1
                     std       FSIZE
-UDF9                rts
-
-
+                    rts
 
 ;*********************************************************
-;       INITIALIZATION ROUTINES
+;       INITIALIZATION ROUTINES                         *
 ;*********************************************************
-
+;                                                       *
 ; *--------------------------------------------------------
 ; ROUTINE TO INIT THE SYSTEM ON POWER UP                -
 ; *--------------------------------------------------------
 ;  PARAMETERS : -----                                   -
+;                                                       -
 ;  MODIFIES   : PAGENUM, A                              -
+;                                                       -
 ;  CALLS      : STOP0, RBPB, RFAT, RFDIR, RDATA         -
+;                                                       -
 ;  RETURNS    : the following buffers are initialized   -
 ;               with data from the disk :               -
 ;               BPB  -- disk address 00 00 1c           -
@@ -3213,7 +3293,6 @@ INITSYS             jsr       STOP0               ; init all regs
                     jsr       CHKDSK              ; check if a disk is in the drive first
                     rts
 
-
 INITDSK             jsr       RESET
                     jsr       RBPB                ; read the BPB
                     jsr       RFAT                ; read in the complete fat
@@ -3224,14 +3303,15 @@ INITDSK             jsr       RESET
 INITD9              clr       FHANDLE
                     rts
 
-
 ; *--------------------------------------------------------
 ;  ROUTINE TO INITIALIZE THE FILE HANDLE                -
 ; *--------------------------------------------------------
 ;  PARAMETERS : Files file dir. shopuld be in the FILEDR-
 ;               buffer.                                 -
 ;  MODIFIES   : A, B, X, all file handle fields         -
+;                                                       -
 ;  CALLS      : MOVE, SWAPAB, PNTRADR, FEOF             -
+;                                                       -
 ;  RETURNS    : file handle fields are initialized according
 ;               to the info found in a files file dir.  -
 ;               D = 00 if error finding EOF             -
@@ -3243,7 +3323,7 @@ IFHNDL              ldx       #FILEDR             ; point to info source
                     stx       DSTX
                     ldb       #11
                     jsr       MOVE                ; save the file name
-
+;
                     ldx       #FILEDR             ; get the file size
                     ldd       $1C,x               ; get hi word
                     jsr       SWAPAB              ; convert to forde form
@@ -3251,19 +3331,19 @@ IFHNDL              ldx       #FILEDR             ; point to info source
                     ldd       $1E,x               ; get low word
                     jsr       SWAPAB              ; convert to forde form
                     std       FSIZE
-
+;
                     clr       FPTR                ; clear the file pointer
                     clr       FPTR+1
                     clr       FPTR+2
-
+;
                     ldx       #FILEDR             ; get the first cluster field
                     ldd       $1A,x
                     jsr       SWAPAB              ; swap it to FORDE form
                     std       BOF                 ; save the begining of file cluster value
                     std       CENTRY              ; set current entry = BOF
-                    ldd       #0
+                    clrd
                     std       CENUM               ; set current entry num = 00
-
+;
                     ldd       CENTRY              ; get next entry
                     std       FATNUM              ; get entry at BOF
                     jsr       GENTRY
@@ -3276,20 +3356,19 @@ IFHNDL              ldx       #FILEDR             ; point to info source
 
 IFH1                ldd       FATNUM              ; else set next entry
                     std       NENTRY
-
+;
 IFH2                jsr       FEOF                ; find the end of file sector
                     ldd       FATNUM
-                    beq       IFH9
+                    beq       :AnRTS
                     clr       LFFAT
                     clr       LFFAT+1
                     inc       FHANDLE
-IFH9                rts
-
+                    rts
 
 ;*********************************************************
-;       SERIAL COMMUNICATIONS
+;       SERIAL COMMUNICATIONS                           *
 ;*********************************************************
-
+;                                                       *
 ; *--------------------------------------------------------
 ; Send A to serial port                                 -
 ; *--------------------------------------------------------
@@ -3301,30 +3380,32 @@ SENDA               ldb       TRCSR2              ; Transmit/Receive CSR-2
                     sta       TDR                 ; write A to Transmit Data Reg.
                     rts
 
-
 ; *--------------------------------------------------------
 ; Receive serial port into A                            -
 ; *--------------------------------------------------------
 
-RECESC              jsr       RECVA               ; wait until escape ctrl code is read from serials
+RECESC              bsr       RECVA               ; wait until escape ctrl code is read from serials
                     cmpa      #$1B
                     bne       RECESC
                     rts
 
-;                        CHECK IF CHAR TO BE READ FROM SERIAL PORT
+; CHECK IF CHAR TO BE READ FROM SERIAL PORT
+
 QSERL               ldb       TRCSR2              ; Transmit/Receive CSR-2
                     bitb      #%01000000          ; Overun / Framing error ?
                     bne       OVRRUN
                     tstb
                     rts
 
-;                        WAIT TO GET A CHAR FROM THE SERIAL PORT
-RECVA               jsr       QSERL
+; WAIT TO GET A CHAR FROM THE SERIAL PORT
+
+RECVA               bsr       QSERL
                     bpl       RECVA               ; wait for RDRF = 1 (bit 7)
-;                        GET AVAILIBLE CHAR FROM THE SERIAL PORT
+
+; GET AVAILABLE CHAR FROM THE SERIAL PORT
+
 GSERL               lda       RDR                 ; A = Read Data reg.
                     rts
-
 
 ; *--------------------------------------------------------
 ;       Error                                           -
@@ -3341,7 +3422,6 @@ OVR1                psha                          ; wait for about 0.5 sec to cl
                     jsr       ERROR               ; jump to error handler ------>
                     rts
 
-
 ; *--------------------------------------------------------
 ; *ROUTINE TO TRANSMIT B BYTES FROM X OVER THE SERIAL LINK-
 ; *--------------------------------------------------------
@@ -3350,7 +3430,7 @@ SEROUT              ldd       BSIZE
                     psha
                     pshb
 SOUT1               lda       ,x
-                    jsr       SENDA
+                    bsr       SENDA
                     inx
                     ldd       BSIZE
                     subd      #1
@@ -3361,7 +3441,6 @@ SOUT1               lda       ,x
                     std       BSIZE
                     rts
 
-
 ; *--------------------------------------------------------
 ; *ROUTINE TO RECEIVE B BYTES TO X OVER THE SERIAL LINK   -
 ; *--------------------------------------------------------
@@ -3369,7 +3448,7 @@ SOUT1               lda       ,x
 SERIN               ldd       BSIZE
                     psha
                     pshb
-SIN1                jsr       RECVA
+SIN1                bsr       RECVA
                     sta       ,x
                     inx
                     ldd       BSIZE
@@ -3381,30 +3460,31 @@ SIN1                jsr       RECVA
                     std       BSIZE
                     rts
 
-
 ;********************************************************
-;  ROUTINE TO OPEN A FILE
+;  ROUTINE TO OPEN A FILE                              *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
-;               CODE FILENAME EXT
-;  MODIFIES   : A, B, TEMPD
-;  CALLS      : -------
-;  RETURNS    : SBUFF returns as follows -
-;               CODE FILEHANDLE FILESIZE
-;               CODE returns as follows
-;               00 ok
-;               01 invalid function
-;               02 file not found
-;               03 path not found
-;               04 too many open files
-;               05 Access denied
-;               0C invalid access
+;  PARAMETERS : SBUFF should be set up as follows ---  *
+;               CODE FILENAME EXT                      *
+;  MODIFIES   : A, B, TEMPD                            *
+;                                                      *
+;  CALLS      : -------                                *
+;                                                      *
+;  RETURNS    : SBUFF returns as follows -             *
+;               CODE FILEHANDLE FILESIZE               *
+;               CODE returns as follows                *
+;               00 ok                                  *
+;               01 invalid function                    *
+;               02 file not found                      *
+;               03 path not found                      *
+;               04 too many open files                 *
+;               05 Access denied                       *
+;               0C invalid access                      *
 ;********************************************************
 
 FOPEN               ldd       #12                 ; receive the info
                     std       BSIZE
                     ldx       #SBUFF
-                    jsr       SERIN
+                    bsr       SERIN
 
                     jsr       CHKDSK              ; check disk in drive first
                     cmpb      #$FF
@@ -3430,58 +3510,57 @@ FOPEN               ldd       #12                 ; receive the info
                     std       SBUFF+2
                     ldd       FSIZE+2
                     std       SBUFF+4
-                    clr       SBUFF
+                    clra
                     bra       FOPN89
 
-;                         ERROR HANDLING
+;*******************************************************************************
+; ERROR HANDLING
+;*******************************************************************************
+
 FOPN81              lda       #1                  ; invalid function call error
-                    sta       SBUFF
                     bra       FOPN89
 
 FOPN82              lda       #2                  ; file not foound error
-                    sta       SBUFF
                     bra       FOPN89
 
 FOPN83              lda       #3                  ; path not found error
-                    sta       SBUFF
                     bra       FOPN89
 
 FOPN84              lda       #4                  ; too many open files error
-                    sta       SBUFF
                     bra       FOPN89
 
 FOPN85              lda       #5                  ; access denied error
-                    sta       SBUFF
                     bra       FOPN89
 
 FOPN8C              lda       #$0C                ; invalid access error
-                    sta       SBUFF
 
-FOPN89              jsr       PROMPT              ; debuging prompt
+FOPN89              sta       SBUFF
+                    jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     ldx       #SBUFF
                     ldd       #6
                     std       BSIZE
                     jsr       SEROUT
                     lda       SBUFF
-                    beq       FOPEN9
+                    beq       :AnRTS
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-FOPEN9              rts
-
+                    rts
 
 ;********************************************************
-;  ROUTINE TO CLOSE A FILE
+;  ROUTINE TO CLOSE A FILE                             *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
-;               FILEHANDLE
-;  MODIFIES   : A, B, TEMPD
-;  CALLS      : -------
-;  RETURNS    : SBUFF returns as follows -
-;               CODE
-;               CODE returns as follows
-;               00 ok
-;               06 invalid handle
+;  PARAMETERS : SBUFF should be set up as follows ---  *
+;               FILEHANDLE                             *
+;  MODIFIES   : A, B, TEMPD                            *
+;                                                      *
+;  CALLS      : -------                                *
+;                                                      *
+;  RETURNS    : SBUFF returns as follows -             *
+;               CODE                                   *
+;               CODE returns as follows                *
+;               00 ok                                  *
+;               06 invalid handle                      *
 ;********************************************************
 
 FCLOSE              jsr       RECVA               ; get the file handle value
@@ -3494,50 +3573,49 @@ FCLOSE              jsr       RECVA               ; get the file handle value
                     clr       SBUFF
                     bra       FCLS89
 
-
 FCLS8               lda       #6                  ; INVALID FILE HANDLE ERROR CODE
                     sta       SBUFF
 FCLS89              jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     lda       SBUFF
                     jsr       SENDA
-                    cmpa      #0
-                    bne       FCLS9
+                    cmpa      #$00
+                    bne       :AnRTS
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-FCLS9               rts
-
+                    rts
 
 ;********************************************************
-;  ROUTINE TO MOVE THE FILE POINTER
+;  ROUTINE TO MOVE THE FILE POINTER                    *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
-;               CODE FILEHANDLE OFFSET
-;               code may have the following values :
-;               00 offset from BOF
+;  PARAMETERS : SBUFF should be set up as follows ---  *
+;               CODE FILEHANDLE OFFSET                 *
+;               code may have the following values :   *
+;               00 offset from BOF                     *
 ;               01 offset from current position (forward)
 ;               03 offset from current position (reverse)
-;               03 offset from EOF
-;  MODIFIES   : A, B, TEMPD
-;  CALLS      : -------
-;  RETURNS    : FPTR is adjusted to required value
-;               SBUFF returns as follows -- CODE FPTR
-;               TEMPA returns as follows :
-;               00 ok
-;               01 invalid function
-;               06 invalid handle
+;               03 offset from EOF                     *
+;  MODIFIES   : A, B, TEMPD                            *
+;                                                      *
+;  CALLS      : -------                                *
+;                                                      *
+;  RETURNS    : FPTR is adjusted to required value     *
+;               SBUFF returns as follows -- CODE FPTR  *
+;               TEMPA returns as follows :             *
+;               00 ok                                  *
+;               01 invalid function                    *
+;               06 invalid handle                      *
 ;********************************************************
 
 MFPTR               ldd       #5                  ; read info first
                     std       BSIZE
                     ldx       #SBUFF
                     jsr       SERIN
-
+;
                     lda       SBUFF+1             ; check for correct file handle value
                     cmpa      FHANDLE
                     beq       MFP1
                     jmp       MFP86               ; invalid file handle error
-
 
 MFP1                lda       SBUFF               ; get the code
                     beq       MFPTR0              ; offset from bof
@@ -3545,7 +3623,7 @@ MFP1                lda       SBUFF               ; get the code
                     beq       MFPTR1              ; offset from current fptr (forward)
                     cmpa      #2
                     bne       MFP2
-                    jmp       MFPTR2              ; offset from fptr (reverse)
+                    bra       MFPTR2              ; offset from fptr (reverse)
 
 MFP2                cmpa      #3
                     beq       MFP3
@@ -3553,7 +3631,8 @@ MFP2                cmpa      #3
 
 MFP3                jmp       MFPTR3              ; offset from EOF
 
-;                        OFFSET FROM BOF
+; OFFSET FROM BOF
+
 MFPTR0              ldd       FSIZE+2             ; get num bytes from file pointer to EOF
                     subd      FPTR+1
                     std       SBUFF+6
@@ -3579,16 +3658,16 @@ MFP02               ldd       FSIZE+1             ; offset value too big
                     std       FPTR                ; set pointer to EOF
                     lda       FSIZE+3
                     sta       FPTR+2
-                    jmp       MFPTR4
-
+                    bra       MFPTR4
 
 MFP03               ldd       SBUFF+2             ; offset from bof
                     std       FPTR                ; filepointer = offset value
                     lda       SBUFF+4
                     sta       FPTR+2
-                    jmp       MFPTR4
+                    bra       MFPTR4
 
-;                        OFFSET FROM FPTR (FORWARD)
+; OFFSET FROM FPTR (FORWARD)
+
 MFPTR1              ldd       FPTR+1              ; offset from current file pointer value
                     addd      SBUFF+3             ; file pointer += offset value
                     std       FPTR+1
@@ -3616,7 +3695,8 @@ MFP14               ldd       FSIZE+1             ; offset value too big
                     sta       FPTR+2
                     bra       MFPTR4
 
-;                        OFFSET FROM FPTR (REVERSE)
+; OFFSET FROM FPTR (REVERSE)
+
 MFPTR2              ldd       FPTR+1              ; Back wards from current file pointer value
                     subd      SBUFF+3             ; file pointer -= offset value
                     std       FPTR+1
@@ -3631,7 +3711,8 @@ MFP21               lda       FPTR
                     clr       FPTR+2
                     bra       MFPTR4
 
-;                        OFFSET FROM EOF
+; OFFSET FROM EOF
+
 MFPTR3              ldd       FSIZE+2             ; offset from eof
                     subd      SBUFF+3             ; file pointer = file size - offset value
                     std       FPTR+1
@@ -3652,10 +3733,12 @@ MFPTR4              clr       SBUFF
                     sta       SBUFF+3
                     bra       MFP89
 
-;                        ERROR HANDLING
+; ERROR HANDLING
+
 MFP81               lda       #1                  ; invalid function
                     sta       SBUFF
                     bra       MFP89
+                    rts
 
 MFP86               lda       #6                  ; invalid handle
                     sta       SBUFF
@@ -3666,36 +3749,37 @@ MFP89               jsr       PROMPT              ; debuging prompt
                     ldx       #SBUFF
                     jsr       SEROUT
                     lda       SBUFF
-                    beq       MFPTR9
+                    beq       :AnRTS
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-MFPTR9              rts
-
+                    rts
 
 ;********************************************************
-;  ROUTINE TO RENAME A FILE
+;  ROUTINE TO RENAME A FILE                            *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
+;  PARAMETERS : SBUFF should be set up as follows ---  *
 ;               original filename(11 bytes) new filename(11 bytes)
-;  MODIFIES   : A, B, X, DSTX, SRCX, FNAME, TEMPA
-;  CALLS      : FFILE, MOVE
+;  MODIFIES   : A, B, X, DSTX, SRCX, FNAME, TEMPA      *
+;                                                      *
+;  CALLS      : FFILE, MOVE                            *
+;                                                      *
 ;  RETURNS    : TEMPA returns with 1 of the following values --
-;               00 - ok
-;               02 - file not found
-;               03 - path not found
-;               05 - access denied
-;               11 - not same device
+;               00 - ok                                *
+;               02 - file not found                    *
+;               03 - path not found                    *
+;               05 - access denied                     *
+;               11 - not same device                   *
 ;********************************************************
 
 FRNAME              ldd       #22                 ; read in 2 file names
                     std       BSIZE
                     ldx       #BUFFER
                     jsr       SERIN
-
+;
                     jsr       CHKDSK              ; check disk in drive first
                     cmpb      #$FF
                     bne       FRN85
-
+;
                     ldx       #BUFFER             ; set up for find file function
                     stx       SRCX
                     ldx       #FNAME
@@ -3705,14 +3789,10 @@ FRNAME              ldd       #22                 ; read in 2 file names
                     jsr       FFILE               ; search for the file
                     lda       EXIST
                     bne       FRN82               ; file not found error
-
+;
                     ldb       FDIRNM              ; calculate offset to correct file dir location
                     clra                          ; FDIR location = FDIRNM * 32 + #FDIR
-                    asld                          ; 32 = 2 to the 5 => shift 5 times
-                    asld
-                    asld
-                    asld
-                    asld
+                    asld:5                        ; 32 = 2 to the 5 => shift 5 times
                     addd      #FDIRBUF            ; D now holds correct location
                     std       DSTX
                     ldx       #BUFFER+11
@@ -3725,7 +3805,10 @@ FRNAME              ldd       #22                 ; read in 2 file names
                     clr       SBUFF
                     bra       FRN89
 
-;                         ERROR HANDLING
+;*******************************************************************************
+; ERROR HANDLING
+;*******************************************************************************
+
 FRN82               lda       #2                  ; file not found error
                     sta       SBUFF
                     bra       FRN89
@@ -3744,31 +3827,32 @@ FRN89               jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     lda       SBUFF
                     jsr       SENDA
-                    cmpa      #0
-                    beq       FRN9
+                    tsta
+                    beq       :AnRTS
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-FRN9                rts
-
+                    rts
 
 ;********************************************************
-;  ROUTINE TO READ FROM A FILE
+;  ROUTINE TO READ FROM A FILE                         *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
-;               FILEHANDLE NUMBYTES
-;  MODIFIES   : A, B, TEMPD
-;  CALLS      : -------
-;  RETURNS    : SBUFF returns as follows -
-;               CODE NUMBYTES
-;               DATA bytes are returned in BUFFER
-;               CODE returns as follows
-;               00 ok
-;               05 Access denied
-;               06 invalid handle
-;               NUMBTYES = num bytes read,
-;                  "     = 00 => already at EOF
+;  PARAMETERS : SBUFF should be set up as follows ---  *
+;               FILEHANDLE NUMBYTES                    *
+;  MODIFIES   : A, B, TEMPD                            *
+;                                                      *
+;  CALLS      : -------                                *
+;                                                      *
+;  RETURNS    : SBUFF returns as follows -             *
+;               CODE NUMBYTES                          *
+;               DATA bytes are returned in BUFFER      *
+;               CODE returns as follows                *
+;               00 ok                                  *
+;               05 Access denied                       *
+;               06 invalid handle                      *
+;               NUMBTYES = num bytes read,             *
+;                  "     = 00 => already at EOF        *
 ;                  "     < passed value => EOF encountered
-;                          during read.
+;                          during read.                *
 ;********************************************************
 
 FREAD               ldd       #3                  ; get params from moneychanger
@@ -3781,12 +3865,10 @@ FREAD               ldd       #3                  ; get params from moneychanger
                     beq       FR0
                     jmp       FR85
 
-
 FR0                 lda       SBUFF               ; check for correct file handle
                     cmpa      FHANDLE
                     beq       FR1
                     jmp       FR86                ; illegal file handle
-
 
 FR1                 ldd       FSIZE+2             ; get num bytes from file pointer to EOF
                     subd      FPTR+1
@@ -3809,7 +3891,6 @@ FR1B                suba      FPTR
                     bcc       FR1C                ; OK wont go beyond EOF
                     ldd       SBUFF+6             ; set num bytes = amount left
                     bra       FR1D
-
 
 FR1C                ldd       SBUFF+1             ; get numbytes to be read
 FR1D                std       TEMPX               ; divide it up into 512 byte sections
@@ -3856,7 +3937,6 @@ FR21                ldx       #BUFFER
                     jsr       SEROUT              ; output next block of data to the moneychanger
                     bra       FR2                 ; any more to read ??
 
-
 FR3                 pulb                          ; retrieve remainder
                     pula
                     subd      #0
@@ -3871,10 +3951,8 @@ FR3                 pulb                          ; retrieve remainder
                     anda      #%00000010
                     beq       FR4
                     ldx       #BUFFER
-                    pulb
-                    pula
-                    psha
-                    pshb
+                    puld
+                    pshd
                     std       BSIZE
                     jsr       BUFOUT
 
@@ -3889,9 +3967,12 @@ FR5                 lda       SBUFF+1             ; output numbytes read
                     jsr       SENDA               ; hi byte
                     lda       SBUFF+2             ; low byte
                     jsr       SENDA
-                    bra       FR9
+                    rts
 
-;                         ERROR HANDLING
+;*******************************************************************************
+; ERROR HANDLING
+;*******************************************************************************
+
 FR85                jsr       SNDESC              ; access denied error
                     lda       #5
                     sta       ERRNUM
@@ -3910,26 +3991,27 @@ FR86                jsr       SNDESC              ; illegal file handle error
                     clra                          ; no bytes read
                     jsr       SENDA
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-FR9                 rts
-
+                    rts
 
 ;********************************************************
-;  ROUTINE TO WRITE TO A FILE
+;  ROUTINE TO WRITE TO A FILE                          *
 ;********************************************************
-;  PARAMETERS : SBUFF should be set up as follows ---
-;               FILEHANDLE NUMBYTES(MAX = 512)
+;  PARAMETERS : SBUFF should be set up as follows ---  *
+;               FILEHANDLE NUMBYTES(MAX = 512)         *
 ;               DATA bytes should also be located in BUFFER
-;  MODIFIES   : A, B, TEMPD
-;  CALLS      : -------
-;  RETURNS    : SBUFF returns as follows -
-;               CODE NUMBYTES
-;               CODE returns as follows
-;               00 ok
-;               05 Access denied
-;               06 invalid handle
+;  MODIFIES   : A, B, TEMPD                            *
+;                                                      *
+;  CALLS      : -------                                *
+;                                                      *
+;  RETURNS    : SBUFF returns as follows -             *
+;               CODE NUMBYTES                          *
+;               CODE returns as follows                *
+;               00 ok                                  *
+;               05 Access denied                       *
+;               06 invalid handle                      *
 ;               NUMBTYES = num bytes written, if less than
 ;               passed NUMBYTES then disk is full and only
-;               a partial write occured.
+;               a partial write occured.               *
 ;********************************************************
 
 FWRITE              jsr       RECVA               ; get file handle num
@@ -3942,21 +4024,20 @@ FWRITE              jsr       RECVA               ; get file handle num
                     sta       BSIZE+1             ; low byte
                     ldx       #BUFFER
                     jsr       SERIN               ; get the data bytes
-
+;
                     jsr       CHKDSK              ; check disk in drive first
                     cmpb      #$FF
                     beq       FW0
                     jmp       FW85
 
+;                   ldd       SBUFF+1             ;FOR TESTING WITH NO SERIALS ONLY
+;                   psha                          ;DITTO
+;                   pshb                          ;DITTO
 
-;       LDD     SBUFF+1 ;FOR TESTING WITH NO SERIALS ONLY
-;       PSHA            ;DITO
-;       PSHB            ;DITO
 FW0                 lda       FHANDLE
                     cmpa      SBUFF
                     beq       FW1A
                     jmp       FW86
-
 
 FW1A                lda       #'W'                ; set the write flag
                     sta       WFLAG
@@ -3994,7 +4075,9 @@ FW2A                lda       #$FF
                     pshb
                     subd      SBUFF+1             ; calculate amount left to append
                     std       BSIZE
-;                       INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+
+          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
+
 ;                   addd      #BUFFER             ; put EOF marker at end of file
 ;                   xgdx
 ;                   lda       #$1A
@@ -4015,19 +4098,16 @@ FW2A                lda       #$FF
 FW2B                jsr       WFMID               ; write the data to the file
                     bra       FW5
 
-
 FW3                 clr       APNDF               ; clear the append flag
                     lda       #'P'                ; write new data from file pointer
                     sta       CTRLCD              ; set the write mode flag depending on fptr value
-                    pulb                          ; get correct bsize
-                    pula
-                    psha                          ; save again
-                    pshb
+                    puld                          ; get correct bsize
+                    pshd                          ; save again
                     std       BSIZE
                     jsr       WFMID               ; write the data to the file
 
 FW5                 jsr       WDATA
-                    lda       APNDF               ; fdir and FAT only updated if we are apending
+                    lda       APNDF               ; fdir and fat only updated if we are apending
                     beq       FW52
 
 FW51                jsr       UDFDIR              ; only do these when appending
@@ -4049,9 +4129,12 @@ FW52                jsr       PROMPT              ; debuging prompt
                     jsr       SENDA               ; numbytes written
                     lda       SBUFF               ; low byte
                     jsr       SENDA
-                    bra       FW9
+                    rts
 
-;                         ERROR HANDLING
+;*******************************************************************************
+; ERROR HANDLING
+;*******************************************************************************
+
 FW85                jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     lda       #5                  ; access denied error
@@ -4060,8 +4143,9 @@ FW85                jsr       PROMPT              ; debuging prompt
                     clra
                     jsr       SENDA
                     jsr       SENDA
-                    jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-;                   bra       FW9
+                    bsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
+;                   rts
+
 FW86                jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     lda       #6                  ; illegal file handle error
@@ -4070,27 +4154,29 @@ FW86                jsr       PROMPT              ; debuging prompt
                     clra
                     jsr       SENDA
                     jsr       SENDA
-                    jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-FW9                 rts
-
+                    bsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
+                    rts
 
 ;********************************************************
-;  ROUTINE TO GET THE AVAILIBLE DISK SPACE ON A DISK
+;  ROUTINE TO GET THE AVAILABLE DISK SPACE ON A DISK   *
 ;********************************************************
 ;  PARAMETERS : BPB should have been already read in and
-;               a disk should be in the default drive
-;  MODIFIES   : A, B, X, SBUFF
-;  CALLS      : CHKDSK, FFFAT
+;               a disk should be in the default drive  *
+;  MODIFIES   : A, B, X, SBUFF                         *
+;                                                      *
+;  CALLS      : CHKDSK, FFFAT                          *
+;                                                      *
 ;  RETURNS    : SBUFF is returned containing the following
-;               data
-;              1) CODE    ---  FF if no disk in drive
-;                            00 if disk in drive
-;              2) SECTORS/CLUSTER
-;              3) CLUSTERS AVAILIBLE
-;              4) BYTES/SECTOR
-;              5) CLUSTERS/DISK
-;  NOTE       : free space =  2 * 3 * 4
-;               total space = 4 * 2 * 5
+;               data                                   *
+;              1) CODE    ---  FF if no disk in drive  *
+;                            00 if disk in drive       *
+;              2) SECTORS/CLUSTER                      *
+;              3) CLUSTERS AVAILABLE                   *
+;              4) BYTES/SECTOR                         *
+;              5) CLUSTERS/DISK                        *
+;                                                      *
+;  NOTE       : free space =  2 * 3 * 4                *
+;               total space = 4 * 2 * 5                *
 ;               items 2-5 become meaningless if CODE = FF
 ;********************************************************
 
@@ -4109,7 +4195,7 @@ GDSPACE             jsr       CHKDSK              ; check if a disk is in the dr
                     subd      #9                  ; 07 sector offset to data and 2 unused
                     std       SBUFF+5
 
-                    jsr       FFFAT               ; get num sectors availible
+                    jsr       FFFAT               ; get num sectors available
                     ldd       SBUFF+5
                     subd      LFFAT
                     addd      #2                  ; and 2 unused
@@ -4122,8 +4208,7 @@ GDSPACE             jsr       CHKDSK              ; check if a disk is in the dr
                     std       BSIZE
                     ldx       #SBUFF
                     jsr       SEROUT
-                    bra       GDSP9
-
+                    rts
 
 GDSP8               jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
@@ -4133,15 +4218,14 @@ GDSP8               jsr       PROMPT              ; debuging prompt
                     std       BSIZE
                     ldx       #SBUFF
                     jsr       SEROUT
-GDSP9               rts
-
+                    rts
 
 ;********************************************************
-;       CRITICAL FILE ERROR HANDLER ROUTINE
+;       CRITICAL FILE ERROR HANDLER ROUTINE             *
 ;********************************************************
 
 FERROR              lda       ERRNUM
-                    beq       FERR9
+                    beq       :AnRTS
                     lda       DBUGF               ; are we debuging ??
                     beq       FERRA
                     lda       #'E'
@@ -4149,17 +4233,14 @@ FERROR              lda       ERRNUM
                     lda       ERRNUM
                     jsr       $F23E               ; OUT ERROR NUMBER AS HEX VALUE
                     jsr       $F003               ; --------------------> FBUG WARM START
-                    bra       FERR9
+                    rts
 
 FERRA               jmp       POWER               ; --------------------> POWER
 
-FERR9               rts
-
-
 ;*********************************************************
-;       SCREEN I\O FUNCTION ROUTINES
+;       SCREEN I\O FUNCTION ROUTINES                    *
 ;*********************************************************
-
+;
 ;   ------   PRINT AN ALPHA-NUMERIC CHAR  -------
 
 PCHAR               cmpa      #$0D                ; allow cr
@@ -4178,104 +4259,95 @@ PCHAR1              lda       #'.'
 PCHAR2              jsr       PUTCH
                     rts
 
-
 ;   ------   PRINT A 2 BYTE HEX NUM. FOLLOWED BY A SPACE -----
 
 P2HEX               psha
                     jsr       OUTHL               ; print as a hex num
                     pula
                     jsr       OUTHR
-                    jsr       PSPC                ; leave a space
+                    bsr       PSPC                ; leave a space
                     rts
-
 
 ;   ------   PRINT A BLANK SPACE  -------
 
 PSPC                lda       #$20
-                    jsr       PCHAR
+                    bsr       PCHAR
                     rts
-
 
 ;   ------   PRINT CARRAIGE RETURN, LINE FEED  -------
 
 CRLF                lda       #$0D                ; CR
-                    jsr       PCHAR               ; print it
+                    bsr       PCHAR               ; print it
                     lda       #$0A                ; LF
-                    jsr       PCHAR               ; print it
+                    bsr       PCHAR               ; print it
                     rts
-
 
 ;   ------   PRINT B BYTES FROM X TO THE SCREEN    -------
 
 PSTR                lda       ,x                  ; get next char
-                    jsr       PCHAR               ; print it
+                    bsr       PCHAR               ; print it
                     inx
                     decb                          ; finished yet
                     bne       PSTR
                     rts
 
-
 ;   ------   PRINT THE BPB TO THE SCREEN    -------
 
 PBPB                lda       DBUGF
                     anda      #%00010000
-                    beq       PBPB9
+                    beq       :AnRTS
                     ldx       #BPBBUF
 PBPB1               lda       ,x
-                    jsr       PCHAR
+                    bsr       PCHAR
                     inx
                     cpx       #BPBEND
                     bne       PBPB1
-PBPB9               rts
-
+                    rts
 
 ;   ------   PRINT THE FAT TO THE SCREEN    -------
 
 PFAT                lda       DBUGF
                     anda      #%00001000
-                    beq       PFAT9
+                    beq       :AnRTS
                     ldx       #FATBUF
 PFAT1               lda       ,x
-                    jsr       P2HEX
+                    bsr       P2HEX
                     inx
                     cpx       #FATEND
                     bne       PFAT1
-PFAT9               rts
-
+                    rts
 
 ;   ------   PRINT THE FILE DIR. TO THE SCREEN    -------
 
 PFDIR               lda       DBUGF
                     anda      #%00000100
-                    beq       PFDIR9
+                    beq       :AnRTS
                     ldx       #FDIRBUF
 PFDIR1              ldb       #32
-                    jsr       PSTR
-                    jsr       CRLF
+                    bsr       PSTR
+                    bsr       CRLF
                     cpx       #FDIREND
                     bne       PFDIR1
-PFDIR9              rts
-
+                    rts
 
 ;   ------   PRINT THE FILE DIR. TO THE SCREEN    -------
 
 PDATA               lda       DBUGF
                     anda      #%00000010
-                    beq       PDATA9
+                    beq       :AnRTS
                     ldx       #DATA
 PDATA1              lda       ,x
                     jsr       PCHAR
                     inx
                     cpx       #TOPRAM
                     bne       PDATA1
-PDATA9              rts
-
+                    rts
 
 ;   ------   PRINT COMMAND NAME TO THE SCREEN    -------
 
 PCMND               lda       DBUGF
                     anda      #%00100000
-                    beq       PCMND9
+                    beq       :AnRTS
                     ldx       #PRMBUF             ; get the command number and print it to the screen
                     ldb       ,x
                     andb      #%00011111          ; extract command number
@@ -4290,32 +4362,29 @@ PCMND               lda       DBUGF
                     ldb       #21
                     jsr       PSTR                ; print the command name
                     jsr       CRLF
-PCMND9              rts
-
+                    rts
 
 ;   ------   PRINT B RESULTS TO THE SCREEN    -------
 
 PRSLT               lda       DBUGF               ; check for test mode first
                     anda      #%01000000
-                    beq       PRS9
+                    beq       :AnRTS
 
                     lda       FDCCMND             ; set correct number for command
-                    cmpa      #8                  ; sense interupt
+                    cmpa      #8                  ; sense interrupt
                     bne       PRS1
                     ldb       #2
                     bra       PRS3
-
 
 PRS1                cmpa      #4                  ; sense drive
                     bne       PRS2
                     ldb       #1
                     bra       PRS3
 
-
 PRS2                cmpa      #7                  ; recalibrate
-                    beq       PRS9
+                    beq       :AnRTS
                     cmpa      #$0F                ; seek
-                    beq       PRS9
+                    beq       :AnRTS
 
                     ldb       #7                  ; all other commands
 PRS3                ldx       #RESBUF
@@ -4325,14 +4394,14 @@ PRS4                lda       ,x                  ; get next result
                     decb
                     bne       PRS4
                     jsr       CRLF                ; new line
-PRS9                rts
-
+                    rts
 
 ;   ------   PRINT ERROR FOR STATUS REG B TO THE SCREEN ----
 ;            A != 00 IF THERE IS AN ERROR
 ;            Bhi = ERROR BLOCK, Blo = ERROR MESSAGE
-PERROR              cmpa      #0
-                    beq       PERR9
+
+PERROR              tsta
+                    beq       :AnRTS
                     psha
                     lda       DBUGF
                     bne       PERR1               ; debuging mode
@@ -4340,13 +4409,12 @@ PERROR              cmpa      #0
                     pula                          ; not debuging
                     lda       FDCCMND             ; ignore (SNSIRQ) recallibration errors - sometimes takes
                     cmpa      #%00001000          ; two efforts to recalibrate
-;       CMPA    #%00000111      ; two efforts to recalibrate
-                    beq       PERR9
+;                   cmpa      #%00000111          ; two efforts to recalibrate
+                    beq       :AnRTS
                     jsr       SNDESC              ; call MC3
                     lda       #$FF
                     jsr       SENDA               ; to say that a serious error occured with the disk
                     jmp       POWER               ; reboot system
-
 
 PERR1               pshb                          ; save error number
                     lsrb                          ; get hi nibble to low nibble
@@ -4374,25 +4442,23 @@ PERR1               pshb                          ; save error number
                     addd      TEMPD
                     xgdx                          ; X now points to correct error message
                     pula
-                    cmpa      #0
+                    tsta
                     beq       PERR2
                     ldb       #60
                     abx
 PERR2               ldb       #60
                     jsr       PSTR                ; print the string
                     jsr       CRLF
-PERR9               rts
-
+                    rts
 
 PROMPT              lda       DBUGF
-                    beq       PROM1
+                    beq       :AnRTS
                     lda       #'*'
                     jsr       $F009
-PROM1               rts
-
+                    rts
 
 BUFOUT              lda       DBUGF
-                    beq       BUF9
+                    beq       :AnRTS
 BUF1                lda       ,x
                     jsr       PCHAR
                     inx
@@ -4400,37 +4466,34 @@ BUF1                lda       ,x
                     subd      #1
                     std       BSIZE
                     bne       BUF1
-BUF9                rts
-
+                    rts
 
 ;*********************************************************
-;      TEST ROUTINES TO CALL THE FDC COMMANDS
+;      TEST ROUTINES TO CALL THE FDC COMMANDS           *
 ;*********************************************************
 
-RSTFDC              @aim      PORT5,#%10111111    ; reset the FDC first
+RSTFDC              aim       PORT5,#%10111111    ; reset the FDC first
                     jsr       W400
-                    @oim      PORT5,#%01000000
-                    @tim      PORT5,#1            ; check for irq = 0
-                    bne       RST1
-                    jsr       IRQSNS              ; interupt maybe generated if RDY is
-;                               ;active during reset
-RST1                rts
+                    oim       PORT5,#%01000000
+                    tim       PORT5,#1            ; check for irq = 0
+                    bne       :AnRTS
+                    jsr       IRQSNS              ; interrupt maybe generated if RDY is
+                                                  ; active during reset
+                    rts
 
-
-RESET               jsr       RSTFDC
+RESET               bsr       RSTFDC
                     lda       #80                 ; now reset the FDD as well
                     sta       SDTRKS
                     lda       #18
                     sta       TRKSCS
                     lda       #1
                     sta       US0
-                    lda       #0
+                    clra
                     sta       US1
-                    jsr       SPEC
+                    bsr       SPEC
                     jsr       RECAL
                     jsr       RECAL
                     rts
-
 
 SPEC                lda       #$D0
                     sta       SRT                 ; HI NIBBLE ONLY VALID
@@ -4443,23 +4506,21 @@ SPEC                lda       #$D0
                     jsr       SPECIFY
                     rts
 
-
 ;   ----- SENSE DRIVE STATUS -----
 
 GETDRV              lda       #%00000000
                     sta       HEAD
                     lda       #1
                     sta       US0
-                    lda       #0
+                    clra
                     sta       US1
-                    jsr       SPEC
+                    bsr       SPEC
                     lda       #10
                     ldb       HEAD
-                    jsr       SEEKTO
-                    jsr       SPEC
+                    bsr       SEEKTO
+                    bsr       SPEC
                     jsr       SNSDRV
                     rts
-
 
 ;   ----- READ ID ------
 
@@ -4467,16 +4528,15 @@ READID              lda       #%00000000
                     sta       HEAD
                     lda       #1
                     sta       US0
-                    lda       #0
+                    clra
                     sta       US1
-                    jsr       SPEC
+                    bsr       SPEC
                     lda       #10
                     ldb       HEAD
-                    jsr       SEEKTO
-                    jsr       SPEC
+                    bsr       SEEKTO
+                    bsr       SPEC
                     jsr       RDID
                     rts
-
 
 ;   ----- SEEK TO TRACK A, SIDE B -----
 
@@ -4484,26 +4544,28 @@ SEEKTO              sta       TRACK
                     stb       HEAD
                     lda       #1
                     sta       US0
-                    lda       #0
+                    clra
                     sta       US1
                     lda       HEAD
                     cmpa      LASTHD
                     beq       STO1
                     sta       LASTHD
-                    jsr       RESET
+                    bsr       RESET
 
-STO1                jsr       SPEC
+STO1                bsr       SPEC
                     jsr       SEEK
                     rts
 
-
 ;*********************************************************
-;      ROUTINE TO FORMAT A DISK
+;      ROUTINE TO FORMAT A DISK                         *
 ;*********************************************************
-;  PARAMETERS :
-;  MODIFIES   :
-;  CALLS      :
-;  RETURNS    :
+;  PARAMETERS :                                         *
+;                                                       *
+;  MODIFIES   :                                         *
+;                                                       *
+;  CALLS      :                                         *
+;                                                       *
+;  RETURNS    :                                         *
 ;*********************************************************
 
 FORMAT              lda       #1                  ; select first drive
@@ -4560,14 +4622,16 @@ FRMT1               clr       HEAD                ; NEXT TRACK, SIDE 0
                     jsr       SENDA
                     rts
 
-
 ;*********************************************************
-;      ROUTINE TO TEST FOR A DISK IN THE DRIVE
+;      ROUTINE TO TEST FOR A DISK IN THE DRIVE          *
 ;*********************************************************
-;  PARAMETERS :  ---------
-;  MODIFIES   :
-;  CALLS      :
-;  RETURNS    : B = 00 if disk in, B = $FF for no disk
+;  PARAMETERS :  ---------                              *
+;                                                       *
+;  MODIFIES   :                                         *
+;                                                       *
+;  CALLS      :                                         *
+;                                                       *
+;  RETURNS    : B = 00 if disk in, B = $FF for no disk  *
 ;*********************************************************
 
 CHKDSK              ldb       #10                 ; read DISKCHANGE for a low level
@@ -4598,12 +4662,10 @@ CHK2                decb                          ; try 10 times
                     clr       INITF               ; clear system inited falg
                     bra       CHK5
 
-
 CHK3                clr       DSKCHNG             ; clear disk changed flag
                     lda       #1
                     sta       DSKPRS              ; set disk present flag
                     bra       CHK5
-
 
 CHK4                lda       #1                  ; set disk changed flag
                     sta       DSKCHNG
@@ -4622,14 +4684,16 @@ CHK6                jsr       INITDSK             ; read critical disk areas
 CHK9                ldb       DISKIN
                     rts
 
-
 ;*********************************************************
-;      ROUTINE TO TEST THE FDD HEAD ACTION
+;      ROUTINE TO TEST THE FDD HEAD ACTION               *
 ;*********************************************************
-;  PARAMETERS :  ---------
-;  MODIFIES   :
-;  CALLS      :
-;  RETURNS    : ---------
+;  PARAMETERS :  ---------                               *
+;                                                        *
+;  MODIFIES   :                                          *
+;                                                        *
+;  CALLS      :                                          *
+;                                                        *
+;  RETURNS    : ---------                                *
 ;*********************************************************
 
 HDTST               lda       #2                  ; TRACK 0
@@ -4660,9 +4724,8 @@ HDTST2              clrb
                     bne       HDTST2
                     rts
 
-
 ;********************************************************
-;     BPB MAP, FAT MAP, FDIR MAP FOR FORMATTING
+;     BPB MAP, FAT MAP, FDIR MAP FOR FORMATTING        *
 ;********************************************************
 
 BPBMAP              fcb       $EB,$3C,$90,$4D,$53,$44,$4F,$53,$35,$2E,$30,$00
@@ -4715,20 +4778,19 @@ FDRMAP              fcb       $53,$4B,$59,$54,$45,$4C,$4C,$45,$52,$20,$20,$28
                     fcb       $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$98,$6D
                     fcb       $9D,$1C,$00,$00
 
-;********************************************************
-;       MAIN LOOP
-;********************************************************
+;*******************************************************************************
+; MAIN LOOP
+;*******************************************************************************
 
                     org       $A000
 POWER               lds       #$005F              ; set up the stack
                     clr       INITF               ; assume no disk present
                     jsr       INITSYS             ; setup the 6303 cpu
 
-
                     jsr       PROMPT
 LOOP                jsr       RECESC              ; wait for function request.
                     jsr       RECVA
-                    cmpa      #$36                ; check for get availible disk space request
+                    cmpa      #$36                ; check for get available disk space request
                     beq       GSPACE
                     cmpa      #$3D                ; check for open file request
                     beq       OPENF
@@ -4748,48 +4810,39 @@ LOOP                jsr       RECESC              ; wait for function request.
 ;                   beq       MAGRD
 ;                   bra       LOOP                ; till death do us part !!
 
-                    jmp       POWER               ; RESET THE WHOLE SYSTEM ON RECEPTION
-
-;                       ;OF AN ILLEGAL CODE ????????????????
+                    bra       POWER               ; RESET THE WHOLE SYSTEM ON RECEPTION
+                                                  ; OF AN ILLEGAL CODE ????????????????
 OPENF               jsr       FOPEN
                     bra       LOOP
-
 
 CLOSEF              jsr       FCLOSE
                     bra       LOOP
 
-
 MPTRF               jsr       MFPTR
                     bra       LOOP
-
 
 RNAMEF              jsr       FRNAME
                     bra       LOOP
 
-
 READF               jsr       FREAD
                     bra       LOOP
-
 
 WRITEF              jsr       FWRITE
                     bra       LOOP
 
-
 GSPACE              jsr       GDSPACE
                     bra       LOOP
-
 
 FRMT                jsr       RESET
                     jsr       FORMAT
                     bra       LOOP
 
-
 ;MAGRD              jsr       RDMAG
 ;                   bra       LOOP
 
-;*********************************************************
-;      MAIN LOOP
-;*********************************************************
+;*******************************************************************************
+; MAIN LOOP
+;*******************************************************************************
 
                     org       $A500
 POWER1              jsr       STOP0
@@ -4808,7 +4861,10 @@ STEP1               pshx
 
                     jmp       QUIT
 
-;                       TEST READ AND WRITE OF EVERY BYTE OF THE DISK
+;*******************************************************************************
+; TEST READ AND WRITE OF EVERY BYTE OF THE DISK
+;*******************************************************************************
+
                     org       $A600
 POWER2              lds       #$005F              ; set up the stack
                     jsr       STOP0
@@ -4820,8 +4876,7 @@ POWER2              lds       #$005F              ; set up the stack
 A6001               ldd       ABSSEC              ; put some data in the data buffer
                     ldx       #BUFFER
 A6002               std       ,x
-                    inx
-                    inx
+                    inx:2
                     cpx       #BUFFER+512
                     bne       A6002
 
@@ -4875,9 +4930,12 @@ A6005               lda       ,x                  ; print the offending block
                     inx
                     cpx       #BUFFER+512
                     bne       A6005
-                    jmp       A6004
+                    bra       A6004
 
-;                       TEST READ OF EVERY BYTE OF THE DISK
+;*******************************************************************************
+; TEST READ OF EVERY BYTE OF THE DISK
+;*******************************************************************************
+
                     org       $A700
 POWER3              lds       #$005F              ; set up the stack
                     jsr       STOP0
@@ -4906,7 +4964,7 @@ A7004               jsr       CRLF
                     ldx       #BUFFER
 A7005               lda       ,x                  ; print the block
                     jsr       P2HEX
-;       JSR     PCHAR
+;                   jsr       PCHAR
                     inx
                     cpx       #BUFFER+512
                     bne       A7005
@@ -4918,7 +4976,10 @@ A7005               lda       ,x                  ; print the block
                     bne       A7001
                     jmp       QUIT
 
-;                            HEAD TEST FUNCTION
+;*******************************************************************************
+; HEAD TEST FUNCTION
+;*******************************************************************************
+
                     org       $A800
                     jsr       STOP0
                     jsr       RESET               ; RESET THE DRIVE
@@ -4926,7 +4987,10 @@ A7005               lda       ,x                  ; print the block
                     jsr       HDTST
                     jmp       QUIT
 
-;                            FORMAT DISK FUNCTION
+;*******************************************************************************
+; FORMAT DISK FUNCTION
+;*******************************************************************************
+
                     org       $A900
                     jsr       STOP0
                     jsr       RESET               ; RESET THE DRIVE
@@ -4934,11 +4998,14 @@ A7005               lda       ,x                  ; print the block
                     jsr       FORMAT
                     jmp       QUIT
 
+;*******************************************************************************
 
                     org       $AA00
                     jsr       STOP0
                     jsr       INITSYS
-;                          OPEN A FILE FIRST -- FILENAME AT SBUFF+1
+
+          ; OPEN A FILE FIRST -- FILENAME AT SBUFF+1
+
                     ldx       #SBUFF+1            ; set up params for ffile
                     stx       SRCX
                     ldx       #FNAME
@@ -4959,18 +5026,17 @@ A7005               lda       ,x                  ; print the block
                     clr       SBUFF
                     bra       FOP89
 
-
 FOP82               lda       #2                  ; file not foound error
                     sta       SBUFF
-                    !bra      FOP89
-
 
 FOP89               jsr       PROMPT              ; debuging prompt
                     lda       SBUFF
                     beq       FRD1
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-;                        NOW READ THE FILE
+
+          ; NOW READ THE FILE
+
 FRD1                ldd       FSIZE+2             ; get num bytes from file pointer to EOF
                     subd      FPTR+1
                     std       SBUFF+6
@@ -4984,7 +5050,7 @@ FRB                 suba      FPTR
                     sta       SBUFF+5
                     ldd       #$5FFF
                     std       SBUFF+1             ; set num bytes to read
-
+;
                     ldd       SBUFF+6             ; see if it's greater than amount required to be read
                     subd      SBUFF+1
                     bcc       FRC1                ; OK wont go beyond EOF
@@ -4994,7 +5060,6 @@ FRB                 suba      FPTR
                     bcc       FRC1                ; OK wont go beyond EOF
                     ldd       SBUFF+6             ; set num bytes = amount left
                     bra       FRD
-
 
 FRC1                ldd       SBUFF+1             ; get numbytes to be read
 FRD                 std       TEMPX               ; divide it up into 512 byte sections
@@ -5029,7 +5094,6 @@ FRD2                ldd       COUNTER             ; all blocks read yet ?
                     jsr       BUFOUT
                     bra       FRD2                ; any more to read ??
 
-
 FRD3                pulb                          ; retrieve remainder
                     pula
                     subd      #0
@@ -5047,21 +5111,18 @@ FRD3                pulb                          ; retrieve remainder
                     jsr       BUFOUT
                     bra       FCLS
 
-
 FRD4                pulb
                     pula
 FCLS                ldb       #37                 ; clear out the whole file handle
                     ldx       #FNAME
                     jsr       CLRXB
                     clr       SBUFF
-                    !jmp      QUIT
-
 
 QUIT                jsr       WARM
 
-;*********************************************************
-;       THE VARIOUS TABLES FOR TESTING ROUTINES
-;*********************************************************
+;*******************************************************************************
+; THE VARIOUS TABLES FOR TESTING ROUTINES
+;*******************************************************************************
 
                     org       $B000
 EOFFLG              fcb       $00                 ; APPEND EOF MARK TO FILE FLAG
@@ -5084,7 +5145,7 @@ CMNDTBL             fcc       'INVALID              '  ; 00
                     fcc       'WRITE DATA           '  ; 05
                     fcc       'READ DATA            '  ; 06
                     fcc       'RECALIBRATE          '  ; 07
-                    fcc       'SENSE INTERUPT STATUS'  ; 08
+                    fcc       'SENSE INTERUPT STATUS'  ; 08 *** SPELLING ERROR ***
                     fcc       'WRITE DELETED DATA   '  ; 09
                     fcc       'READ ID              '  ; 0A
                     fcc       'INVALID              '  ; 0B
@@ -5112,129 +5173,157 @@ CMNDTBL             fcc       'INVALID              '  ; 00
 TRKTBL              fcb       $00,$01,$10,$40,$30,$46,$32,$12,$05,$01,$00
 TRKEND              fcb       $00
 
-;                   STATUS REGISTER 0 ERROR CODES
+;*******************************************************************************
+; STATUS REGISTER 0 ERROR CODES
+;*******************************************************************************
 
-;                    INTERUPT CODES
+; INTERRUPT CODES
+
 INTCDS              fcc       'ST0 NORMAL TERMINATION - COMMAND COMPLETED AND EXECUTED     '
                     fcc       'ST0 ABNORMAL TERMINATION - COMMAND STARTED BUT NOT COMPLETED'
                     fcc       'ST0 ABNORMAL TERMINATION - INVALID COMMAND ISSUED           '
                     fcc       'ST0 ABNORMAL TERMINATION - READY, CHANGED DURING EXECUTION  '
+;
+; SEEK CODES
 
-;                        SEEK CODES
 SEKCDS              fcc       'ST0 SEEK COMMAND NOT COMPLETED                              '
                     fcc       'ST0 SEEK COMMAND COMPLETED                                  '
 
-;                    EQUIPMENT CHECK CODES
+; EQUIPMENT CHECK CODES
+
 EQPCDS              fcc       'ST0 NO FAULT SIGNAL - AND/OR TRACK 00 FOUND (RECALIBRATE OK)'
                     fcc       'ST0 FAULT SIGNAL RECEIVED OR NO TRACK 0 AFTER 77 STEP PULSES'
 
-;                    NOT READY CODES
+; NOT READY CODES
+
 RDYCDS              fcc       'ST0 FDD READY - AND/OR LEGAL HEAD NUMBER                    '
                     fcc       'ST0 FDD NOT READY OR SINGLE SIDED DRIVE ONLY (ILLEGAL HEAD) '
 
-;                    DUMMY CODE
+; DUMMY CODE
+
 DM1CDS              fcc       'ST0 DUMMY CODE DUMMY CODE DUMMY CODE                        '
                     fcc       'ST0 DUMMY CODE DUMMY CODE DUMMY CODE                        '
 
-;                    DUMMY CODE
+; DUMMY CODE
+
 DM2CDS              fcc       'ST0 DUMMY CODE DUMMY CODE DUMMY CODE                        '
                     fcc       'ST0 DUMMY CODE DUMMY CODE DUMMY CODE                        '
 
-;                   STATUS REGISTER 1 ERROR CODES
+; STATUS REGISTER 1 ERROR CODES
 
-;                    END OF TRACK CODES
+; END OF TRACK CODES
+
 EOTCDS              fcc       'ST1 SECTOR ON TRACK                                         '
                     fcc       'ST1 ATTEMPT TO ACCESS SECTOR BEYOND END OF TRACK            '
 
-;                        DATA ERROR CODES
+; DATA ERROR CODES
+
 DTECDS              fcc       'ST1 NO CRC ERROR                                            '
                     fcc       'ST1 CRC ERROR IN ID FIELD OR DATA FIELD                     '
 
-;                    OVER RUN CODES
+; OVER RUN CODES
+
 OVRCDS              fcc       'ST1 FDC SERVICED IN TIME                                    '
                     fcc       'ST1 FDC NOT SERVICED IN TIME => OVERRUN ERROR               '
 
-;                    NO DATA CODES
+; NO DATA CODES
+
 NDTCDS              fcc       'ST1 DATA CODES OK                                           '
                     fcc       'ST1 CANNOT FIND SPECIFED SECTOR (READ, WRITE DELETED, SCAN) '
                     fcc       'ST1 CANNOT READ ID FIELD WITHOUT ERROR ( READ ID )          '
                     fcc       'ST1 CANNOT FIND STARTING SECTOR ( READ A TRACK )            '
 
-;                    NOT WRITABLE CODES
+; NOT WRITABLE CODES
+
 WRTCDS              fcc       'ST1 DISK NOT PROTECTED                                      '
                     fcc       'ST1 WRITE PROTECTED DISK IN DRIVE                           '
 
-;                    MISSING ADDRESS MARK CODES
+; MISSING ADDRESS MARK CODES
+
 MAMCDS              fcc       'ST1 NO MISSING ADDRESS MARKS                                '
                     fcc       'ST1 IDAM, DAM, DDAM NOT FOUND - CHECK MAM IN DATA FIELD CODE'
 
-;                   STATUS REGISTER 2 ERROR CODES
+; STATUS REGISTER 2 ERROR CODES
 
-;                    CONTROL MARK CODES
+; CONTROL MARK CODES
+
 CMKCDS              fcc       'ST2 NO DELETED DATA ADDRESS MARKS FOUND                     '
                     fcc       'ST2 SECTOR CONTAINS A DELETED DATA ADDRESS MARK (READ, SCAN)'
 
-;                        DATA ERROR IN DATA FIELD
+; DATA ERROR IN DATA FIELD
+
 DEDCDS              fcc       'ST2 NO CRC ERROR IN DATA FIELD                              '
                     fcc       'ST2 CRC ERROR IN DATA FIELD                                 '
 
-;                    WRONG TRACK CODES
+; WRONG TRACK CODES
+
 WTRCDS              fcc       'ST2 CORRECT TRACK LOCATED                                   '
                     fcc       'ST2 DISK TRACK != IDR TRACK                                 '
 
-;                    SCAN EQUAL HIT CODES
+; SCAN EQUAL HIT CODES
+
 SEHCDS              fcc       'ST2 SCAN EQUAL NOT SATISFIED                                '
                     fcc       'ST2 SCAN EQUAL SATISFIED                                    '
 
-;                    SCAN NOT SATISFIED CODES
+; SCAN NOT SATISFIED CODES
+
 SNSCDS              fcc       'ST2 FOUND SECTOR ON DISK MATCHING SCAN PARAMETERS           '
                     fcc       'ST2 CANNOT FIND SECTOR ON TRACK MATCHING SCAN PARAMETERS    '
 
-;                    BAD TRACK CODES
+; BAD TRACK CODES
+
 BTRCDS              fcc       'ST2 TRACK NUMBER OK                                         '
                     fcc       'ST2 TRACK = FFh AND DOES NOT EQUAL TRACK VALUE IN IDR       '
 
-;                    MISSING ADDRESS MARK IN DATA FIELD CODES
+; MISSING ADDRESS MARK IN DATA FIELD CODES
+
 MDFCDS              fcc       'ST2 NO MISSING ADDRESS MARKS IN DATA FIELD                  '
                     fcc       'ST2 DAM OR DDAM NOT FOUND                                   '
 
-;                   STATUS REGISTER 3 ERROR CODES
+; STATUS REGISTER 3 ERROR CODES
 
-;                    FAULT LINE CODES
+; FAULT LINE CODES
+
 FLTCDS              fcc       'ST3 FAULT LINE IS LOW    => NO FAULT                        '
                     fcc       'ST3 FAULT LINE IS HIGH   => FAULT                           '
 
-;                        WRITE PROTECTED CODES
+; WRITE PROTECTED CODES
+
 WRPCDS              fcc       'ST3 WRITE PROTECT LINE LOW       => NOT WRITE PROTECTED     '
                     fcc       'ST3 WRITE PROTECT LINE IS HIGH   => WRITE PROTECTED         '
 
-;                    READY CODES
+; READY CODES
+
 REDCDS              fcc       'ST3 READY LINE IS LOW   => FDD NOT READY                    '
                     fcc       'ST3 READY LINE IS HIGH  => FDD IS READY                     '
 
-;                    TRACK 0 CODES
+; TRACK 0 CODES
+
 TR0CDS              fcc       'ST3 TRACK 00 LINE IS LOW  => HEAD NOT ON TRACK 00           '
                     fcc       'ST3 TRACK 00 LINE IS HIGH => HEAD ON TRACK 00               '
 
-;                    TWO SIDED CODES
+; TWO SIDED CODES
+
 TSDCDS              fcc       'ST3 TWO SIDED LINE IS LOW  => SINGLE SIDED DISK             '
                     fcc       'ST3 TWO SIDED LINE IS HIGH => DOUBLE SIDED DISK             '
 
-;                    HEAD ADDRESS MARK CODES
+; HEAD ADDRESS MARK CODES
+
 HDACDS              fcc       'ST3 HEAD ADDRESS LINE IS LOW   => HEAD 2 SELECTED           '
                     fcc       'ST3 HEAD ADDRESS LINE IS HIGH  => HEAD 1 SELECTED           '
 
-;                    DUMMY CODE
+; DUMMY CODE
+
 DM3CDS              fcc       'ST3 DUMMY CODE DUMMY CODE DUMMY CODE                        '
                     fcc       'ST3 DUMMY CODE DUMMY CODE DUMMY CODE                        '
 
-;*********************************************************
-;       VECTORS
-;*********************************************************
+;*******************************************************************************
+; VECTORS
+;*******************************************************************************
 
                     org       $7FE0
                     fcc       'LSI1.1'            ; PROGRAM ID
-                    fcb       $15,$03,$94;FILE    ; CREATION DATE
+                    fcb       $15,$03,$94         ; FILE CREATION DATE
 
                     fcb       $00                 ; ROM CHECKSUM BYTE
 
@@ -5253,9 +5342,5 @@ RST                 fdb       POWER1              ; RES
                     end
 
 ;*******************************************************************************
-; Missing code stubs
-;*******************************************************************************
-
 GETRSLTS            equ       GETRSLT
-
-                    #Hint     Signature: 10899 bytes, RAM: 15566, CRC: $699D
+;*******************************************************************************
