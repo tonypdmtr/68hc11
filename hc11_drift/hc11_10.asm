@@ -6,6 +6,8 @@
 ; You may copy this software for non commercial use,
 ; as long as you mention the original developer's copyright
 ;*******************************************************************************
+; Several optimizations by Tony Papadimitriou <tonyp@acm.org>
+;*******************************************************************************
 
 ; Instructions:
 ;   1  running Buffalo
@@ -15,6 +17,8 @@
 ;   4  wait for completion of file send
 ;   5  "md 2000" (enter) will display the memory containing the program
 ;   6  "go 2000" (enter) to run the program
+
+                    #ExtraOn
 
 ;*************************************
 ; Major switches for assembly control
@@ -46,7 +50,7 @@ GGMODE              def       0
 ; REGISTER (define registers within the CPU)
 ;*******************************************************************************
 
-REGBS               equ       $1000               ; start of CPU register block
+REGS                equ       $1000               ; start of CPU register block
 PORTA               equ       $00                 ; PORT A
 DDRA                equ       $01                 ; PORT A DDR
 PORTG               equ       $02                 ; PORT G
@@ -102,7 +106,7 @@ ADR4                equ       $34
 BPROT               equ       $35
 OPTION              equ       $39                 ; OPTION REG
 COPRST              equ       $3A                 ; COP RESET REG
-PPROG               equ       REGBS+$3B           ; EEPROM PROG REG
+PPROG               equ       REGS+$3B            ; EEPROM PROG REG
 HPRIO               equ       $3C                 ; HPRIO REG
 INIT                equ       $3D                 ; INIT
 CONFIG              equ       $3F                 ; CONFIG REG
@@ -180,12 +184,8 @@ sec_cnt             rmb       1                   ; seconds counter for timer ir
 sec_flg             rmb       1                   ; 1 second toggle flag (chg each 1/2 sec)
 lst_sec             rmb       1                   ; previous value of 1 sec flag
 key_cnt             rmb       1                   ; 1/5 sec counter for key query
-angdsp0             rmb       1                   ; mirror angle digit 0
-angdsp1             rmb       1                   ; mirror angle digit 1
-angdsp2             rmb       1                   ; mirror angle digit 2
-drfdsp0             rmb       1                   ; mirror drift digit 0
-drfdsp1             rmb       1                   ; mirror drift digit 1
-drfdsp2             rmb       1                   ; mirror dirft digit 2
+angdsp              rmb       3                   ; mirror angle digits
+drfdsp              rmb       3                   ; mirror drift digits
 tmp                 rmb       2                   ; temp storage
 sendbuf             rmb       16                  ; send buffer for irq serial io
 sendrd              rmb       2                   ; send buffer write ptr
@@ -239,9 +239,8 @@ work_space          rmb       2                   ; Work space for divide
 ;*******************************************************************************
                     #ROM
 ;*******************************************************************************
-          #ifz DEBUG
                     org       $C000               ; location in FLASH RAM
-          #else
+          #ifnz DEBUG
                     org       $2000
           #endif
 ;*******************************************************************************
@@ -251,7 +250,7 @@ Start               proc
           #ifz DEBUG
                     lds       #$07FF
           #endif
-                    ldx       #REGBS              ; register base address
+                    ldx       #REGS               ; register base address
                     lda       DDRA,x
                     anda      #%11110111          ; make 'ent' key -> input
                     ora       #%10000111          ; make LED interface -> output
@@ -269,12 +268,12 @@ Start               proc
           #else
                     ldd       RAM_RTI             ; in Debug mode use buffalo jump vectors
                     std       rtiv_mr
-                    ldd       #isr_RTI
+                    ldd       #RTI_Handler
                     std       RAM_RTI             ; replace with ROM irq later
 
                     ldd       RAM_SIO
                     std       siov_mr
-                    ldd       #isr_SCI
+                    ldd       #SCI_Handler
                     std       RAM_SIO             ; replace with ROM irq later
                     lda       #%00000000
           #endif
@@ -322,7 +321,7 @@ Start               proc
                     lda       #70
                     sta       st4refy
           #endif
-                    ldx       #REGBS              ; Eat up any trash in serial input data reg
+                    ldx       #REGS               ; Eat up any trash in serial input data reg
 start10             lda       SCSR,x
                     anda      #%00100000
                     beq       start20
@@ -337,7 +336,7 @@ start20             cli
                     jsr       dft2dsp
                     jsr       dispang
                     jsr       dispdrf
-                    jsr       initled             ; show 'FL ' on left display
+                    jsr       InitLED             ; show 'FL ' on left display
                     jsr       ldgren
           #ifnz DEBUG
                     lda       #'I'
@@ -364,7 +363,7 @@ start22             jsr       rd_stat
                     ldd       #2                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
           #endif
-start23             lda       #$09                ; hi decode mode
+start23             lda       #9                  ; hi decode mode
                     ldb       #%00000111          ; lo left BIN right BCD
                     jsr       disp
                     lda       #ANGDG2
@@ -389,7 +388,7 @@ start30             jsr       dft2dsp             ; wait for enter focal length
                     std       flen                ; store focal length
                     clrd
                     std       drift
-                    jsr       initled             ; overwrite 'FL' back to numeric
+                    jsr       InitLED             ; overwrite 'FL' back to numeric
 
 start40             tst       entflg
                     bne       start40
@@ -459,7 +458,6 @@ main_a6             ldx       countx
                     beq       main0d0             ; quadr=2 -> decrement xref
                     cmpa      #3
                     beq       main0c0             ; quadr=3 -> increment xref
-                    bra       main0b
           #else                                   ; This table for guide scope with 90deg prism
                     beq       main0d0             ; quadr=0 -> decrement xref
                     cmpa      #1
@@ -468,8 +466,8 @@ main_a6             ldx       countx
                     beq       main0c0             ; quadr=2 -> increment xref
                     cmpa      #3
                     beq       main0d0             ; quadr=3 -> decrement xref
-                    bra       main0b
           #endif
+                    bra       main0b
 main0c0             lda       st4refx             ; get xref
                     cmpa      #ST4XMAX
                     beq       main0b              ; see if we would go beyond max x -> yes, do nothing
@@ -574,7 +572,7 @@ main08a             ldx       drift
           ; calc x y down counter values
 
                     ldd       angl                ; get angle to calc modulus 90deg and quadrant
-                    ldx       #0                  ; x will become quadrant
+                    clrx                          ; x will become quadrant
 main09              cmpd      #89                 ; see if we can subtract 90deg (once again)
                     ble       main10              ; no. => 0<=D<=90
                     subd      #90                 ; yes. subtract
@@ -738,130 +736,164 @@ main26              tst       entflg
                     bne       main26
                     jmp       main
 
-initled             lda       #$0f                ; hi test register
+;*******************************************************************************
+
+InitLED             proc
+                    lda       #15                 ; hi test register
                     ldb       #%00000000          ; lo 0 = normal ops
                     jsr       disp
 
-                    lda       #$0c                ; hi shut down reg
+                    lda       #12                 ; hi shut down reg
                     ldb       #%00000001          ; lo 1 = normal ops
                     jsr       disp
 
-                    lda       #$0b                ; hi scan limit reg
+                    lda       #11                 ; hi scan limit reg
                     ldb       #%00000111          ; lo %0111 display all digits
                     jsr       disp
 
-                    lda       #$0a                ; hi intensity reg
+                    lda       #10                 ; hi intensity reg
                     ldb       #%00001000          ; lo 1/2 intensity
                     jsr       disp
 
-                    lda       #$09                ; hi decode mode
+                    lda       #9                  ; hi decode mode
                     ldb       #%01110111          ; lo left BCD right BCD
                     jmp       disp
 
-ang2rmp             ldb       xrmpld
+;*******************************************************************************
+
+ang2rmp             proc
+                    ldb       xrmpld
                     clra
-                    addd      #ledtab
+                    addd      #LED_Table
                     xgdx
                     ldb       ,x
                     lda       #ANGRMP
                     jmp       disp
 
-drf2rmp             ldb       yrmpld
+;*******************************************************************************
+
+dgreen              proc
+                    lda       rgled
+                    anda      #%11111100
+                    ora       #%00000001
+                    bra       dled
+
+;*******************************************************************************
+
+dred                proc
+                    lda       rgled
+                    anda      #%11111100
+                    ora       #%00000010
+                    bra       dled
+
+;*******************************************************************************
+
+dorng               proc
+                    lda       rgled
+                    anda      #%11111100
+                    ora       #%00000011
+;                   bra       dled
+dled                sta       rgled
+                    rts
+
+;*******************************************************************************
+
+ldgren              proc
+                    bsr       dgreen
+;                   bra       drf2rmp
+
+;*******************************************************************************
+
+drf2rmp             proc
+                    ldb       yrmpld
                     clra
-                    addd      #ledtab
+                    addd      #LED_Table
                     xgdx
                     ldb       ,x
                     orb       rgled
                     lda       #DRFRMP
                     jmp       disp
 
-dgreen              lda       rgled
-                    anda      #%11111100
-                    ora       #%00000001
-                    bra       dled
+;*******************************************************************************
 
-dred                lda       rgled
-                    anda      #%11111100
-                    ora       #%00000010
-                    bra       dled
+ldred               proc
+                    bsr       dred
+                    bra       drf2rmp
 
-dorng               lda       rgled
-                    anda      #%11111100
-                    ora       #%00000011
-                    bra       dled
+;*******************************************************************************
 
-dblak               lda       rgled
-                    anda      #%11111100
-;                   bra       dled
+ldorng              proc
+                    bsr       dorng
+                    bra       drf2rmp
 
-dled                sta       rgled
+;*******************************************************************************
+
+ang2dsp             proc
+                    ldd       angl
+                    ldx       #10
+                    idiv
+                    stb       angdsp
+                    xgdx
+                    ldx       #10
+                    idiv
+                    stb       angdsp+1
+                    xgdx
+                    stb       angdsp+2
                     rts
 
-ldgren              bsr       dgreen
-                    bra       drf2rmp
+;*******************************************************************************
 
-ldred               bsr       dred
-                    bra       drf2rmp
-
-ldorng              bsr       dorng
-                    bra       drf2rmp
-
-ldblak              bsr       dblak
-                    bra       drf2rmp
-
-ang2dsp             ldd       angl
+dft2dsp             proc
+                    ldd       drift
                     ldx       #10
                     idiv
-                    stb       angdsp0
+                    stb       drfdsp
                     xgdx
                     ldx       #10
                     idiv
-                    stb       angdsp1
+                    stb       drfdsp+1
                     xgdx
-                    stb       angdsp2
+                    stb       drfdsp+2
                     rts
 
-dft2dsp             ldd       drift
-                    ldx       #10
-                    idiv
-                    stb       drfdsp0
-                    xgdx
-                    ldx       #10
-                    idiv
-                    stb       drfdsp1
-                    xgdx
-                    stb       drfdsp2
-                    rts
+;*******************************************************************************
 
-dispang             lda       #ANGDG0
-                    ldb       angdsp0
+dispang             proc
+                    lda       #ANGDG0
+                    ldb       angdsp
                     bsr       disp
                     lda       #ANGDG1
-                    ldb       angdsp1
+                    ldb       angdsp+1
                     bsr       disp
                     lda       #ANGDG2
-                    ldb       angdsp2
+                    ldb       angdsp+2
                     bra       disp
 
-dispdrf             lda       #DRFDG0
-                    ldb       drfdsp0
+;*******************************************************************************
+
+dispdrf             proc
+                    lda       #DRFDG0
+                    ldb       drfdsp
                     bsr       disp
                     lda       #DRFDG1
-                    ldb       drfdsp1
+                    ldb       drfdsp+1
                     orb       #%10000000
                     bsr       disp
                     lda       #DRFDG2
-                    ldb       drfdsp2
+                    ldb       drfdsp+2
                     bra       disp
 
-dispfl              lda       #DRFDG0
-                    ldb       drfdsp0
+;*******************************************************************************
+
+dispfl              proc
+                    lda       #DRFDG0
+                    ldb       drfdsp
                     bsr       disp
                     lda       #DRFDG1
-                    ldb       drfdsp1
+                    ldb       drfdsp+1
                     bsr       disp
                     lda       #DRFDG2
-                    ldb       drfdsp2
+                    ldb       drfdsp+2
                     bra       disp
 
 ;*******************************************************************************
@@ -888,11 +920,8 @@ dispdec             proc
 ;*******************************************************************************
 
 disp                proc
-                    psha
-                    pshb
-                    pshx
-                    pshy
-                    ldx       #REGBS
+                    push
+                    ldx       #REGS
                     bclr      PORTA,x,CLK
                     bclr      PORTA,x,LOAD
                     bclr      PORTA,x,DATA
@@ -901,17 +930,13 @@ Loop@@              lsld
                     bcc       Zero@@
                     bset      PORTA,x,DATA
                     bra       Clock@@
-
 Zero@@              bclr      PORTA,x,DATA
 Clock@@             bset      PORTA,x,CLK
                     bclr      PORTA,x,CLK
                     dey
                     bne       Loop@@
                     bset      PORTA,x,LOAD
-                    puly
-                    pulx
-                    pulb
-                    pula
+                    pull
                     rts
 
 ;*******************************************************************************
@@ -929,40 +954,48 @@ Fatal               proc
 
 ;*******************************************************************************
           #ifnz DEBUG
-rd_stat             clra
+rd_stat             proc
+                    clra
 wr_stat             rts
 
-rd_xref             lda       st4refx
+rd_xref             proc
+                    lda       st4refx
                     rts
 
-rd_yref             lda       st4refy
+;*******************************************************************************
+
+rd_yref             proc
+                    lda       st4refy
                     rts
 
-wr_xref             psha
+;*******************************************************************************
+
+wr_xref             proc
+                    tab
                     lda       #'X'
                     bsr       sendv24
-                    pula
-                    tab
                     clra
                     bsr       out_dec
                     bra       crlf
 
-wr_yref             psha
+;*******************************************************************************
+
+wr_yref             proc
+                    tab
                     lda       #'Y'
                     bsr       sendv24
-                    pula
-                    tab
                     clra
                     bsr       out_dec
                     bra       crlf
           #else
-rd_stat             lda       #10
+rd_stat             proc
+                    lda       #10
                     sta       errcnt              ; init error counter
-rd_st02             lda       #$02                ; read RAM cmd. and reetry point for error recovery
+rd_st02             lda       #2                  ; read RAM cmd. and reetry point for error recovery
                     jsr       sendv24
-                    lda       #$01                ; number of bytes
+                    lda       #1                  ; number of bytes
                     jsr       sendv24
-                    lda       #$01                ; 0=ext, 1=int ram
+                    lda       #1                  ; 0=ext, 1=int ram
                     jsr       sendv24
                     lda       #[ST4ST             ; LSB of Status address
                     jsr       sendv24
@@ -970,9 +1003,7 @@ rd_st02             lda       #$02                ; read RAM cmd. and reetry poi
                     jsr       sendv24
                     lda       #$33                ; checksum=$02+$01+$01+$2f+$00
                     jsr       sendv24
-
-; response :    02 01 ST CS
-
+          ;-------------------------------------- ; response :    02 01 ST CS
                     ldx       #st4buf             ; pointer to read buffer
 rd_st05             lda       #$ff                ; init value for timeout
                     sta       timout
@@ -998,10 +1029,10 @@ rd_st20             iny
                     bne       rd_st05             ; go back for next char. incl re-init of timeout
 
                     lda       st4buf              ; all received. now check
-                    cmpa      #$02                ; $02
+                    cmpa      #2
                     bne       rd_st95
                     lda       st4buf+1
-                    cmpa      #$01                ; $01
+                    cmpa      #1
                     bne       rd_st95
 
                     clra
@@ -1022,14 +1053,17 @@ rd_st95             dec       errcnt              ; count down for error
 rd_st97             ldd       #1                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
 
-wr_stat             sta       tmp
+;*******************************************************************************
+
+wr_stat             proc
+                    sta       tmp
                     lda       #10
                     sta       errcnt
-wr_st02             lda       #$01                ; write RAM cmd
+Loop@@              lda       #1                  ; write RAM cmd
                     jsr       sendv24
-                    lda       #$04                ; number of bytes
+                    lda       #4                  ; number of bytes
                     jsr       sendv24
-                    lda       #$01                ; 0=ext, 1=int ram
+                    lda       #1                  ; 0=ext, 1=int ram
                     jsr       sendv24
                     lda       #[ST4ST             ; LSB of Status address
                     jsr       sendv24
@@ -1040,45 +1074,44 @@ wr_st02             lda       #$01                ; write RAM cmd
                     lda       tmp
                     adda      #$35                ; checksum $35=$01+$04+$01+$2f+$00
                     jsr       sendv24
-
-; response :    06
-
-wr_st05             ldy       recvrd
+          ;-------------------------------------- ; response :    06
+                    ldy       recvrd
                     lda       #$ff
                     sta       timout
-wr_st10             cpy       recvwr
-                    bne       wr_st15             ; wait till we have received something
+_1@@                cpy       recvwr
+                    bne       _2@@                ; wait till we have received something
                     tst       timout
-                    bne       wr_st10
+                    bne       _1@@
                     dec       errcnt
-                    bne       wr_st02
+                    bne       Loop@@
                     ldd       #11
-                    jmp       Fatal
+                    bra       Fail@@
 
-wr_st15             lda       ,y
+_2@@                lda       ,y
                     cpy       #recvbuf+15
-                    bne       wr_st20
+                    bne       _3@@
                     ldy       #recvbuf-1
-wr_st20             iny
+_3@@                iny
                     sty       recvrd
-                    cmpa      #$06
-                    beq       wr_st25
+                    cmpa      #6
+                    beq       Done@@
                     dec       errcnt
-                    bne       wr_st02
-                    ldd       #$03
-                    jmp       Fatal
+                    bne       Loop@@
+                    ldd       #3
+Fail@@              jmp       Fatal
+Done@@              equ       :AnRTS
 
-wr_st25             equ       :AnRTS
-
+;*******************************************************************************
 ; x ref addr $7e7c
 
-rd_xref             lda       #10
+rd_xref             proc
+Go@@                lda       #10
                     sta       errcnt
-rd_xr02             lda       #$02                ; read RAM cmd
+Loop@@              lda       #2                  ; read RAM cmd
                     jsr       sendv24
-                    lda       #$01                ; number of bytes
+                    lda       #1                  ; number of bytes
                     jsr       sendv24
-                    lda       #$00                ; 0=ext, 1=int ram
+                    clra                          ; 0=ext, 1=int ram
                     jsr       sendv24
                     lda       #[ST4XRF            ; LSB of x ref coordinate address
                     jsr       sendv24
@@ -1086,67 +1119,66 @@ rd_xr02             lda       #$02                ; read RAM cmd
                     jsr       sendv24
                     lda       #$FD                ; checksum $FD=$02+$01+$00+$7c+$7e
                     jsr       sendv24
-
-; response $02 $01 xref CS
-
+          ;-------------------------------------- ; response $02 $01 xref CS
                     ldx       #st4buf
-rd_xr05             lda       #$ff
+_1@@                lda       #$ff
                     sta       timout
                     ldy       recvrd
-rd_xr10             cpy       recvwr
-                    bne       rd_xr15             ; wait till we have received something
+_2@@                cpy       recvwr
+                    bne       _3@@                ; wait till we have received something
                     tst       timout
-                    bne       rd_xr10
+                    bne       _2@@
                     dec       errcnt
-                    bne       rd_xr02
+                    bne       Loop@@
                     ldd       #12
                     jmp       Fatal
 
-rd_xr15             lda       ,y
+_3@@                lda       ,y
                     sta       ,x                  ; copy v24 receive data to st4 receive buffer
                     inx
                     cpy       #recvbuf+15
-                    bne       rd_xr20
+                    bne       _4@@
                     ldy       #recvbuf-1
-rd_xr20             iny
+_4@@                iny
                     sty       recvrd
                     cpx       #st4buf+4
-                    bne       rd_xr05
+                    bne       _1@@
 
                     lda       st4buf              ; all received. now check
-                    cmpa      #$02                ; $02
-                    bne       rd_xr95
+                    cmpa      #2
+                    bne       _6@@
                     lda       st4buf+1
-                    cmpa      #$01                ; $01
-                    bne       rd_xr95
+                    cmpa      #1
+                    bne       _6@@
 
                     clra
                     ldx       #st4buf
-rd_xr30             adda      ,x                  ; add up checksum
+_5@@                adda      ,x                  ; add up checksum
                     inx
                     cpx       #st4buf+3
-                    bne       rd_xr30
+                    bne       _5@@
                     cmpa      ,x                  ; compare with received checksum value
-                    bne       rd_xr95             ; goto error handler if wrong checksum
+                    bne       _6@@                ; goto error handler if wrong checksum
                     lda       st4buf+2            ; retrieve x ref byte and return it
                     rts
 
-rd_xr95             dec       errcnt              ; count down for error
-                    beq       rd_xr97
-                    jmp       rd_xref
+_6@@                dec       errcnt              ; count down for error
+                    jne       Go@@
 
-rd_xr97             ldd       #4                  ; if 10 errors encountered -> goto fatal halt
+                    ldd       #4                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
 
+;*******************************************************************************
 ; y ref addr $7e7d
 
-rd_yref             lda       #10
+rd_yref             proc
+                    lda       #10
                     sta       errcnt
-rd_yr02             lda       #$02                ; read RAM cmd
+Loop@@              lda       #2                  ; read RAM cmd
                     jsr       sendv24
-                    lda       #$01                ; number of bytes
+                    lda       #1                  ; number of bytes
                     jsr       sendv24
-                    lda       #$00                ; 0=ext, 1=int ram
+                    clra                          ; 0=ext, 1=int ram
                     jsr       sendv24
                     lda       #[ST4YRF            ; LSB of y ref coordinate address
                     jsr       sendv24
@@ -1154,66 +1186,65 @@ rd_yr02             lda       #$02                ; read RAM cmd
                     jsr       sendv24
                     lda       #$FE                ; checksum $FE=$02+$01+$00+$7d+$7e
                     jsr       sendv24
-
-; response $02 $01 yref CS
-
+          ;-------------------------------------- ; response $02 $01 yref CS
                     ldx       #st4buf
-rd_yr05             lda       #$ff
+_1@@                lda       #$ff
                     sta       timout
                     ldy       recvrd
-rd_yr10             cpy       recvwr
-                    bne       rd_yr15             ; wait till we have received something
+_2@@                cpy       recvwr
+                    bne       _3@@                ; wait till we have received something
                     tst       timout
-                    bne       rd_yr10
+                    bne       _2@@
                     dec       errcnt
-                    bne       rd_yr02
+                    bne       Loop@@
                     ldd       #13
                     jmp       Fatal
 
-rd_yr15             lda       ,y
+_3@@                lda       ,y
                     sta       ,x                  ; copy v24 receive data to st4 receive buffer
                     inx
                     cpy       #recvbuf+15
-                    bne       rd_yr20
+                    bne       _4@@
                     ldy       #recvbuf-1
-rd_yr20             iny
+_4@@                iny
                     sty       recvrd
                     cpx       #st4buf+4
-                    bne       rd_yr05
+                    bne       _1@@
 
                     lda       st4buf              ; all received. now check
-                    cmpa      #$02                ; $02
-                    bne       rd_yr95
+                    cmpa      #2
+                    bne       _6@@
                     lda       st4buf+1
-                    cmpa      #$01                ; $01
-                    bne       rd_yr95
+                    cmpa      #1
+                    bne       _6@@
 
                     clra
                     ldx       #st4buf
-rd_yr30             adda      ,x                  ; add up checksum
+_5@@                adda      ,x                  ; add up checksum
                     inx
                     cpx       #st4buf+3
-                    bne       rd_yr30
+                    bne       _5@@
                     cmpa      ,x                  ; compare with received checksum value
-                    bne       rd_yr95             ; goto error handler if wrong checksum
+                    bne       _6@@                ; goto error handler if wrong checksum
                     lda       st4buf+2            ; retrieve x ref byte and return it
                     rts
 
-rd_yr95             dec       errcnt              ; count down for error
-                    beq       rd_yr97
-                    jmp       rd_yr02
-
-rd_yr97             ldd       #5                  ; if 10 errors encountered -> goto fatal halt
+_6@@                dec       errcnt              ; count down for error
+                    jne       Loop@@
+                    ldd       #5                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
 
-wr_xref             sta       tmp
+;*******************************************************************************
+
+wr_xref             proc
+                    sta       tmp
                     lda       #10
                     sta       errcnt
-wr_xr02             lda       #$01                ; write RAM cmd
+Loop@@              lda       #1                  ; write RAM cmd
                     jsr       sendv24
-                    lda       #$04                ; number of bytes
+                    lda       #4                  ; number of bytes
                     jsr       sendv24
-                    lda       #$00                ; 0=ext, 1=int ram
+                    clra                          ; 0=ext, 1=int ram
                     jsr       sendv24
                     lda       #[ST4XRF            ; LSB of x ref address $7e7c
                     jsr       sendv24
@@ -1224,136 +1255,128 @@ wr_xr02             lda       #$01                ; write RAM cmd
                     lda       tmp
                     adda      #$ff                ; checksum $ff=$01+$04+$00+$7c+$7e
                     jsr       sendv24
-
-; response :    06
-
-wr_xr05             ldy       recvrd
+          ;-------------------------------------- ; response :    06
+                    ldy       recvrd
                     lda       #$ff
                     sta       timout
-wr_xr10             cpy       recvwr
-                    bne       wr_xr15             ; wait till we have received something
+_1@@                cpy       recvwr
+                    bne       _2@@                ; wait till we have received something
                     tst       timout
-                    bne       wr_xr10
+                    bne       _1@@
                     dec       errcnt
-                    bne       wr_xr02
+                    bne       Loop@@
                     ldd       #14
-                    jmp       Fatal
+                    bra       Fail@@
 
-wr_xr15             lda       ,y
+_2@@                lda       ,y
                     cpy       #recvbuf+15
-                    bne       wr_xr20
+                    bne       _3@@
                     ldy       #recvbuf-1
-wr_xr20             iny
+_3@@                iny
                     sty       recvrd
-                    cmpa      #$06
-                    beq       wr_xr25
+                    cmpa      #6
+                    beq       Done@@
                     dec       errcnt
-                    bne       wr_xr02
-                    ldd       #$06
-                    jmp       Fatal
+                    bne       Loop@@
+                    ldd       #6
+Fail@@              jmp       Fatal
+Done@@              rts
 
-wr_xr25             rts
+;*******************************************************************************
 
-wr_yref             sta       tmp
+wr_yref             proc
+                    sta       tmp
                     lda       #10
                     sta       errcnt
-wr_yr02             lda       #$01                ; write RAM cmd
-                    jsr       sendv24
-                    lda       #$04                ; number of bytes
-                    jsr       sendv24
-                    lda       #$00                ; 0=ext, 1=int ram
-                    jsr       sendv24
+Loop@@              lda       #1                  ; write RAM cmd
+                    bsr       sendv24
+                    lda       #4                  ; number of bytes
+                    bsr       sendv24
+                    clra                          ; 0=ext, 1=int ram
+                    bsr       sendv24
                     lda       #[ST4YRF            ; LSB of y ref address $7e7d
-                    jsr       sendv24
+                    bsr       sendv24
                     lda       #]ST4YRF            ; MSB of y ref address
                     bsr       sendv24
                     lda       tmp                 ; x ref byte
                     bsr       sendv24
-                    lda       tmp
-                    adda      #$00                ; checksum $00=$01+$04+$00+$7d+$7e
+                    lda       tmp                 ; checksum $00=$01+$04+$00+$7d+$7e
                     bsr       sendv24
-
-; response :    06
-
-wr_yr05             ldy       recvrd
+          ;-------------------------------------- ; response :    06
+                    ldy       recvrd
                     lda       #$ff
                     sta       timout
-wr_yr10             cpy       recvwr
-                    bne       wr_yr15             ; wait till we have received something
+_1@@                cpy       recvwr
+                    bne       _2@@                ; wait till we have received something
                     tst       timout
-                    bne       wr_yr10
+                    bne       _1@@
                     dec       errcnt
-                    bne       wr_yr02
+                    bne       Loop@@
                     ldd       #15
-                    jmp       Fatal
+                    bra       Fail@@
 
-wr_yr15             lda       ,y
+_2@@                lda       ,y
                     cpy       #recvbuf+15
-                    bne       wr_yr20
+                    bne       _3@@
                     ldy       #recvbuf-1
-wr_yr20             iny
+_3@@                iny
                     sty       recvrd
-                    cmpa      #$06
-                    beq       wr_yr25
+                    cmpa      #6
+                    beq       Done@@
                     dec       errcnt
-                    bne       wr_yr02
-                    ldd       #$07
-                    jmp       Fatal
-
-wr_yr25             equ       :AnRTS
+                    bne       Loop@@
+                    ldd       #7
+Fail@@              jmp       Fatal
+Done@@              equ       :AnRTS
           #endif
-out_dec             ldy       #5
-out_d10             ldx       #10
+
+;*******************************************************************************
+
+out_dec             proc
+                    ldy       #5
+_1@@                ldx       #10
                     idiv
                     pshb
                     xgdx
                     dey
-                    bne       out_d10
-
-                    ldy       #5
-out_d20             pula
-                    adda      #'0'
+                    bne       _1@@
+          ;--------------------------------------
+                    ldb       #5
+_2@@                pula
+                    adda      #'0'                ;convert to ASCII
                     bsr       sendv24
-                    dey
-                    bne       out_d20
+                    decb
+                    bne       _2@@
                     rts
 
-outbyte             psha                          ; output accu a 1 byte as 2 hex digits
-                    anda      #$F0
-                    lsra:4
-                    bsr       outbyt1
-                    pula
-                    anda      #$0F
+;*******************************************************************************
 
-outbyt1             adda      #'0'                ; output 4 bits as 1 hex digit
-                    cmpa      #'9'
-                    ble       sendv24
-                    adda      #7
-
-sendv24             pshy
-                    ldy       sendwr
-                    sta       ,y
-                    cpy       #sendbuf+15
-                    bne       sendv50
-                    ldy       #sendbuf-1
-sendv50             iny
-sendv60             cpy       sendrd
-                    beq       sendv60
-                    sty       sendwr
-                    puly
+sendv24             proc
+                    pshx
+                    ldx       sendwr
+                    sta       ,x
+                    cpx       #sendbuf+15
+                    bne       _1@@
+                    ldx       #sendbuf-1
+_1@@                inx
+Loop@@              cpx       sendrd
+                    beq       Loop@@
+                    stx       sendwr
+                    pulx
                     rts
 
 ;*******************************************************************************
 
 crlf                proc
                     psha
-                    lda       #13
+                    lda       #13                 ;Carriage Return
                     bsr       sendv24
-                    lda       #10
+                    lda       #10                 ;Line Feed
                     bsr       sendv24
                     pula
                     rts
 
+;*******************************************************************************
 ;Calculate the 48 bit unsigned product of two 24 bit unsigned numbers.
 ;Place the multiplicand in a24, the multiplier in b24, then JSR Mul24.
 ;Result is returned in a48.  Put smaller value in b24 when given a
@@ -1365,8 +1388,7 @@ crlf                proc
 ;any reasonable number of bytes quite easily.
 
 Mul24               proc
-                    pshb                          ; Preserve regs
-                    psha
+                    pshd                          ; Preserve regs
                     pshx
                     ldx       #b24                ; Address of args
                     clr       3,x                 ; Clear a48
@@ -1404,8 +1426,7 @@ Cont@@              dex                           ; Move left 1 byte in multipli
                     dec       counter
                     bne       Loop@@
                     pulx                          ; Restore regs
-                    pula
-                    pulb
+                    puld
                     rts
 
 ;*******************************************************************************
@@ -1424,10 +1445,10 @@ Cont@@              dex                           ; Move left 1 byte in multipli
 ; Typical operation is two passes through the loop per byte in the dividend.
 
 Div24               proc
-                    pshb
-                    psha
+                    pshd
                     pshx
                     pshy
+
                     clr       q24                 ; Clear quotient to 0
                     clr       q24+1
                     clr       q24+2
@@ -1440,10 +1461,11 @@ Loop@@              tst       ,y
                     iny
                     bra       Loop@@
 
-DIVER1              jmp       DIVBY0              ; Extend branch range
+DIVER1              jmp       DIVDUN              ; Extend branch range
 
-;  Find size of divisor and dividend & thus the hi byte of quotient.
-;  Also do gross checks to avoid dividing by 0, etc.
+; Find size of divisor and dividend & thus the hi byte of quotient.
+; Also do gross checks to avoid dividing by 0, etc.
+
 DIV1                stb       dividend_size       ; Save # bytes in dividend
                     lda       #$FF
                     negb
@@ -1476,11 +1498,12 @@ DIV3                tab
                     addd      #q24+2              ; Ptr to hi byte of quotient
                     std       .quotient_byte
 
-;  Decide whether to use 1 or 2 bytes as trial divisor
+; Decide whether to use 1 or 2 bytes as trial divisor
+
 DIVLUP              ldx       .divisor            ; Get ptr to MSB of divisor
                     lda       divisor_size        ; Get # bytes in divisor
                     deca
-                    beq       DIV1BY              ; Only 1 byte in divisor
+                    jeq       DIV1BYT             ; Only 1 byte in divisor
                     sta       counter             ; Temp, # bytes in divisor -1
                     ldd       1,y                 ; Get hi word of dividend in B
                     cpd       ,x                  ; IF hi word of dividend < hi word of divisor
@@ -1496,9 +1519,10 @@ DIVLUP              ldx       .divisor            ; Get ptr to MSB of divisor
                     bra       DIVSTO
 
 DIVBYB              jmp       DIVBYT              ; Extend branch range
-DIV1BY              jmp       DIV1BYT
 
-;  Trial divisor is 2 bytes. Round up if required.
+;*******************************************************************************
+; Trial divisor is 2 bytes. Round up if required.
+
 DIVW2B              lda       counter
                     deca                          ; Make A = 0 if exactly 2 bytes in divisor
 DIVWRD              ldx       ,x                  ; Get MSW of divisor
@@ -1508,7 +1532,9 @@ DIVWRD              ldx       ,x                  ; Get MSW of divisor
 DIVWNR              ldd       1,y                 ; Get MSW of dividend
                     idiv
                     xgdx                          ; Get trial quotient into B
-;  Multiply divisor by trial quotient and subtract from dividend
+
+; Multiply divisor by trial quotient and subtract from dividend
+
 DIVSTO              stb       quotient_trial_val  ; Save trial quotient
                     ldx       .quotient_byte
                     addb      ,x                  ; Add Trial Q to current Q
@@ -1533,9 +1559,9 @@ DIVSTO              stb       quotient_trial_val  ; Save trial quotient
                     ldd       1,y
                     subd      work_space
                     std       1,y
-                    bcc       *+5
+                    bcc       SkipPropagation
                     dec       ,y                  ; Propagate borrow
-                    dec       counter
+SkipPropagation     dec       counter
                     beq       DIVLND              ; BR if divisor is 2 bytes
                     ldx       .divisor
                     lda       2,x
@@ -1562,8 +1588,11 @@ DIVDN0              iny                           ; Hi word of dividend=0, move 
                     inc       .quotient_byte+1
 DIVLN2              jmp       DIVLUP              ; Loop to do next byte
 
-;  Trial divisor is hi byte of divisor.  Always round it up.
-DIVBYT              dec       quotient_remaining  ; Divisor > dividend, move 1 position right
+;*******************************************************************************
+; Trial divisor is hi byte of divisor.  Always round it up.
+
+DIVBYT              proc
+                    dec       quotient_remaining  ; Divisor > dividend, move 1 position right
                     blt       DIVDUN              ; BR if done
                     inc       .quotient_byte+1
                     iny
@@ -1576,237 +1605,248 @@ DIVBYR              ldb       ,x                  ; Get MSB of divisor
                     idiv                          ; MSW of dividend / MSB of divisor = Trial Q
                     xgdx                          ; Get quotient in D
                     tsta
-                    beq       DIVBT2
+                    beq       Done@@
                     ldb       #$F0                ; Overflow on this trial, force max
-DIVBT2              jmp       DIVSTO
+Done@@              jmp       DIVSTO
 
+;*******************************************************************************
 ; Handle single byte divisor specially
-DIV1BYT             ldb       ,x                  ; Get divisor, single byte
+
+DIV1BYT             proc
+                    ldb       ,x                  ; Get divisor, single byte
                     clra
                     xgdx
-DIV1SKP             cpx       ,y
-                    bls       DIV1BGO
+Loop@@              cpx       ,y
+                    bls       Go@@
                     dec       quotient_remaining  ; Divisor > Dividend, move 1 position right
                     blt       DIVDUN              ; BR if done
                     inc       .quotient_byte+1
                     iny
-                    bra       DIV1SKP
+                    bra       Loop@@
 
-DIV1BGO             ldd       ,y                  ; Dividend, current hi 16 bits
+Go@@                ldd       ,y                  ; Dividend, current hi 16 bits
                     idiv                          ; MSW of dividend / divisor = Trial Q
                     xgdx                          ; Get quotient in D
                     jmp       DIVSTO
-DIVDUN
-DIVBY0              puly
+
+;*******************************************************************************
+
+DIVDUN              puly
                     pulx                          ; Restore regs
-                    pula
-                    pulb
+                    puld
                     rts
 
-cos_x               ldb       quadr
-                    beq       cos_x10
+;*******************************************************************************
+
+cos_x               proc
+                    ldb       quadr
+                    beq       _1@@
                     cmpb      #1
-                    beq       cos_x20
-                    cmpb      #2
-                    beq       cos_x10
+                    beq       _2@@
                     cmpb      #3
-                    beq       cos_x20
-
-cos_x10             sta       tmp
-                    lda       #90
-                    suba      tmp
-
-cos_x20             tab
-                    clra
-                    addd      #sintab
-                    xgdx
-                    lda       ,x
-                    rts
-
-sin_x               ldb       quadr
-                    beq       sin_x10
-                    cmpb      #1
-                    beq       sin_x20
+                    beq       _2@@
                     cmpb      #2
-                    beq       sin_x10
-                    cmpb      #3
-                    beq       sin_x20
-                    bra       *
+                    bne       *                   ;should not happen
 
-sin_x20             sta       tmp
-                    lda       #90
-                    suba      tmp
+_1@@                nega
+                    adda      #90
 
-sin_x10             tab
+_2@@                tab
                     clra
-                    addd      #sintab
+                    addd      #SineTable
                     xgdx
                     lda       ,x
                     rts
 
 ;*******************************************************************************
 
-isr_RTI             proc
-                    ldx       #REGBS
+sin_x               proc
+                    ldb       quadr
+                    beq       _2@@
+                    cmpb      #1
+                    beq       _1@@
+                    cmpb      #2
+                    beq       _2@@
+                    cmpb      #3
+                    bne       *                   ;should not happen
+
+_1@@                nega
+                    adda      #90
+
+_2@@                tab
+                    clra
+                    addd      #SineTable
+                    xgdx
+                    lda       ,x
+                    rts
+
+;*******************************************************************************
+
+RTI_Handler         proc
+                    ldx       #REGS
                     lda       #%01000000
                     sta       TFLG2,x
 
                     tst       timout
-                    beq       key005
+                    beq       _1@@
                     dec       timout
 
-key005              inc       sec_cnt
+_1@@                inc       sec_cnt
                     lda       sec_cnt
                     cmpa      #62
-                    bne       key00
+                    bne       _2@@
                     clr       sec_cnt
                     lda       sec_flg
                     eora      #%00000001
                     sta       sec_flg
 
-key00               inc       key_cnt
+_2@@                inc       key_cnt
                     lda       key_cnt
                     cmpa      #12
-                    beq       key02
+                    beq       _3@@
                     rti                           ; skip all irq until key_cnt = 12
 
-key02               clr       key_cnt
+_3@@                clr       key_cnt
                     lda       PORTD,x
                     sta       pdmir
                     anda      #ALLKEY
                     cmpa      #ALLKEY
-                    beq       key10
+                    beq       _9@@
                     anda      #ANGKEY
                     cmpa      #ANGKEY
-                    beq       key20               ; no ANG key pressed
+                    beq       _7@@                ; no ANG key pressed
                     cmpa      #ANGPL
-                    bne       angminu
+                    bne       _5@@
 
-angplus             ldd       angl
+                    ldd       angl
                     incd
                     cmpd      #360
-                    bne       angpl10
+                    bne       _4@@
                     clrd
                     std       angl
-angpl10             std       angl
-                    bra       key20
+_4@@                std       angl
+                    bra       _7@@
 
-angminu             ldd       angl
+_5@@                ldd       angl
                     decd
-                    bpl       angmi10
+                    bpl       _6@@
                     ldd       #359
-angmi10             std       angl
+_6@@                std       angl
 
-key20               lda       pdmir
+_7@@                lda       pdmir
                     anda      #DRFKEY
                     cmpa      #DRFKEY
-                    beq       key10
+                    beq       _9@@
                     cmpa      #DRFPL
-                    bne       drfminu
+                    bne       _8@@
 
-drfplus             ldd       drift
+                    ldd       drift
                     cmpd      #999
-                    beq       key10
+                    beq       _9@@
                     incd
                     std       drift
-                    bra       key10
+                    bra       _9@@
 
-drfminu             ldd       drift
-                    beq       key10
+_8@@                ldd       drift
+                    beq       _9@@
                     decd
                     std       drift
-;                   bra       key10
+;                   bra       _9@@
 
-key10               lda       PORTA,x
+_9@@                lda       PORTA,x
                     anda      #ENTKEY
-                    bne       key30
-                    lda       #$01
+                    bne       _10@@
+                    lda       #1
                     sta       entflg
-                    bra       key99
+                    bra       _11@@
 
-key30               clr       entflg
-
-key99               bra       sio_snd             ; see if we have to initiate sending
+_10@@               clr       entflg
+_11@@               bra       sio_snd             ; see if we have to initiate sending
 
 ;*******************************************************************************
 
-isr_SCI             proc
-                    ldx       #REGBS
+SCI_Handler         proc
+                    ldx       #REGS
                     lda       SCSR,x
                     sta       scsr_mr
                     anda      #%00100000
-                    bne       sio_rcv
+                    bne       _1@@
                     lda       scsr_mr
                     anda      #%10000000
                     bne       sio_snd
                     rti                           ; if not rcv or snd. No other irq served.
 
-sio_rcv             lda       SCDR,x              ; dont care for overrun error yet
+_1@@                lda       SCDR,x              ; dont care for overrun error yet
                     ldy       recvwr
                     sta       ,y
                     cpy       #recvbuf+15
-                    bne       sio_r10
+                    bne       _2@@
                     ldy       #recvbuf-1
-sio_r10             iny
+_2@@                iny
                     sty       recvwr
                     lda       scsr_mr
                     anda      #%10000000
                     bne       sio_snd
                     rti
 
-sio_snd             ldy       sendrd
+;*******************************************************************************
+
+sio_snd             proc
+                    ldy       sendrd
                     cpy       sendwr
-                    beq       sio_s08             ; nothing to send
-sio_s03             brclr     SCSR,x,%10000000,sio_s03  ; wait till send reg empty
+                    beq       _4@@                ; nothing to send
+                    brclr     SCSR,x,%10000000,*  ; wait till send reg empty
 
                     pshx
                     ldx       #8
                     clrb
                     lda       ,y
                     psha
-sio_s0a             lsra
-                    bcc       sio_s04
+Loop@@              lsra
+                    bcc       Cont@@
                     incb
-sio_s04             dex
-                    bne       sio_s0a
+Cont@@              dex
+                    bne       Loop@@
                     pula
                     pulx
-                    andb      #$01
-                    bne       sio_s0c
+                    andb      #1
+                    bne       _1@@
                     bclr      SCCR1,x,%01000000
-                    bra       sio_s0d
+                    bra       _2@@
 
-sio_s0c             bset      SCCR1,x,%01000000
+_1@@                bset      SCCR1,x,%01000000
 
-sio_s0d             sta       SCDR,x
+_2@@                sta       SCDR,x
                     cpy       #sendbuf+15
-                    bne       sio_s05
+                    bne       _3@@
                     ldy       #sendbuf-1
-sio_s05             iny
+_3@@                iny
                     sty       sendrd
                     cpy       sendwr
-                    beq       sio_s08             ; nothing more to send
+                    beq       _4@@                ; nothing more to send
                     bset      SCCR2,x,%10000000   ; if more bytes to send set irq enable bit
-                    bra       sio_s10
+                    bra       Done@@
 
-sio_s08             bclr      SCCR2,x,%10000000   ; if no more bytes to send clr irq enable
-sio_s10             rti
+_4@@                bclr      SCCR2,x,%10000000   ; if no more bytes to send clr irq enable
+Done@@              rti
 
-ledtab              fcb       %00000000
+;*******************************************************************************
+
+LED_Table           fcb       %00000000
                     fcb       %00000100
                     fcb       %00100100
                     fcb       %00110100
                     fcb       %00111100
                     fcb       %01111100
-
-ledtab1             fcb       %00000000
+;LED_Table1
+                    fcb       %00000000
                     fcb       %00000100
                     fcb       %00100000
                     fcb       %00010000
                     fcb       %00001000
                     fcb       %01000000
 
-sintab              fcb       000                 ; 0
+SineTable           fcb       000                 ; 0
                     fcb       004
                     fcb       009
                     fcb       013
@@ -1897,13 +1937,15 @@ sintab              fcb       000                 ; 0
                     fcb       255
                     fcb       255
                     fcb       255                 ; 90
-          #ifz DEBUG
+#ifz DEBUG
+;*******************************************************************************
                     #EEPROM
+;*******************************************************************************
                     org       $FF00               ; start of EEPROM
 
 RESET               proc                          ; INITIALIZE THE CPU
                     lds       #$01FF              ; put stack in CPU RAM
-                    ldx       #$1000              ; register base address
+                    ldx       #REGS               ; register base address
                     lda       #%10010001          ; adpu, irqe, dly, cop = 65mS
                     sta       OPTION,x
                     lda       #%00000000
@@ -1923,60 +1965,18 @@ RESET               proc                          ; INITIALIZE THE CPU
                     sta       PORTG,x             ; select 1ST bank
                     jmp       Start
 
-;******************************************************************************
-;                           Interrupt Service Routinen                       *
-;******************************************************************************
+;*******************************************************************************
 
-;       Commented vectors are serviced in the code
+AnRTI               rti                           ; keine Bearbeitung fuer diese IRQ's
 
-;isr_SCI
-isr_SPI
-isr_PAIE
-isr_PAO
-isr_TIMO
-isr_TIC4
-isr_TOC4
-isr_TOC3
-isr_TOC2
-isr_TOC1
-isr_TIC3
-isr_TIC2
-isr_TIC1
-;isr_RTI
-isr_IRQ
-isr_XIRQ
-isr_SWI
-isr_ILLOP
-isr_COPFAIL
-isr_CLMONFAIL
-                    rti                           ; keine Bearbeitung fuer diese IRQ's
-
-;***********************************
-; VECTOR TABLE
-;***********************************
-
+;*******************************************************************************
                     #VECTORS
+;*******************************************************************************
                     org       $FFD6               ; Start der Vectortabelle
 
-                    dw        isr_SCI
-                    dw        isr_SPI
-                    dw        isr_PAIE
-                    dw        isr_PAO
-                    dw        isr_TIMO
-                    dw        isr_TIC4
-                    dw        isr_TOC4
-                    dw        isr_TOC3
-                    dw        isr_TOC2
-                    dw        isr_TOC1
-                    dw        isr_TIC3
-                    dw        isr_TIC2
-                    dw        isr_TIC1
-                    dw        isr_RTI
-                    dw        isr_IRQ
-                    dw        isr_XIRQ
-                    dw        isr_SWI
-                    dw        isr_ILLOP
-                    dw        isr_COPFAIL
-                    dw        isr_CLMONFAIL
+                    dw        SCI_Handler
+                    dw:12     AnRTI
+                    dw        RTI_Handler
+                    dw:6      AnRTI
                     dw        RESET
-          #endif
+#endif
