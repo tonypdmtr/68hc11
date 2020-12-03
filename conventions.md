@@ -27,8 +27,8 @@ The following are general coding conventions which older code may not yet follow
 * Proc-local labels end with `@@` (although ASM11 allows `@@` to be anywhere inside the label).
 * Macro-local labels end with `$$$` (although ASM11 allows `$$$` to be anywhere inside the label).
 * Subroutines always begin with a `proc` pseudo-op to mark the beginning of the subroutine.  This allows proc-local symbols to be used inside the subroutine without worrying about name collisions with other subroutine symbols.
-* Subroutines normally use `#spauto` mode with optional `:ab` offset when the proc may reference caller-level stack variables.
-* Local (stack) variables defined near the beginning of the subroutine either directly (with `AIS #-nn`) or with the use of the `local` macro which follow an `#AIS` directive.  These variables are de-allocated using the `AIS #:AIS` instruction.
+* Subroutines normally use `#spauto` mode with optional offset when the proc may reference caller-level stack variables.
+* Local (stack) variables defined near the beginning of the subroutine either directly (with `GETX #n` or `GETY #n`) or with the use of the `local` macro which follow an `#AIS` directive.  These variables are de-allocated using the `GIVEX #:AIS` or `GIVEY #:AIS` instruction.
 * Each subroutine is separated from the previous one with an 80-column semi-colon beginning comment line full of asterisks (i.e., `;***...`).
 * File-local subroutines begin with `?` as required by ASM11 to keep local to that file.
 * File-local subroutines end with an `RTS` instruction.  They are called with either `JSR` or `BSR` instructions.
