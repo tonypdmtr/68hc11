@@ -6,10 +6,10 @@
 ; through the SPI interface and the rest of Port D.
 ; There are 10 commands:
 ; WRITE Protect Reg WRite (PRWR)
-; READ Protect Reg ReaD (PRRD)
-; WRite ENable (WREN) Protect Reg ENable (PREN)
+; READ Protect Reg ReaD (PrRd)
+; WRite ENable (WrEn) Protect Reg ENable (PrEn)
 ; WRite DiSable (WRDS) Protect Reg DiSable (PRDS)
-; WRite ALL (WRALL) Protect Reg CLeaR (PRCLR)
+; WRite ALL (WRALL) Protect Reg CLeaR (PrClr)
 ; Each EEPROM command type is implemented as a
 ; subroutine call. Address is passed to the routine
 ; in XADDR, data in XDATLO and XDATHI. Data is
@@ -26,12 +26,12 @@ MainLoop            proc
                     sta       XDATLO              ; Load in low byte xmit dat
                     lda       #$cc
                     sta       XDATHI              ; Load in hi byte xmit data
-                    bsr       WREN                ; Call Write Enable
-                    bsr       PREN                ; Call Protect Register Enable
-                    jsr       PRCLR               ; Call Protect Register Clear
-                    bsr       PREN                ; Call Protect Register Enable
-                    jsr       PRWRT               ; Call Protect Register Write
-                    jsr       PRRD                ; Call Protect Register Read
+                    bsr       WrEn                ; Call Write Enable
+                    bsr       PrEn                ; Call Protect Register Enable
+                    jsr       PrClr               ; Call Protect Register Clear
+                    bsr       PrEn                ; Call Protect Register Enable
+                    jsr       PrWrt               ; Call Protect Register Write
+                    jsr       PrRd                ; Call Protect Register Read
                                                   ; (read back Protect Register)
                     bra       MainLoop
 
@@ -219,7 +219,7 @@ WrPen               lda       MESSCT              ; Write Pending Subroutine:
                                                   ; count is 0 before preceding
                     lda       WRACTV              ; Check write still active even
                     bne       WrPen               ; though last message sent
-                    rts                           ; Note that a bad write (ie. WREN
+                    rts                           ; Note that a bad write (ie. WrEn
                                                   ; has not been sent) will not return
                                                   ; a ready so this loop will never
                                                   ; stop... a timer (approx 10ms)
@@ -245,7 +245,7 @@ PstWr               lda       #$80
                                                   ; rest of the message is sent
                                                   ; by interrupt routine SpInt
 SpInt               ldb       SPSR                ; Check that interrupt cause by
-                    bpl       done                ; SPIF (not mode error)
+                    bpl       Done                ; SPIF (not mode error)
                     lda       SPDR                ; Clear SPIF interrupt
                     ldb       MESSCT              ; Load message byte count in B
                     beq       Twp                 ; Jump to post write poller
