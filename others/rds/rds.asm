@@ -36,9 +36,8 @@ PPROG               equ       $3B                 ; EEPROM CONTROL REGISTER
 ND                  equ       9                   ; No. DIGITS
 
 ;*******************************************************************************
-                    #RAM                          ;SECTION.S .RAM1,COMM
+                    #RAM      $0000               ;SECTION.S .RAM1,COMM
 ;*******************************************************************************
-                    org       $0000
 
 BMJD                rmb       3                   ; BINARY MJD
 Q                   rmb       9                   ; WORKING NUMBER 1 - RDS
@@ -156,21 +155,18 @@ STAT6               rmb       1                   ; BAND/BANK (,MW STEP,COLON, ,
 BCTO                rmb       1                   ; BAND CHANGE TIMEOUT
 SCNT                rmb       1                   ; SHAFT DETENT COUNTER
 
-                    #RAM      SECTION .RAM2,COMM
-                    org       $0100
+                    #RAM      $0100               ; SECTION .RAM2,COMM
 
 EON                 rmb       256
 
-                    #RAM      SECTION .RAM3,COMM EON DATA (16 NETWORKS)
-                    org       $0200
+                    #RAM      $0200               ; SECTION .RAM3,COMM EON DATA (16 NETWORKS)
 
 DISP                rmb       16                  ; LCD MODULE BUFFER
 DISPP               rmb       16                  ; CURRENT LCD MODULE CONTENTS
 PSN                 rmb       8
 RT                  rmb       69                  ; RADIOTEXT
 
-                    #ROM      SECTION .ROM1
-                    org       $D000
+                    #ROM      $D000               ; SECTION .ROM1
 
 STRST               !jmp      Start               ; RESET VECTOR
 TMRB                !jmp      TINTB               ; RTI
@@ -324,7 +320,8 @@ FULON               brclr     STAT4,$02,FLN       ; SLEEP TIMER RUNNING ?
 ; Idle loop (cont.)
 ;*******************************************************************************
 
-FLN                 brclr     STAT4,$80,NT1       ; 14B FLAG HIGH ?
+FLN                 proc
+                    brclr     STAT4,$80,NT1       ; 14B FLAG HIGH ?
                     brset     STAT2,$80,NT2       ; YES, BIT AGREES ?
                     bset      STAT2,$80           ; NO, SET BIT
                     clr       REARET
@@ -460,7 +457,7 @@ RCLP                bset      PORTA,Y,$10         ; MUTE
 ; Shaft rotation interrupts
 ;*******************************************************************************
 
-SHAFT               exp       *
+SHAFT               proc
                     brset     PORTE,Y,$20,SEM     ; IRQ,SHAFT I/O HIGH (E5) ?
                     bclr      STAT3,$10           ; NO, CLEAR DIRECTION BIT
                     bra       TEM
@@ -481,10 +478,11 @@ YEM                 bset      STAT3,$20           ; SET FLAG TO INDICATE ROTATIO
 ; Keyboard routine
 ;*******************************************************************************
 
-KBD                 clr       W1
+KBD                 proc
+                    clr       W1
                     ldy       #$1000
                     ldx       #7
-KEY1                ldb       W1
+Loop@@              ldb       W1
                     addb      #$04                ; SELECT COLUMN
                     stb       W1
                     ldb       PORTD,Y
@@ -495,13 +493,12 @@ KEY1                ldb       W1
                     bita      #$0F                ; ANY INPUT LINE HIGH ?
                     bne       L1
                     dex                           ; NO, TRY NEXT COLUMN
-                    bne       KEY1                ; LAST COLUMN ?
+                    bne       Loop@@              ; LAST COLUMN ?
                     clr       KEY                 ; YES, NO KEY PRESSED
                     bra       EXIT
 
 L1                  ldb       W1
-                    lslb
-                    lslb
+                    lslb:2
                     lda       PORTE,Y             ; READ KEYBOARD
                     anda      #$0F
                     aba
@@ -554,8 +551,9 @@ DNT                 rts
 ; Execute key
 ;*******************************************************************************
 
-KEYP                bcc       DNT                 ; ANYTHING TO DO ?
-KEYP2               lda       KEY                 ; YES, GET KEY
+KEYP                proc
+                    bcc       DNT                 ; ANYTHING TO DO ?
+                    lda       KEY                 ; YES, GET KEY
                     cmpa      #$54                ; DEC. PROG. (M)
                     beq       RPT
                     cmpa      #$58                ; INC. PROG. (S)
@@ -583,89 +581,41 @@ PJ                  bset      STAT,$20
 ; Keyboard jump table
 ;*******************************************************************************
 
-                    #Push
-                    #OptRelOff
+?                   macro
+                    fcb       ~1~
+                    !jmp      ~2~
+                    endm
 
-CTAB                fcb       $11                 ; 0
-                    jmp       DIGIT
-
-                    fcb       $21                 ; 1
-                    jmp       DIGIT
-
-                    fcb       $22                 ; 2
-                    jmp       DIGIT
-
-                    fcb       $24                 ; 3
-                    jmp       DIGIT
-
-                    fcb       $31                 ; 4
-                    jmp       DIGIT
-
-                    fcb       $32                 ; 5
-                    jmp       DIGIT
-
-                    fcb       $34                 ; 6
-                    jmp       DIGIT
-
-                    fcb       $41                 ; 7
-                    jmp       DIGIT
-
-                    fcb       $42                 ; 8
-                    jmp       DIGIT
-
-                    fcb       $44                 ; 9
-                    jmp       DIGIT
-
-                    fcb       $48                 ; ALARM
-                    jmp       ALARM
-
-                    fcb       $38                 ; STORE/SET
-                    jmp       SAVE
-
-                    fcb       $18                 ; ON/OFF
-                    jmp       ONOFF
-
-                    fcb       $14                 ; CLEAR/STEP
-                    jmp       CLEAR
-
-                    fcb       $12                 ; MODE (PROG./FREQ.)
-                    jmp       MODE
-
-                    fcb       $52                 ; SLEEP TIMER START
-                    jmp       SLEEP
-
-                    fcb       $54                 ; DEC. PROG./FREQ./CHAR.
-                    jmp       PDEC
-
-                    fcb       $58                 ; INC. PROG./FREQ./CHAR.
-                    jmp       PINC
-
-                    fcb       $61                 ; RDS DISPLAYS
-                    jmp       RTDSP
-
-                    fcb       $62                 ; TRAFFIC ENABLE (TOGGLE)
-                    jmp       TPEN
-
-                    fcb       $64                 ; MW STEP 9/10KHz (TOGGLE)
-                    jmp       T910
-
-                    fcb       $51                 ; COLON CONTROL
-                    jmp       TFCC
-
-LAST                fcb       $68                 ; TA TEST
-                    jmp       TEST
-
-                    #Pull
-
+CTAB                @?        $11,DIGIT           ; 0
+                    @?        $21,DIGIT           ; 1
+                    @?        $22,DIGIT           ; 2
+                    @?        $24,DIGIT           ; 3
+                    @?        $31,DIGIT           ; 4
+                    @?        $32,DIGIT           ; 5
+                    @?        $34,DIGIT           ; 6
+                    @?        $41,DIGIT           ; 7
+                    @?        $42,DIGIT           ; 8
+                    @?        $44,DIGIT           ; 9
+                    @?        $48,ALARM           ; ALARM
+                    @?        $38,SAVE            ; STORE/SET
+                    @?        $18,ONOFF           ; ON/OFF
+                    @?        $14,CLEAR           ; CLEAR/STEP
+                    @?        $12,MODE            ; MODE (PROG./FREQ.)
+                    @?        $52,SLEEP           ; SLEEP TIMER START
+                    @?        $54,PDEC            ; DEC. PROG./FREQ./CHAR.
+                    @?        $58,PINC            ; INC. PROG./FREQ./CHAR.
+                    @?        $61,RTDSP           ; RDS DISPLAYS
+                    @?        $62,TPEN            ; TRAFFIC ENABLE (TOGGLE)
+                    @?        $64,T910            ; MW STEP 9/10KHz (TOGGLE)
+                    @?        $51,TFCC            ; COLON CONTROL
+LAST                @?        $68,TEST            ; TA TEST
 
 ;*******************************************************************************
-
 ; Alarm key
-
 ;*******************************************************************************
 
-
-ALARM               brclr     STAT4,$08,ADON      ; ALARM DISPLAY ON ?
+ALARM               proc
+                    brclr     STAT4,$08,ADON      ; ALARM DISPLAY ON ?
                     brclr     STAT4,$10,ALOF      ; YES, ALARM ON ?
                     bclr      STAT4,$10           ; YES, SWITCH OFF
                     bra       UDCNT
@@ -685,7 +635,8 @@ ABOA                rts
 ; On/off key
 ;*******************************************************************************
 
-ONOFF               jsr       CLTR                ; CLEAR DISPLAY TRANSIENTS
+ONOFF               proc
+                    jsr       CLTR                ; CLEAR DISPLAY TRANSIENTS
                     bclr      STAT4,$82           ; CANCELL SLEEP TIMER & TA SWITCH FLAG
                     bclr      STAT5,$40           ; CANCEL STORE MODE
 
@@ -703,19 +654,21 @@ ALRON               bset      PORTD,Y,$20         ; YES, SWITCH OFF
 ; PS name clear
 ;*******************************************************************************
 
-PSC                 ldx       #PSN
+PSC                 proc
+                    ldx       #PSN
                     lda       #$FF
-CPSL                sta       ,x
+Loop@@              sta       ,x
                     inx
                     cpx       #PSN+8
-                    bne       CPSL
+                    bne       Loop@@
                     rts
 
 ;*******************************************************************************
 ; TP
 ;*******************************************************************************
 
-TPEN                brset     PORTD,Y,$20,HIGH    ; STANDBY ?
+TPEN                proc
+                    brset     PORTD,Y,$20,HIGH    ; STANDBY ?
                     brset     STAT,$01,NS1        ; NO, NORMAL MODE ?
                     brset     STAT5,$20,TAEH      ; NO, FREQ. MODE, NVM DISABLE FLAG SET ?
                     bset      STAT5,$20           ; NO, SET IT
@@ -735,7 +688,8 @@ TPOF                bset      STAT4,$04           ; NO, ENABLE
 ; Sleep timer
 ;*******************************************************************************
 
-SLEEP               brset     STAT5,$04,DECS      ; ALREADY SLEEP DISPLAY ?
+SLEEP               proc
+                    brset     STAT5,$04,DECS      ; ALREADY SLEEP DISPLAY ?
                     brset     STAT4,$02,STR       ; NO, SLEEP TIMER ALREADY RUNNING ?
 INSLP               lda       #60                 ; NO, INITIALISE SLEEP TIMER
 SLEP                sta       SLEPT
@@ -760,10 +714,10 @@ SLPTOK              lda       #25
 ; Number entry routine
 ;*******************************************************************************
 
-DIGIT               brset     PORTD,Y,$20,ABO3    ; STANDBY ?
+DIGIT               proc
+                    brset     PORTD,Y,$20,ABO3    ; STANDBY ?
                     jsr       CLTR                ; NO, CLEAR DISPLAY TRANSIENTS
-                    lsrb
-                    lsrb
+                    lsrb:2
                     brset     STAT,$01,SKP        ; STATION MODE ?
                     brset     STAT5,$40,SKP       ; NO, STORE MODE ?
                     bset      STAT5,$10           ; NO, SET RETUNE FLAG (FREQUENCY MODE)
@@ -792,7 +746,8 @@ SKP                 bset      PORTA,Y,$10         ; MUTE
 ; Save pointers & 500ms delay
 ;*******************************************************************************
 
-DR1                 ldx       #RQ                 ; STORE POINTERS
+DR1                 proc
+                    ldx       #RQ                 ; STORE POINTERS
                     stx       W1
                     ldb       #5
                     abx
@@ -808,7 +763,8 @@ DEL500              ldx       #255
 ; Increment key (& knob)
 ;*******************************************************************************
 
-PINC2               brset     STAT4,$20,ALSU1     ; ALARM SET-UP ?
+PINC2               proc
+                    brset     STAT4,$20,ALSU1     ; ALARM SET-UP ?
                     brset     STAT4,$08,TOG57J    ; NO, ALARM DISPLAY ?
                     brset     PORTD,Y,$20,DMI     ; NO,STANDBY ?
                     ldb       PSNP
@@ -826,7 +782,8 @@ TOG57J              brset     STAT4,$08,TOG57     ; NO, ALARM DISPLAY ?
 ; Alarm inc. (hours/minutes)
 ;*******************************************************************************
 
-ALSU1               brset     STAT4,$40,IHR       ; YES, SET-UP HOURS ?
+ALSU1               proc
+                    brset     STAT4,$40,IHR       ; YES, SET-UP HOURS ?
                     lda       AMIN                ; NO, MINUTES
                     cmpa      #59
                     bhs       TOOH
@@ -856,7 +813,8 @@ NACS                ldb       PSNP
 ; P-S Edit inc. (ASCII) and 5/7 day toggle
 ;*******************************************************************************
 
-PSN0                ldx       #PSN-1
+PSN0                proc
+                    ldx       #PSN-1
                     abx
                     lda       ,x                  ; YES
                     inca                          ; INCREMENT ASCII VALUE
@@ -905,7 +863,8 @@ A7                  bset      STAT5,$80           ; YES, MAKE IT 5 DAY
 ; Program number increment
 ;*******************************************************************************
 
-CONTI               bset      PORTA,Y,$10         ; MUTE
+CONTI               proc
+                    bset      PORTA,Y,$10         ; MUTE
                     bset      STAT2,$08           ; PROG. No. INCREMENT, UPDATE DISPLAY
                     lda       LED
                     brset     STAT2,$80,IOK       ; IF SWITCHED TO TA DON'T INCREMENT
@@ -920,7 +879,8 @@ IOK                 sta       LED
 ; Decrement key (& knob)
 ;*******************************************************************************
 
-PDEC2               brset     STAT4,$20,ALSU2     ; ALARM SET-UP ?
+PDEC2               proc
+                    brset     STAT4,$20,ALSU2     ; ALARM SET-UP ?
                     brset     STAT4,$08,TOG57     ; NO, ALARM DISPLAY ?
                     brset     PORTD,Y,$20,DMD     ; NO, STANDBY ?
                     ldb       PSNP
@@ -937,7 +897,8 @@ PDEC                brset     STAT4,$20,ALSU2     ; ALARM SET-UP ?
 ; Alarm dec. (hours/minutes)
 ;*******************************************************************************
 
-ALSU2               brset     STAT4,$40,IHRD      ; YES, SET-UP HOURS ?
+ALSU2               proc
+                    brset     STAT4,$40,IHRD      ; YES, SET-UP HOURS ?
                     tst       AMIN                ; NO, MINUTES
                     beq       MZ
                     dec       AMIN
@@ -965,7 +926,8 @@ NACS2               ldb       PSNP
 ; P-S Edit dec. (ASCII)
 ;*******************************************************************************
 
-PSN1                ldx       #PSN-1
+PSN1                proc
+                    ldx       #PSN-1
                     abx
                     lda       ,x                  ; YES
                     deca                          ; DECREMENT ASCII VALUE
@@ -1010,7 +972,8 @@ OUTCH               sta       DIST
 ; Program number decrement
 ;*******************************************************************************
 
-CONTD               bset      PORTA,Y,$10         ; MUTE
+CONTD               proc
+                    bset      PORTA,Y,$10         ; MUTE
                     lda       LED                 ; PROG. No. DECREMENT
                     brset     STAT2,$80,RETUNE    ; IF SWITCHED TO TA DON'T DECREMENT
 PNM1                deca                          ; DECREMENT PROGRAM NUMBER
@@ -1049,7 +1012,8 @@ FOK                 ldb       #10
 ; Tune to TA (using EEPROM data)
 ;*******************************************************************************
 
-TASW                clrb
+TASW                proc
+                    clrb
 TPIC                addb      #10
                     jsr       READ1               ; FIND PI
                     incb
@@ -1085,7 +1049,8 @@ ABTA                sta       REARET
 ; Program store/recall
 ;*******************************************************************************
 
-DOIT                brset     STAT2,$80,TASW
+DOIT                proc
+                    brset     STAT2,$80,TASW
                     ldb       #12
                     mul
                     brset     STAT5,$40,STORE
@@ -1095,7 +1060,8 @@ DOIT                brset     STAT2,$80,TASW
 ; NVW write, sub-address in X
 ;*******************************************************************************
 
-STORE               bclr      SMEM+1,$80
+STORE               proc
+                    bclr      SMEM+1,$80
                     brclr     STAT5,$20,SKTA      ; TA NVM INHIBIT FLAG SET ?
                     bset      SMEM+1,$80
 SKTA                lda       SMEM+1              ; BINARY FREQUENCY MSB
@@ -1154,7 +1120,8 @@ FINST               bsr       WRITE1
 ; NVW read, sub-address in X
 ;*******************************************************************************
 
-RECALL              bsr       NEWSUB
+RECALL              proc
+                    bsr       NEWSUB
                     jmp       NEW
 
 NEWSUB              bsr       READ1
@@ -1191,12 +1158,16 @@ NOTFF2              sta       SMEM
 ; NVW read & write one byte
 ;*******************************************************************************
 
-READ1               bsr       GETAD
+READ1               proc
+                    bsr       GETAD
                     lda       ,x
                     incb
                     rts
 
-WRITE1              ldy       #$1000
+;*******************************************************************************
+
+WRITE1              proc
+                    ldy       #$1000
                     bset      PPROG,Y,$16         ; SET EELAT, ERASE & BYTE ERASE BITS
                     bsr       WBYTE               ; ERASE BYTE
                     jsr       DBOUNC              ; WAIT 15 ms
@@ -1211,25 +1182,25 @@ WBYTE               bsr       GETAD
                     incb
                     rts
 
-GETAD               psha
-                    pshb
+;*******************************************************************************
+
+GETAD               proc
+                    pshd
                     jsr       BAND                ; GET BAND
                     ldx       #$B618              ; EEPROM START ADDRESS
                     tba
                     cmpa      #1                  ; FM ?
-                    bls       FMB
+                    bls       Done@@
                     ldb       #122                ; NO, AM
                     abx
                     cmpa      #2                  ; MW ?
-                    beq       FMB
+                    beq       Done@@
                     abx                           ; NO, SW
-                    brclr     PORTE,Y,$40,SWB2    ; SECOND BANK ?
+                    brclr     PORTE,Y,$40,_1@@    ; SECOND BANK ?
                     abx                           ; YES
-SWB2
-; BRCLR     PORTE,Y,$80,FMB     ;SECOND PAIR OF BANKS ?
-; ABX:2                         ;YES
-FMB                 pulb
-                    pula
+_1@@               ;brclr     PORTE,Y,$80,Done@@  ; SECOND PAIR OF BANKS ?
+;                   abx:2                         ; YES
+Done@@              puld
                     abx
                     rts
 
@@ -1237,7 +1208,8 @@ FMB                 pulb
 ; RDS displays
 ;*******************************************************************************
 
-RTDSP               brset     PORTD,Y,$20,SRT     ; STANDBY ?
+RTDSP               proc
+                    brset     PORTD,Y,$20,SRT     ; STANDBY ?
                     brset     STAT5,$02,NOTRT     ; ALREADY RDS DISPLAY ?
                     brclr     STAT2,$04,NORT      ; ALREADY RT DISPLAY ?
 
@@ -1264,7 +1236,8 @@ NORT                jsr       CLTR
 ; Increment and decrement routines.
 ;*******************************************************************************
 
-UP                  bsr       LDXR
+UP                  proc
+                    bsr       LDXR
 IF                  inc       SMEM                ; NO, INCREMENT LSB
                     bne       TT1                 ; DID IT WRAP ROUND
                     inc       SMEM+1              ; YES, INCREMENT MSB
@@ -1272,7 +1245,10 @@ TT1                 decb
                     bne       IF                  ; ALL DONE ?
                     bra       NEWJ
 
-DOWN                bsr       LDXR
+;*******************************************************************************
+
+DOWN                proc
+                    bsr       LDXR
 DF                  tst       SMEM                ; NO, IS LSB ZERO ?
                     bne       TT2                 ; IF NOT LEAVE MSD
                     dec       SMEM+1              ; DECREMENT MSB
@@ -1284,7 +1260,10 @@ NEWJ                jsr       NEW
                     bclr      PORTA,Y,$10         ; DEMUTE
                     rts
 
-LDXR                brclr     STAT6,$08,LDXR2     ; AM ?
+;*******************************************************************************
+
+LDXR                proc
+                    brclr     STAT6,$08,LDXR2     ; AM ?
                     bset      STAT2,$40           ; YES, CLEAR PS NAME
                     bra       NFMB
 
@@ -1307,7 +1286,8 @@ SRT                 rts
 ; TA test
 ;*******************************************************************************
 
-TEST                brset     PORTD,Y,$20,AOB     ; STANDBY ?
+TEST                proc
+                    brset     PORTD,Y,$20,AOB     ; STANDBY ?
                     ldd       #$C5B1              ; CLYDE 1
                     std       PION
                     brset     STAT4,$04,NABT      ; TA SWITCHING ENABLED ?
@@ -1322,7 +1302,8 @@ NABT                bset      STAT4,$80           ; YES, DO IT
 ; Store key
 ;*******************************************************************************
 
-SAVE                brclr     STAT4,$08,NAME      ; ALARM DISPAY ?
+SAVE                proc
+                    brclr     STAT4,$08,NAME      ; ALARM DISPAY ?
                     brclr     STAT4,$10,NTB2      ; YES, ALARM ARMED ?
                     brset     STAT4,$20,AISM      ; YES, ALREADY SET-UP MODE ?
                     bset      STAT4,$60           ; NO, ENTER SET-UP MODE, HOURS
@@ -1366,7 +1347,8 @@ NTB2                rts
 ; subtracts the IF offset.
 ;*******************************************************************************
 
-PROG                brset     STAT,$01,NEW        ; STATION MODE ?
+PROG                proc
+                    brset     STAT,$01,NEW        ; STATION MODE ?
                     jsr       IFO                 ; P < IF OFFSET
                     jsr       ADB                 ; Q < FREQ + IF
 
@@ -1404,7 +1386,8 @@ STIF                jsr       IFO                 ; P < IF OFFSET
 ; The IF offset is selected according to the required band and placed in "RP."
 ;*******************************************************************************
 
-IPO                 bsr       BAND                ; FIND BAND
+IPO                 proc
+                    bsr       BAND                ; FIND BAND
                     brset     PORTA,Y,$04,NOTN    ; NEGATIVE FM IF ?
                     cmpb      #1                  ; YES
                     bhi       NOTN                ; BUT IS IT FM ?
@@ -1431,9 +1414,10 @@ IFS                 fcb       0,0,1,0,7,0         ; 10.70 MHz FM OSC HIGH
                     fcb       0,0,1,0,7,0         ; 10.70 MHz FM OSC HIGH
                     fcb       0,0,0,4,5,5         ; 455 KHz SW/MW
                     fcb       0,1,0,7,0,0         ; 10.70 MHz SW (EXT/5 FOR 5157)
-                    fcb       9,9,8,9,3,0         ; ­10.70 MHz FM OSC LOW
+                    fcb       9,9,8,9,3,0         ; ï¿½10.70 MHz FM OSC LOW
 
-BAND                ldb       PORTA,Y             ; GET BAND
+BAND                proc
+                    ldb       PORTA,Y             ; GET BAND
                     andb      #$03
                     ldx       #RQ
                     stx       NUM2
@@ -1558,7 +1542,8 @@ Loop@@              lda       #$FF
 ; Addition and subtraction of BCD numbers
 ;*******************************************************************************
 
-SUB                 stx       W5                  ; ANSWER POINTER
+SUB                 proc
+                    stx       W5                  ; ANSWER POINTER
 COM2                ldx       NUM2                ; 9S COMPLIMENT
 COMP                ldb       #$06                ; SECOND NUMBER
 LOOP3               lda       #$09
@@ -1607,7 +1592,8 @@ ADJ                 cmpa      #10
 ; Current binary divide ratio in SMEM & SMEM+1 is converted to decimal in RQ
 ;*******************************************************************************
 
-DCON                lda       SMEM+1              ; TRANSFER CURRENT
+DCON                proc
+                    lda       SMEM+1              ; TRANSFER CURRENT
                     sta       W2                  ; FREQUENCY DIVIDE
                     lda       SMEM                ; RATIO INTO
                     sta       W1                  ; WORKING AREA
@@ -1636,7 +1622,8 @@ NXT                 ldx       #RR                 ; ADD RR
 ; Delay (X x 1.5mS)
 ;*******************************************************************************
 
-DBNC                ldx       #100                ; 150mS
+DBNC                proc
+                    ldx       #100                ; 150mS
                     bra       SKDB
 
 DBOUNC              ldx       #10                 ; APPROX 15mS WITH A 8.388 MHz XTAL
@@ -1654,7 +1641,8 @@ ABO                 rts
 ; Serial output routine to the MC145170
 ;*******************************************************************************
 
-P5170               bclr      PORTB,Y,$01         ; CLOCK LOW
+P5170               proc
+                    bclr      PORTB,Y,$01         ; CLOCK LOW
                     bclr      PORTB,Y,$10         ; LE LOW
                     clra                          ; CLEAR
                     bsr       SQU8I               ; CONTROL REGISTER
@@ -1678,7 +1666,8 @@ P5170               bclr      PORTB,Y,$01         ; CLOCK LOW
 ; Serial output routine to the MC145157
 ;*******************************************************************************
 
-P5157               lda       SMEM                ; TRANSFER SMEM AND
+P5157               proc
+                    lda       SMEM                ; TRANSFER SMEM AND
                     lsla                          ; MEM+1 TO TEMPORARY
                     sta       W4                  ; LOCATIONS AND MOVE
                     lda       SMEM+1              ; UP ONE BIT TO INCLUDE
@@ -1700,7 +1689,8 @@ P5157               lda       SMEM                ; TRANSFER SMEM AND
 ; Subroutines for the MC145157/170
 ;*******************************************************************************
 
-SQU8I               ldb       #8                  ; SEND 8 BITS
+SQU8I               proc
+                    ldb       #8                  ; SEND 8 BITS
                     bra       S1I
 
 SQU7I               lsla                          ; MOVE OUT MS BIT
@@ -1734,7 +1724,8 @@ S2                  bclr      PORTB,Y,$01         ; CLOCK
 ; Toggle 9/10 KHz step (MW)
 ;*******************************************************************************
 
-T910                brset     STAT6,$40,CBH
+T910                proc
+                    brset     STAT6,$40,CBH
                     bset      STAT6,$40
                     rts
 
@@ -1742,13 +1733,13 @@ CBH                 bclr      STAT6,$40
                     rts
 
 ;*******************************************************************************
-
+;
 ; LINK batch files (RLE.BAT & RDE.LD) and PCBUG11 Vectors.
-
+;
 ; ILD11 RADE.O FNCE.O RDSE.O -MKUF E32.MAP -G RDE -O RDE.OUT
 ; IHEX RDE.OUT -O RDE.0
 ; TYPE E32.MAP
-
+;
 ; section .RAM1 BSS origin 0x0000
 ; section .RAM2 BSS origin 0x0100
 ; section .RAM3 BSS origin 0x0200           E32
@@ -1757,38 +1748,36 @@ CBH                 bclr      STAT6,$40
 ; section .ROM3 origin 0xF000             $A000
 ; section .VECT origin 0xBFC1               -
 ; section .VECT2 origin 0xFFD6            ($FFD6)
-
+;
 ;*******************************************************************************
 
-; #VECTORS                      ;SECTION .VECT
-; ORG       $BFC1
-
-; JMP       START                    ;SCI
-; JMP       START                    ;SPI
-; JMP       START                    ;PULSE ACCUMULATOR EDGE
-; JMP       START                    ;  "      "        OVER
-; JMP       START                    ;TIMER OVER
-; JMP       START                    ;"     IC4/OC5
-; JMP       START                    ;"     OC4
-; JMP       START                    ;"     OC3
-; JMP       START                    ;"     OC2
-; JMP       START                    ;"     OC1
-; JMP       START                    ;"     IC3
-; JMP       START                    ;"     IC2
-; JMP       START                    ;"     IC1
-; JMP       TINTB                    ;RTI
-; JMP       SDATA                    ;IRQ
-; JMP       SHAFTX                   ;NOT USED, XIRQ USED BY PCbug11
-; JMP       START                    ;SWI
-; JMP       START                    ;ILLEGAL OP CODE
-; JMP       START                    ;COP
-; JMP       START                    ;CLOCK MONITOR
-; JMP       START                    ;RESET
+;                   #VECTORS  $BFC1               ; SECTION .VECT
+;
+;                   jmp       START               ; SCI
+;                   jmp       START               ; SPI
+;                   jmp       START               ; PULSE ACCUMULATOR EDGE
+;                   jmp       START               ;   "      "        OVER
+;                   jmp       START               ; TIMER OVER
+;                   jmp       START               ; "     IC4/OC5
+;                   jmp       START               ; "     OC4
+;                   jmp       START               ; "     OC3
+;                   jmp       START               ; "     OC2
+;                   jmp       START               ; "     OC1
+;                   jmp       START               ; "     IC3
+;                   jmp       START               ; "     IC2
+;                   jmp       START               ; "     IC1
+;                   jmp       TINTB               ; RTI
+;                   jmp       SDATA               ; IRQ
+;                   jmp       SHAFTX              ; NOT USED, XIRQ USED BY PCbug11
+;                   jmp       START               ; SWI
+;                   jmp       START               ; ILLEGAL OP CODE
+;                   jmp       START               ; COP
+;                   jmp       START               ; CLOCK MONITOR
+;                   jmp       START               ; RESET
 
 ;*******************************************************************************
-                    #VECTORS                      ; MC68HC11E32 Vectors
+                    #VECTORS  $FFD6               ; MC68HC11E32 Vectors
 ;*******************************************************************************
-;                   ORG       $FFD6
 
                     dw        Start               ; SCI
                     dw        Start               ; SPI
