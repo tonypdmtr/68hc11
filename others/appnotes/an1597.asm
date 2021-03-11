@@ -52,53 +52,52 @@ stat2               rmb       1                   ; 0: DISPLAY TRANSIENT
 
 ;*******************************************************************************
 
-DOY                 rmb       2                   ; DAY OF YEAR
-MNTH                rmb       1                   ; MONTH
-DOM                 rmb       2                   ; DAY OF MONTH
-DOW                 rmb       2                   ; DAY OF WEEK
-WEEK                rmb       1                   ; WEEK NUMBER
-SDAY                rmb       2                   ; YEAR START DAY
-TYPE                rmb       1                   ; YEAR TYPE (LEAP)
-OFSET               rmb       1                   ; LOCAL OFFET
-DAT                 rmb       7                   ; SERIAL DATA BUFFER
-BLOCK               rmb       4                   ; BLOCK DATA
-BIT                 rmb       1                   ; BIT LEVEL
-CONF                rmb       1                   ; CRC CONFIDENCE
-QSEC                rmb       1                   ; QUARTER SECONDS
-TH8                 rmb       1                   ; EIGHTHS OF SECONDS
-M9                  rmb       1                   ; 9 MINUTE COUNTER
-CODE                rmb       1                   ; BLOCK CODE
-MIN                 rmb       1                   ; MINUTES
-OUR                 rmb       1                   ; HOURS
-DMIN                rmb       1                   ; DISPLAYED MINUTES
-DOUR                rmb       1                   ; DISPLAYED HOURS
-DDOW                rmb       2                   ; DISPLAYED DAY OF WEEK
-DWEEK               rmb       1                   ; DISPLAYED WEEK NUMBER
-TMIN                rmb       1                   ; TEMPORARY MINUTES
-TOUR                rmb       1                   ; TEMPORARY HOURS
-TDOW                rmb       1                   ; TEMPORARY DAY OF WEEK
-TWEEK               rmb       1                   ; TEMPORARY WEEK NUMBER
-SUP                 rmb       1                   ; VDD (A/D RESULT)
-RSSI                rmb       1                   ; SIGNAL LEVEL (A/D RESULT)
-RSS4                rmb       1                   ; AVERAGED SIGNAL LEVEL
-DISP                rmb       16                  ; LCD MODULE BUFFER
-DSPOLD              rmb       16                  ; LCD MODULE PREVIOUS DATA
-W1                  rmb       2                   ; \
-W2                  rmb       2                   ; > USED IN INTERRUPT
-W3                  rmb       2                   ; /
-TEMP                rmb       3
-DIST                rmb       1                   ; TRANSIENT DISPLAY TIMEOUT COUNTER
-SLEPT               rmb       1                   ; SLEEP TIMER MINUTES COUNTER
-AMIN                rmb       1                   ; ALARM MINUTES
-AOUR                rmb       1                   ; ALARM HOURS
-KEY                 rmb       1                   ; CODE OF PRESSED KEY
-KOUNT               rmb       1                   ; KEYBOARD COUNTER
-ADIS                rmb       1                   ; ALTERNATIVE DISPLAY TYPE
+doy                 rmb       2                   ; DAY OF YEAR
+mnth                rmb       1                   ; MONTH
+dom                 rmb       2                   ; DAY OF MONTH
+dow                 rmb       2                   ; DAY OF WEEK
+week                rmb       1                   ; WEEK NUMBER
+sday                rmb       2                   ; YEAR START DAY
+type                rmb       1                   ; YEAR TYPE (LEAP)
+ofset               rmb       1                   ; LOCAL OFFET
+dat                 rmb       7                   ; SERIAL DATA BUFFER
+block               rmb       4                   ; BLOCK DATA
+bit                 rmb       1                   ; BIT LEVEL
+conf                rmb       1                   ; CRC CONFIDENCE
+qsec                rmb       1                   ; QUARTER SECONDS
+th8                 rmb       1                   ; EIGHTHS OF SECONDS
+m9                  rmb       1                   ; 9 MINUTE COUNTER
+code                rmb       1                   ; BLOCK CODE
+min                 rmb       1                   ; MINUTES
+hour                rmb       1                   ; HOURS
+dmin                rmb       1                   ; DISPLAYED MINUTES
+dhour               rmb       1                   ; DISPLAYED HOURS
+ddow                rmb       2                   ; DISPLAYED DAY OF WEEK
+dweek               rmb       1                   ; DISPLAYED WEEK NUMBER
+tmin                rmb       1                   ; TEMPORARY MINUTES
+thour               rmb       1                   ; TEMPORARY HOURS
+tdow                rmb       1                   ; TEMPORARY DAY OF WEEK
+tweek               rmb       1                   ; TEMPORARY WEEK NUMBER
+sup                 rmb       1                   ; VDD (A/D RESULT)
+rssi                rmb       1                   ; SIGNAL LEVEL (A/D RESULT)
+rss4                rmb       1                   ; AVERAGED SIGNAL LEVEL
+disp                rmb       16                  ; LCD MODULE BUFFER
+dspold              rmb       16                  ; LCD MODULE PREVIOUS DATA
+w1                  rmb       2                   ; |
+w2                  rmb       2                   ; | USED IN INTERRUPT
+w3                  rmb       2                   ; |
+temp                rmb       3
+dist                rmb       1                   ; TRANSIENT DISPLAY TIMEOUT COUNTER
+slept               rmb       1                   ; SLEEP TIMER MINUTES COUNTER
+amin                rmb       1                   ; ALARM MINUTES
+ahour               rmb       1                   ; ALARM HOURS
+key                 rmb       1                   ; CODE OF PRESSED KEY
+kount               rmb       1                   ; KEYBOARD COUNTER
+adis                rmb       1                   ; ALTERNATIVE DISPLAY TYPE
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      $F800               ; .ROM1
 ;*******************************************************************************
-                    org       $F800               ; .ROM1
 
 ;*******************************************************************************
 ; Reset & initialisation
@@ -113,7 +112,7 @@ Start               proc
                     sta       PACTL
                     lda       #$34                ; ENABLE CONTINUOUS A/D
                     sta       ADCTL
-                    ldy       #$1000
+                    ldy       #REGS
 
                     ldd       #$003C              ; 0,1: SCI (PCBUG11), 24: not used
                     std       [PORTD,y            ; 5: CONTROL OUTPUT
@@ -155,7 +154,7 @@ IDLE                proc
                     bra       IDLE
 
 _1@@                brclr     stat2,$01,_2@@      ; DISPLAY TRANSIENT?
-                    lda       DIST
+                    lda       dist
                     bne       _2@@                ; YES, TIMED OUT?
                     jsr       CLTR
 
@@ -164,7 +163,7 @@ _2@@                brclr     stat1,$08,Scan@@    ; DISPLAY UPDATE REQUIRED?
                     bclr      stat1,$08           ; AND CLEAR FLAG
 
 Scan@@              brclr     stat2,$10,CHSLP@@   ; ALARM ARMED?
-                    ldd       DMIN                ; YES, COMPARE TIME WITH ALARM TIME
+                    ldd       dmin                ; YES, COMPARE TIME WITH ALARM TIME
                     inca                          ; ADD A MINUTE
                     cmpa      #60                 ; NEXT HOUR?
                     bne       ITOK@@
@@ -173,17 +172,17 @@ Scan@@              brclr     stat2,$10,CHSLP@@   ; ALARM ARMED?
                     cmpb      #24                 ; NEXT DAY?
                     bne       ITOK@@
                     clrb                          ; YES, CLEAR HOURS
-ITOK@@              cpd       AMIN                ; ALARM TIME
+ITOK@@              cpd       amin                ; ALARM TIME
                     bne       CHSLP@@             ; SAME?
 
-                    lda       QSEC                ; WAKEUP TWO SECONDS EARLY
+                    lda       qsec                ; WAKEUP TWO SECONDS EARLY
                     cmpa      #218
                     bne       CHSLP@@             ; TO PREVENT SWITCHOFF LOCKOUT
                     bclr      [PORTD,y,$20        ; YES, SWITCH ON
                     jsr       INSLP               ; START SLEEP TIMER
-                    inc       SLEPT               ; 61 TO COMPENSATE FOR IMMEDIATE DECREMENT
+                    inc       slept               ; 61 TO COMPENSATE FOR IMMEDIATE DECREMENT
 CHSLP@@             brclr     stat2,$02,FLN@@     ; SLEEP TIMER RUNNING?
-                    lda       SLEPT               ; YES
+                    lda       slept               ; YES
                     bne       FLN@@               ; TIME TO FINISH?
                     bclr      stat2,$02           ; YES, CLEAR FLAG
                     bset      [PORTD,y,$20        ; AND SWITCH OFF
@@ -205,20 +204,20 @@ KBD                 proc
                     lda       [KEYP,y             ; READ KEYBOARD
                     bita      #KINS               ; ANY INPUT LINE HIGH?
                     bne       _1@@
-                    clr       KEY                 ; NO KEY PRESSED
+                    clr       key                 ; NO KEY PRESSED
                     rts
 
 _1@@                anda      #$1B
-                    cmpa      KEY                 ; SAME AS LAST TIME?
+                    cmpa      key                 ; SAME AS LAST TIME?
                     beq       _2@@
-                    sta       KEY                 ; NO, SAVE THIS KEY
-                    clr       KOUNT
-_2@@                inc       KOUNT               ; YES, THE SAME
-                    lda       KOUNT
+                    sta       key                 ; NO, SAVE THIS KEY
+                    clr       kount
+_2@@                inc       kount               ; YES, THE SAME
+                    lda       kount
                     cmpa      #3                  ; 3 THE SAME?
                     bne       Done@@              ; IF 3 THEN PERFORM KEY FUNCTION
 
-                    lda       KEY
+                    lda       key
                     suba      #9                  ; SLEEP ($09)?
                     beq       SLEEP
                     deca                          ; NO, DISPLAY CONTROL($0A)?
@@ -265,7 +264,7 @@ On@@                bset      [PORTD,y,$20        ; YES, SWITCH OFF
 
 CLTR                proc
                     bclr      stat2,$AD           ; CLEAR DISPLAY FLAGS (TRANSIENT, ALARM, ALT. DISPLAY, SLEEP)
-                    clr       ADIS
+                    clr       adis
                     rts
 
 ;*******************************************************************************
@@ -289,7 +288,7 @@ Update@@            bclr      stat2,$20           ; CANCEL SETUP
 
 T25                 proc
                     lda       #12                 ; 3 SECONDS TIMEOUT
-TRAN                sta       DIST
+TRAN                sta       dist
                     bset      stat2,$01           ; SET DISPLAY TRANSIENT FLAG
                     rts
 
@@ -305,8 +304,8 @@ DCK                 proc
 NEXTD               proc
                     bset      stat2,$80           ; NO, SET ALTERNATIVE DISPLAY FLAG AND
                     bclr      stat2,$2D           ; CLEAR OTHER DISPLAY FLAGS
-                    inc       ADIS                ; INCREMENT DISPLAY TYPE
-                    lda       ADIS
+                    inc       adis                ; INCREMENT DISPLAY TYPE
+                    lda       adis
                     cmpa      #4                  ; TOO FAR?
                     beq       CLTR                ; IF SO BACK TO ZERO
                     rts
@@ -325,15 +324,15 @@ SLEEP               proc
 
 INSLP               proc
 Loop@@              lda       #60                 ; NO, INITIALISE SLEEP TIMER
-                    sta       SLEPT
+                    sta       slept
                     bset      stat2,$02           ; START SLEEP TIMER
 ?STR2               bsr       CLTR                ; YES, CLEAR DISPLAY TRANSIENTS
                     bset      stat2,$04           ; SLEEP DISPLAY
                     bra       SLPTOK@@            ; NO DECREMENT IF FIRST TIME
 
-?DECS               lda       SLEPT               ; DECREMENT SLEEP TIMER
+?DECS               lda       slept               ; DECREMENT SLEEP TIMER
                     suba      #5
-                    sta       SLEPT
+                    sta       slept
                     bmi       Loop@@              ; IF UNDERFLOW, WRAP ROUND TO 60
 SLPTOK@@            bsr       T25
                     bra       SODM
@@ -343,20 +342,20 @@ SLPTOK@@            bsr       T25
 
 PINC                proc
                     brset     stat2,$40,_1@@      ; SETUP HOURS?
-                    lda       AMIN
+                    lda       amin
                     inca
                     cmpa      #59
                     ble       MinOK@@
                     clra
-MinOK@@             sta       AMIN
+MinOK@@             sta       amin
                     bra       T5S                 ; 10 SECOND TIMEOUT
 
-_1@@                lda       AOUR
+_1@@                lda       ahour
                     inca
                     cmpa      #23
                     ble       _2@@
                     clra
-_2@@                sta       AOUR
+_2@@                sta       ahour
 T5S                 jmp       A5SD                ; 10 SECOND TIMEOUT
 
 ;*******************************************************************************
@@ -364,15 +363,15 @@ T5S                 jmp       A5SD                ; 10 SECOND TIMEOUT
 
 PDEC                proc
                     brset     stat2,$40,_1@@      ; SETUP HOURS?
-                    dec       AMIN
+                    dec       amin
                     bpl       T5S
                     lda       #59
-                    sta       AMIN
+                    sta       amin
                     bra       T5S
-_1@@                dec       AOUR
+_1@@                dec       ahour
                     bpl       T5S
                     lda       #23
-                    sta       AOUR
+                    sta       ahour
                     bra       T5S
 
 ;*******************************************************************************
@@ -381,65 +380,65 @@ _1@@                dec       AOUR
 TINTB               proc
                     ldy       #REGS
                     bclr      $25,y,$BF           ; CLEAR RTI INTERRUPT FLAG
-                    inc       TH8                 ; EIGTHS OF SECONDS
-                    lda       TH8
+                    inc       th8                 ; EIGTHS OF SECONDS
+                    lda       th8
                     cmpa      #2                  ; QUARTER SECOND?
                     beq       Quart@@
 Done@@              rti
 
-Quart@@             clr       TH8
-                    dec       DIST                ; DECREMENT TRANSIENT DISPLAY TIMER
+Quart@@             clr       th8
+                    dec       dist                ; DECREMENT TRANSIENT DISPLAY TIMER
                     bset      stat1,$08           ; UPDATE DISPLAY
           ;-------------------------------------- ; Update clock
-                    inc       QSEC                ; UPDATE QUARTER SECONDS
-                    ldb       QSEC
-                    lda       M9                  ; 9 MINUTE COUNTER
+                    inc       qsec                ; UPDATE QUARTER SECONDS
+                    ldb       qsec
+                    lda       m9                  ; 9 MINUTE COUNTER
                     bne       _1@@                ; TIME TO COMPENSATE FOR 2.000 MHz CRYSTAL?
                     cmpb      #228                ; YES, 228 QUARTER SECONDS A MINUTE
                     bra       _2@@
 
 _1@@                cmpb      #229                ; NO, 229 (DIVIDE RATIO=2x228.888)
 _2@@                bne       Done@@              ; IE 457.778, 457.778x131.072=60.00185 sec/min)
-                    clr       QSEC                ; IF 228 OR 229 THEN CLEAR SECONDS
-                    inc       MIN                 ; AND UPDATE MINUTES
-                    dec       SLEPT               ; AND SLEEP TIMER
-                    lda       M9                  ; AND 9 MINUTE COUNTER
+                    clr       qsec                ; IF 228 OR 229 THEN CLEAR SECONDS
+                    inc       min                 ; AND UPDATE MINUTES
+                    dec       slept               ; AND SLEEP TIMER
+                    lda       m9                  ; AND 9 MINUTE COUNTER
                     inca
                     cmpa      #9
                     bne       _3@@                ; TENTH MINUTE FINISHED?
                     clra                          ; YES, START AGAIN
-_3@@                sta       M9
+_3@@                sta       m9
 
-                    lda       MIN
+                    lda       min
                     cmpa      #60
                     bne       NOTC                ; PAST 59?
-                    clr       MIN                 ; YES, CLEAR
-                    inc       OUR                 ; UPDATE HOURS
-                    lda       OUR
+                    clr       min                 ; YES, CLEAR
+                    inc       hour                ; UPDATE HOURS
+                    lda       hour
                     cmpa      #24
                     bne       NOTC                ; PAST 23?
-                    clr       OUR                 ; YES CLEAR
+                    clr       hour                ; YES CLEAR
 ;                   bra       TEST1
 
 ;*******************************************************************************
 ; Update date
 
 TEST1               proc
-                    inc       DOW+1               ; NEXT DAY
-                    lda       DOW+1
+                    inc       dow+1               ; NEXT DAY
+                    lda       dow+1
                     cmpa      #7                  ; PAST SUNDAY?
                     bls       NOTC
                     ldb       #1                  ; YES, BACK TO MONDAY
-                    stb       DOW+1
-TEST2               inc       WEEK                ; INCREMENT WEEK NUMBER
-                    lda       WEEK
+                    stb       dow+1
+TEST2               inc       week                ; INCREMENT WEEK NUMBER
+                    lda       week
 
-                    ldb       SDAY+1
+                    ldb       sday+1
                     cmpb      #4                  ; 1st JANUARY WAS A THURSDAY?
                     beq       W53                 ; IF SO, 53 WEEKS
                     cmpb      #3                  ; WEDNESDAY?
                     bne       W52                 ; NEITHER WED NOR THU SO 52 WEEKS
-                    tst       TYPE                ; WED., BUT IS IT LEAP?
+                    tst       type                ; WED., BUT IS IT LEAP?
                     bne       W52                 ; IF NOT THEN ONLY 52
 W53                 cmpa      #53                 ; (THU.) OR (WED. & LEAP) SO 53 WEEKS
                     bra       TWN
@@ -448,20 +447,20 @@ W52                 cmpa      #52                 ; ELSE, 52 WEEKS
 TWN                 bls       NOTC                ; TOO BIG?
                     ldb       #1                  ; YES, BACK TO 1
 
-                    stb       WEEK
-                    inc       SDAY+1
-                    lda       TYPE                ; IF LEAP THEN START DAY INCREASES BY 2
+                    stb       week
+                    inc       sday+1
+                    lda       type                ; IF LEAP THEN START DAY INCREASES BY 2
                     bne       CSD
-                    inc       SDAY+1              ; SO INCREMENT AGAIN
-CSD                 ldd       SDAY
+                    inc       sday+1              ; SO INCREMENT AGAIN
+CSD                 ldd       sday
                     cmpb      #7                  ; UPDATED START DAY TO BIG?
                     bls       NOV2
                     subb      #7                  ; YES, CORRECT
-                    std       SDAY
-NOV2                lda       TYPE                ; YEAR TYPE
+                    std       sday
+NOV2                lda       type                ; YEAR TYPE
                     inca
                     anda      #$03                ; IF 4, BACK TO 0
-                    sta       TYPE
+                    sta       type
 
 NOTC                jsr       CDATE
                     rti
@@ -481,14 +480,14 @@ QBP                 equ       20                  ; MSB COUNTS FOR 10 ms (BIT PE
 
 SDATA               proc
                     ldd       TCNT                ; READ TIMER
-                    std       W1                  ; SAVE IT
-                    subd      W2                  ; SUBTRACT PREVIOUS
-                    std       W3                  ; AND SAVE DELTA
+                    std       w1                  ; SAVE IT
+                    subd      w2                  ; SUBTRACT PREVIOUS
+                    std       w3                  ; AND SAVE DELTA
                     cmpa      #2*QBP              ; OVER 20 ms?
                     blo       LT20
-                    ldd       W1                  ; YES, UPDATE PREVIOUS WITH CURRENT TIME
-                    std       W2
-                    ldd       W3                  ; RELOAD DELTA
+                    ldd       w1                  ; YES, UPDATE PREVIOUS WITH CURRENT TIME
+                    std       w2
+                    ldd       w3                  ; RELOAD DELTA
                     cmpa      #5*QBP              ; 2 HALF BITS?
                     bhs       NT2HB
 INBIT               bsr       BITIN               ; YES, REPEAT LAST BIT
@@ -523,18 +522,18 @@ FINV                bclr      stat1,$01           ; AND FORCE RESYNC
 ; Shift in bit and calculate CRC
 
 MULT                proc
-                    sta       TEMP
+                    sta       temp
                     lda       #8
-                    sta       TEMP+1
-                    lda       TEMP+2
-Loop@@              ror       TEMP
+                    sta       temp+1
+                    lda       temp+2
+Loop@@              ror       temp
                     bcc       Cont@@
                     eora      ,x
                     eorb      1,x
 Cont@@              inx:2
-                    dec       TEMP+1
+                    dec       temp+1
                     bne       Loop@@
-                    sta       TEMP+2
+                    sta       temp+2
                     rts
 
 ;*******************************************************************************
@@ -548,31 +547,31 @@ BITIN1              proc
 BITIN               proc
                     lda       stat1
                     rola                          ; PUT stat1 $80 BIT INTO C BIT
-                    rol       DAT+6               ; MOVE ALL (50) BITS UP
+                    rol       dat+6               ; MOVE ALL (50) BITS UP
                     jsr       SHFT
                     brclr     stat1,$01,TRY2      ; BIT BY BIT CHECK?
-                    dec       BIT                 ; NO, WAIT FOR BIT 50
+                    dec       bit                 ; NO, WAIT FOR BIT 50
                     bne       Done@@              ; THIS TIME?
 TRY1                lda       #50                 ; YES, RELOAD BIT COUNTER
-                    sta       BIT
-TRY2                brclr     DAT,$02,NOTV        ; PREBIT SHOULD BE A 1
-                    lda       DAT+6               ; LSB
-                    ldb       DAT+5               ; MSB (5 BITS)
+                    sta       bit
+TRY2                brclr     dat,$02,NOTV        ; PREBIT SHOULD BE A 1
+                    lda       dat+6               ; LSB
+                    ldb       dat+5               ; MSB (5 BITS)
                     andb      #$1F
-                    sta       TEMP+2
-                    lda       DAT+5
+                    sta       temp+2
+                    lda       dat+5
                     anda      #$E0
                     ldx       #$B510              ; OFFSET FOR MISSING MATRIX ENTRIES (WAS: B510)
                     bsr       MULT
-                    lda       DAT+4
+                    lda       dat+4
                     bsr       MULT
-                    lda       DAT+3
+                    lda       dat+3
                     bsr       MULT
-                    lda       DAT+2
+                    lda       dat+2
                     bsr       MULT
-                    lda       DAT+1
+                    lda       dat+1
                     bsr       MULT
-                    brclr     DAT+0,$01,FIN
+                    brclr     dat+0,$01,FIN
                     eora      #$3B
                     eorb      #$17
 ;                   bra       FIN
@@ -584,99 +583,99 @@ Done@@              equ       :AnRTS
 FIN                 proc
                     cpd       #0
                     beq       VALID
-NOTV                lda       CONF
+NOTV                lda       conf
                     cmpa      #$0F                ; CONFIDENCE 15?
                     beq       DecConf@@
                     bclr      stat1,$01           ; NO, BIT BY BIT CRC CHECK
                     tsta
                     beq       Done@@              ; CONFIDENCE ZERO?
-                    dec       BIT
+                    dec       bit
                     bne       Done@@              ; USE BIT COUNTER TO SLOW CONFIDENCE
                     lda       #15                 ; DROP DURING BIT BY BIT ATTEMPT TO
-                    sta       BIT                 ; RESYNCRONISE
-DecConf@@           dec       CONF
+                    sta       bit                 ; RESYNCRONISE
+DecConf@@           dec       conf
 Done@@              rts
 
 ;*******************************************************************************
 
 VALID               proc
                     bset      stat1,$01
-                    lda       CONF
+                    lda       conf
                     cmpa      #14
                     bhi       _1@@
                     inca
-                    sta       CONF
+                    sta       conf
 _1@@                lda       #50
-                    sta       BIT
+                    sta       bit
                     bsr       SHFT
                     bsr       SHFT
                     bsr       SHFT
-                    ldd       DAT+1
-                    std       BLOCK
-                    ldd       DAT+3
-                    std       BLOCK+2
-                    lda       DAT
+                    ldd       dat+1
+                    std       block
+                    ldd       dat+3
+                    std       block+2
+                    lda       dat
                     anda      #$0F
-                    sta       CODE
+                    sta       code
                     bne       Done@@              ; BLOCK 0?
-                    brclr     BLOCK,$80,TIME      ; BLOCK 0, TIME?
+                    brclr     block,$80,TIME      ; BLOCK 0, TIME?
 Done@@              rts
 
 ;*******************************************************************************
 
 SHFT                proc
-                    rol       DAT+5
-                    rol       DAT+4
-                    rol       DAT+3
-                    rol       DAT+2
-                    rol       DAT+1
-                    rol       DAT
+                    rol       dat+5
+                    rol       dat+4
+                    rol       dat+3
+                    rol       dat+2
+                    rol       dat+1
+                    rol       dat
                     rts
 
 ;*******************************************************************************
 ; Process time block
 
 TIME                proc
-                    ldd       BLOCK+2
+                    ldd       block+2
                     lsld:2
                     anda      #$3F
                     cmpa      #59
                     bhi       Done@@              ; OVER 59?
-                    sta       TMIN                ; NO, MINUTES OK
-                    ldd       BLOCK+1
+                    sta       tmin                ; NO, MINUTES OK
+                    ldd       block+1
                     lsrd
                     lsrb:3
                     cmpb      #23
                     bhi       Done@@              ; OVER 23?
-                    stb       TOUR                ; NO, HOURS OK
-                    lda       BLOCK+1
+                    stb       thour               ; NO, HOURS OK
+                    lda       block+1
                     rora
                     anda      #$07
                     beq       Done@@              ; ZERO?
-                    sta       TDOW                ; NO, DAYOFWEEK OK
-                    ldd       BLOCK
+                    sta       tdow                ; NO, DAYOFWEEK OK
+                    ldd       block
                     lsrd:2
                     lsrb:2
                     beq       Done@@              ; ZERO?
                     cmpb      #53                 ; NO, OVER 53?
                     bhi       Done@@              ; NO, WEEK NUMBER OK
-                    stb       TWEEK
+                    stb       tweek
                     anda      #$07
                     beq       Done@@              ; YEAR START DAY ZERO?
-                    sta       SDAY+1              ; NO, OK
-                    ldb       BLOCK
+                    sta       sday+1              ; NO, OK
+                    ldb       block
                     clra
                     lsld:3
-                    sta       TYPE                ; YEAR TYPE (LEAP)
-                    lda       BLOCK+3
+                    sta       type                ; YEAR TYPE (LEAP)
+                    lda       block+3
                     anda      #$3F
-                    sta       OFSET               ; LOCAL TIM OFFSET
-                    clr       QSEC
-                    clr       TH8
-                    ldd       TDOW                ; UPDATE DOW & WEEK
-                    std       DOW+1
-                    ldd       TMIN                ; UPDATE MINUTE & HOUR
-                    std       MIN
+                    sta       ofset               ; LOCAL TIM OFFSET
+                    clr       qsec
+                    clr       th8
+                    ldd       tdow                ; UPDATE DOW & WEEK
+                    std       dow+1
+                    ldd       tmin                ; UPDATE MINUTE & HOUR
+                    std       min
                     brset     stat1,$40,CDATE     ; DATE ALREADY VALID?
                     jsr       NOTALR              ; NO, FIRST TIME, STANDBY
                     bset      stat1,$40           ; AND SET FLAG
@@ -687,33 +686,33 @@ Done@@              equ       :AnRTS
 ; Calculate offset
 
 CDATE               proc
-                    ldd       MIN                 ; XFER MINUTES AND HOURS
-                    std       DMIN
-                    lda       WEEK                ; XFER WEEK NUMBER
-                    std       DWEEK
-                    ldd       DOW                 ; XFER DAYOFWEEK
-                    std       DDOW
+                    ldd       min                 ; XFER MINUTES AND HOURS
+                    std       dmin
+                    lda       week                ; XFER WEEK NUMBER
+                    std       dweek
+                    ldd       dow                 ; XFER DAYOFWEEK
+                    std       ddow
 ;                   bra       LOCAL
 
 ;*******************************************************************************
 ; Local time difference adjustment (neg.)
 
 LOCAL               proc
-                    ldb       OFSET               ; CHECK FOR OFFSET
-                    brclr     OFSET,$20,POS       ; POSITIVE?
+                    ldb       ofset               ; CHECK FOR OFFSET
+                    brclr     ofset,$20,POS       ; POSITIVE?
                     negb                          ; NO, NEGATIVE HOURS IN B
                     lsrb
                     orb       #$F0                ; MS BITS TO 1s
                     bsr       HALF                ; HALF HOUR ADJUSTMENT
-                    addb      DOUR                ; HOUR OFFSET, MINUS UTC HOURS
+                    addb      dhour               ; HOUR OFFSET, MINUS UTC HOURS
                     bcs       ZOM@@               ; OVERFLOW?
                     addb      #24                 ; NO, ADD 24 HOURS
-                    lda       DDOW+1
+                    lda       ddow+1
                     deca                          ; AND GO BACK A DAY
                     bne       Ok@@                ; WAS MONDAY?
-                    dec       DWEEK               ; YES, LAST WEEK
+                    dec       dweek               ; YES, LAST WEEK
                     lda       #7                  ; SUNDAY
-Ok@@                sta       DDOW+1
+Ok@@                sta       ddow+1
 ZOM@@               andb      #$1F
                     bra       TFIN
 
@@ -721,13 +720,13 @@ ZOM@@               andb      #$1F
 
 HALF                proc
                     bcc       Done@@              ; 1/2 HOUR?
-                    lda       DMIN                ; YES
+                    lda       dmin                ; YES
                     adda      #30                 ; ADD 30 MINUTES
                     cmpa      #59
                     bls       Save@@              ; OVERFLOW?
                     suba      #60                 ; YES, SUBTRACT 60 MINUTES
-                    inc       DOUR                ; AND ADD 1 HOUR
-Save@@              sta       DMIN
+                    inc       dhour               ; AND ADD 1 HOUR
+Save@@              sta       dmin
 Done@@              rts
 
 ;*******************************************************************************
@@ -736,53 +735,53 @@ Done@@              rts
 POS                 proc
                     lsrb                          ; HOURS IN B
                     bsr       HALF                ; HALF HOUR ADJUSTMENT
-                    addb      DOUR                ; HOUR OFFSET, ADD UTC HOURS
+                    addb      dhour               ; HOUR OFFSET, ADD UTC HOURS
                     cmpb      #23
                     bls       TFIN                ; OVERFLOW?
                     subb      #24                 ; YES, SUBTRACT 24 HOURS
-                    lda       DDOW+1
+                    lda       ddow+1
                     inca                          ; AND INCREMENT DAYOFWEEK
                     cmpa      #7
                     ble       Ok@@                ; WAS SUNDAY?
-                    inc       DWEEK               ; YES, NEXT WEEK
+                    inc       dweek               ; YES, NEXT WEEK
                     lda       #1                  ; MONDAY
-Ok@@                sta       DDOW+1
+Ok@@                sta       ddow+1
 ;                   bra       TFIN
 
 ;*******************************************************************************
 
 TFIN                proc
-                    stb       DOUR
+                    stb       dhour
 ;                   bra       DATE
 
 ;*******************************************************************************
 ; Calculate date (month & dayofmonth)
 
 DATE                proc
-                    lda       DWEEK               ; WEEK NUMBER ADJUSTED FOR LOCAL OFFSET
-                    ldb       SDAY+1              ; CAN BE 0 OR 54 (53 IN A 52 WEEK YEAR)
+                    lda       dweek               ; WEEK NUMBER ADJUSTED FOR LOCAL OFFSET
+                    ldb       sday+1              ; CAN BE 0 OR 54 (53 IN A 52 WEEK YEAR)
                     cmpb      #5                  ; IF 1st JAN/31st DEC RANSITION CAUSED
                     blo       WNOK@@              ; BY OFFSET
                     inca                          ; ADJUST WEEK FOR YEARSTARTDAYOFWEEK
 WNOK@@              ldb       #7                  ; AND MULTIPLY BY 7 TO GET DAYOFYEAR
                     mul
-                    addd      DDOW                ; ADD CURRENT DAYOFWEEK
+                    addd      ddow                ; ADD CURRENT DAYOFWEEK
                     addd      #55                 ; START AT 1st NOV (PREVIOUS YEAR)
-                    subd      SDAY                ; SUBTRACT YEAR START DAYOFWEEK
-                    std       DOY                 ; SAVE DAYOFYEAR (DEBUG)
+                    subd      sday                ; SUBTRACT YEAR START DAYOFWEEK
+                    std       doy                 ; SAVE DAYOFYEAR (DEBUG)
                     brclr     stat1,$40,Done@@    ; DATE VALID?
-                    clr       MNTH                ; MONTH=0: NOVEMBER (PREVIOUS YEAR)
+                    clr       mnth                ; MONTH=0: NOVEMBER (PREVIOUS YEAR)
                     ldx       #Table@@
-                    tst       TYPE
+                    tst       type
                     bne       Loop@@              ; LEAP YEAR?
                     ldx       #Table@@+24         ; YES, USE SECOND TABLE
-Loop@@              inc       MNTH
+Loop@@              inc       mnth
                     subd      ,x
                     inx
                     inx
                     cpd       ,x
                     bhi       Loop@@
-                    std       DOM
+                    std       dom
 Done@@              rts
 
 Table@@             fdb       30,31               ; NOVEMBER, DECEMBER
@@ -798,7 +797,7 @@ MOD                 proc
                     brset     stat2,$08,Alarm@@   ; NO, ALARM DISPLAY?
 
                     brclr     stat2,$80,Normal@@  ; NO,ALTERNATIVE DISPLAYS?
-                    lda       ADIS
+                    lda       adis
                     deca
                     bne       _2@@
                     jsr       ALTD1               ; DATA & TIME DISPLAY
@@ -826,12 +825,12 @@ StandBy@@           bsr       STBYD               ; STANDBY DISPLAY
 
 Alarm@@             jsr       ALRMD               ; ALARM DISPLAY
 
-Row@@               ldx       #DISP
+Row@@               ldx       #disp
 Loop@@              lda       ,x
                     cmpa      16,x                ; HAS CHARACTER CHANGED?
                     bne       DIFF
                     inx
-                    cpx       #DISP+16
+                    cpx       #disp+16
                     bne       Loop@@
                     rts
 
@@ -841,14 +840,14 @@ DIFF                proc
                     jsr       WAIT
                     lda       #$80                ; ADDRESS DISPLAY RAM
                     jsr       CLOCK               ; LATCH IT
-                    ldx       #DISP
+                    ldx       #disp
 Loop@@              jsr       WAIT
                     bset      [LCDC,y,$20         ; WRITE DATA
                     lda       ,x                  ; GET A BYTE
                     sta       16,x
                     jsr       CLOCK               ; SEND IT TO MODULE
                     inx
-                    cpx       #DISP+16            ; DONE?
+                    cpx       #disp+16            ; DONE?
                     bne       Loop@@
                     rts                           ; REMOVE FOR /16 DISPLAY
 #ifdef
@@ -859,7 +858,7 @@ LCD16               proc
                     jsr       WAIT
                     lda       #$A8                ;ADDRESS 40
                     jsr       CLOCK               ;SEND IT TO MODULE
-                    ldx       #DISP
+                    ldx       #disp
 Loop@@              jsr       WAIT
          #if HC11 = 2                             ;E2
                     bset      LCDC,y,$20          ;WRITE DATA
@@ -869,7 +868,7 @@ Loop@@              jsr       WAIT
                     lda       8,x                 ;GET A BYTE
                     jsr       CLOCK               ;SEND IT TO MODULE
                     inx
-                    cpx       #DISP+8             ;DONE?
+                    cpx       #disp+8             ;DONE?
                     bne       Loop@@
                     rts
 #endif
@@ -885,25 +884,25 @@ NORMD               proc
 ALRMA               proc
                     ldx       #ALARMS
                     jsr       XFER16
-                    lda       AOUR                ; GET ALARM HOURS
+                    lda       ahour               ; GET ALARM HOURS
                     jsr       CBCD
-                    std       DISP
-                    lda       AMIN
+                    std       disp
+                    lda       amin
                     jsr       CBCD
-                    std       DISP+2
+                    std       disp+2
 ;                   bra       STIME
 
 ;*******************************************************************************
 
 STIME               proc
-                    lda       DOUR                ; GET TIME
+                    lda       dhour               ; GET TIME
                     bsr       SUBSP
-                    std       DISP+11
-                    lda       DMIN
+                    std       disp+11
+                    lda       dmin
                     jsr       CBCD
-                    std       DISP+14
+                    std       disp+14
                     lda       #$3A                ; 0.5 Hz FLASHING COLON
-                    sta       DISP+13
+                    sta       disp+13
                     rts
 
 ;*******************************************************************************
@@ -921,26 +920,26 @@ Done@@              rts
 STBYD               proc
                     bsr       STIME
                     brset     stat2,$10,ALRMA     ; ALARM ARMED?
-                    ldb       DDOW+1              ; NO, GET DAY OF WEEK
+                    ldb       ddow+1              ; NO, GET DAY OF WEEK
                     ldx       #DNAME              ; WAS: DNAME3
                     bsr       T3X                 ; AND CONVERT TO STRING
-                    std       DISP
+                    std       disp
                     lda       2,x
-                    sta       DISP+2
+                    sta       disp+2
 
                     lda       #' '
-                    sta       DISP+3
-                    sta       DISP+6
-                    sta       DISP+10
-                    lda       DOM+1               ; DAY OF MONTH
+                    sta       disp+3
+                    sta       disp+6
+                    sta       disp+10
+                    lda       dom+1               ; DAY OF MONTH
                     bsr       SUBSP
-                    std       DISP+4
-                    ldb       MNTH                ; MONTH
+                    std       disp+4
+                    ldb       mnth                ; MONTH
                     ldx       #MNAME              ; WAS: MNAME3
                     bsr       T3X                 ; CONVERT TO STRING
-                    std       DISP+7
+                    std       disp+7
                     lda       2,x
-                    sta       DISP+9
+                    sta       disp+9
                     rts
 
 ;*******************************************************************************
@@ -957,65 +956,65 @@ T3X                 proc
 
 ALTD1               proc
                     lda       #' '
-                    sta       DISP+11
-                    sta       DISP+13
-                    lda       CONF
+                    sta       disp+11
+                    sta       disp+13
+                    lda       conf
                     jsr       SPLIT
-                    stb       DISP+12
-                    lda       QSEC                ; QSEC X 256 IN D
+                    stb       disp+12
+                    lda       qsec                ; QSEC X 256 IN D
                     clrb
                     ldx       #978                ; SCALE FOR QSEC = 229
                     idiv                          ; TO BE JUST BELOW 60
                     xgdx
                     tba
                     jsr       CBCD
-                    std       DISP+14
+                    std       disp+14
 ;                   bra       DSUB1
 
 ;*******************************************************************************
 
 DSUB1               proc
                     ldd       #$2D20
-                    stb       DISP+6
-                    stb       DISP+10
+                    stb       disp+6
+                    stb       disp+10
                     brclr     stat2,$02,_1@@      ; SLEEP TIMER RUNNING?
                     ldb       #$2E                ; YES, . IN 2nd CHARACTER
-_1@@                std       DISP
+_1@@                std       disp
                     brclr     stat1,$01,SYNNV@@
-                    lda       CODE
+                    lda       code
                     bne       _2@@                ; BLOCK 0?
-                    brset     BLOCK,$80,_2@@      ; YES, TIME?
+                    brset     block,$80,_2@@      ; YES, TIME?
                     ldb       #'t'                ; YES
                     bra       SKSP@@
 
 _2@@                jsr       SPLIT
-SKSP@@              stb       DISP
-SYNNV@@             lda       BLOCK
+SKSP@@              stb       disp
+SYNNV@@             lda       block
                     jsr       SPLIT
-                    std       DISP+2
-                    lda       BLOCK+1
+                    std       disp+2
+                    lda       block+1
                     jsr       SPLIT
-                    std       DISP+4
-                    lda       BLOCK+2
+                    std       disp+4
+                    lda       block+2
 
-                    ldb       DISP+11             ; t 7D65 37C2 1:23
+                    ldb       disp+11             ; t 7D65 37C2 1:23
                     cmpb      #' '                ; ^
                     bne       MOVEIT              ; SPACE?
                     jsr       SPLIT               ; DIVIDE HEX DATA
-                    std       DISP+7              ; INTO TWO BLOCKS
-                    lda       BLOCK+3             ; OF FOUR IF THE
+                    std       disp+7              ; INTO TWO BLOCKS
+                    lda       block+3             ; OF FOUR IF THE
                     jsr       SPLIT               ; 12th CHARACTER
-                    std       DISP+9              ; IS A SPACE
+                    std       disp+9              ; IS A SPACE
                     rts
 
 ;*******************************************************************************
 
 MOVEIT              proc
                     jsr       SPLIT
-                    std       DISP+6
-                    lda       BLOCK+3
+                    std       disp+6
+                    lda       block+3
                     jsr       SPLIT
-                    std       DISP+8
+                    std       disp+8
                     rts
 
 ;*******************************************************************************
@@ -1024,19 +1023,19 @@ MOVEIT              proc
 ALTD2               proc
                     ldx       #ALT2ST
                     jsr       XFER16
-                    lda       TYPE                ; LEAP YEAR (CYCLE) TYPE
-                    adda      #$30
-                    sta       DISP+2
-                    lda       SDAY+1              ; YEAR START DAY
-                    adda      #$30
-                    sta       DISP+4
-                    lda       SDAY+1              ; IF 0 (NO TIME/DATE RECEIVED)
+                    lda       type                ; LEAP YEAR (CYCLE) TYPE
+                    adda      #'0'
+                    sta       disp+2
+                    lda       sday+1              ; YEAR START DAY
+                    adda      #'0'
+                    sta       disp+4
+                    lda       sday+1              ; IF 0 (NO TIME/DATE RECEIVED)
                     beq       ILLSD@@             ; THEN DON’T CALCULATE YEAR
 
-                    ldb       TYPE
+                    ldb       type
                     lda       #7                  ; CALCULATE OFFSET TABLE OFFSET
                     mul
-                    addb      SDAY+1
+                    addb      sday+1
                     decb
                     ldx       #Table@@
                     abx
@@ -1047,13 +1046,13 @@ ALTD2               proc
                     bls       _1@@                ; 199x?
                     inca                          ; NO, 20xx
 _1@@                jsr       CBCD
-                    std       DISP+6              ; 19 OR 20 TO DISPLAY BUFFER
+                    std       disp+6              ; 19 OR 20 TO DISPLAY BUFFER
                     pula
                     adda      #95                 ; YEAR TENS AND UNITS
                     bsr       CBCD8               ; CONVERT TO ASCII BCD AND PUT INTO DISP+8 & +9
-ILLSD@@             lda       DWEEK               ; WEEK NUMBER
+ILLSD@@             lda       dweek               ; WEEK NUMBER
                     jsr       CBCD
-                    std       DISP+14
+                    std       disp+14
                     rts
 
 Table@@             fcb       1,13,25,9,21,5,17   ; TABLE CONTAINING OFFSET RELATIVE TO
@@ -1069,36 +1068,36 @@ ALRMD               proc
                     bsr       XFER16
                     brclr     stat2,$10,Done@@    ; ALARM ARMED?
                     lda       #$3A                ; YES
-                    sta       DISP+12
-                    lda       AOUR                ; GET ALARM HOURS
+                    sta       disp+12
+                    lda       ahour               ; GET ALARM HOURS
                     jsr       SUBSP
-                    std       DISP+10
-                    lda       AMIN
+                    std       disp+10
+                    lda       amin
                     jsr       CBCD
-                    std       DISP+13
+                    std       disp+13
                     brclr     stat2,$20,Done@@    ; SETUP?
-                    brclr     QSEC,$02,Done@@
+                    brclr     qsec,$02,Done@@
                     lda       #$20
                     tab
                     brset     stat2,$40,_1@@      ; HOURS?
-                    std       DISP+13             ; NO, FLASH MINUTES
+                    std       disp+13             ; NO, FLASH MINUTES
 Done@@              rts
 
-_1@@                std       DISP+10             ; YES, FLASH HOURS
+_1@@                std       disp+10             ; YES, FLASH HOURS
                     rts
 
 ;*******************************************************************************
 
 CBCD8               proc                          ; CONVERT TO ASCII BCD AND PUT INTO DISP+8 & +9
                     bsr       CBCD
-                    std       DISP+8
+                    std       disp+8
                     rts
 
 ;*******************************************************************************
 
 XFER16              proc
                     ldb       #16
-                    ldy       #DISP
+                    ldy       #disp
 Loop@@              lda       ,x
                     sta       ,y
                     inx
@@ -1114,9 +1113,9 @@ Loop@@              lda       ,x
 SLEEPD              proc
                     ldx       #SLPST
                     bsr       XFER16
-                    lda       SLEPT
+                    lda       slept
                     bsr       CBCD
-                    std       DISP+8
+                    std       disp+8
                     rts
 
 ;*******************************************************************************
@@ -1131,33 +1130,33 @@ ALTD3               proc
                     ldb       #200                ; SCALE AND RETURN WITH UP TO 99 (9.9v) IN ACCA
                     bsr       CSUB                ; AND 10s OF VOLTS IN TEMP
                     bsr       CBCD                ; RETURN WITH ASCII VOLTS IN ACCA AND 10ths IN ACCB
-                    sta       DISP+4              ; VOLTS
-                    stb       DISP+6              ; 10ths OF VOLTS
-                    lda       TEMP                ; 10s OF VOLTS
+                    sta       disp+4              ; VOLTS
+                    stb       disp+6              ; 10ths OF VOLTS
+                    lda       temp                ; 10s OF VOLTS
                     bne       Ascii@@             ; ZERO?
                     lda       #$F0                ; YES, MAKE IT A SPACE
 Ascii@@             adda      #'0'                ; CONVERT TO ASCII
-                    sta       DISP+3              ; 10s OF VOLTS
+                    sta       disp+3              ; 10s OF VOLTS
 
                     lda       ADR2                ; RSSI (PE5)
                     inca
                     ldb       #250                ; SCALE AND RETURN WITH UP TO 99 (1.98v) IN ACCA
                     bsr       CSUB                ; AND UP TO 2 (4v) IN TEMP (MAX: 249 OR 4.98V)
-                    lsl       TEMP                ; DOUBLE TEMP TO VOLTS (MAX 4)
+                    lsl       temp                ; DOUBLE TEMP TO VOLTS (MAX 4)
                     asla                          ; DOUBLE ACCA TO 100ths OF VOLTS (MAX 198)
                     bsr       TFMH                ; CHECK FOR CARRY TO TEMP
                     bsr       CBCD                ; RETURN WITH ASCII 10ths IN ACCA AND 100ths IN ACCB
-                    std       DISP+14             ; AND PUT BOTH IN DISPLAY BUFFER
-                    lda       TEMP
-                    adda      #$30                ; CONVERT VOLTS TO ASCII
-                    sta       DISP+12             ; AND PUT IN DISPLAY BUFFER
+                    std       disp+14             ; AND PUT BOTH IN DISPLAY BUFFER
+                    lda       temp
+                    adda      #'0'                ; CONVERT VOLTS TO ASCII
+                    sta       disp+12             ; AND PUT IN DISPLAY BUFFER
                     rts
 
 ;*******************************************************************************
 
 CSUB                proc
                     mul                           ; TIMES 200 (OR 250) AND
-                    clr       TEMP                ; DIVIDE BY 256 (BY USING
+                    clr       temp                ; DIVIDE BY 256 (BY USING
 ;                   bra       TFMH
 
 ;*******************************************************************************
@@ -1165,7 +1164,7 @@ CSUB                proc
 TFMH                proc
 Loop@@              cmpa      #100                ; ONLY ACCA AS RESULT)
                     blo       Done@@              ; OVER 99?
-                    inc       TEMP                ; YES, OVERFLOW AND
+                    inc       temp                ; YES, OVERFLOW AND
                     suba      #100                ; GET ACCA BELOW 100 BEFORE CONVERSION TO BCD
                     bra       Loop@@              ; AND AGAIN
 Done@@              equ       :AnRTS
@@ -1194,7 +1193,7 @@ SPLIT               proc
                     sec
                     rora                          ; SHIFT MS NIBBLE DOWN
                     sec
-                    rora                          ; SHIFT IN TWO 1s TO ADD $30
+                    rora                          ; SHIFT IN TWO 1s TO ADD '0'
                     lsra:2                        ; TO CONVERT DECIMAL NUMBERS TO ASCII
                     cmpa      #'9'
                     bls       Ok@@                ; OVER 9?
@@ -1256,7 +1255,7 @@ CLRAM               proc
                     ldx       #stat1              ; INITIALISE RAM
 Loop@@              clr       ,x
                     inx                           ; 1mS DELAY FOR LCD
-                    cpx       #ADIS+1
+                    cpx       #adis+1
                     bne       Loop@@
                     rts
 
