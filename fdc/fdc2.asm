@@ -11,6 +11,16 @@
 ;*******************************************************************************
 ;Note: In memory of Denis Forde who died on Sunday, May 8, 2005.
 ;(https://notices.irishtimes.com/acknowledgement/forde/2371077)
+;
+;FORDE (Denis) (Died May 8, 2005) (Ringaskiddy and Cork) -
+;On the occasion of his 60th Birthday, the family of Denis
+;(retired, Forde Electronics Ltd.) would like to thank all those
+;who sympathised with us on our sad loss; those who visited
+;our house, attended the removal and funeral, sent floral
+;tributes, cards and letters. Please accept this
+;acknowledgement as a token of our appreciation.
+;
+;Published in the Irish Times on 20th August 2005
 ;*******************************************************************************
 ;      FDC2.SRC
 ;
@@ -125,13 +135,10 @@ FDCMSR              def       $4000               ; FDC Master Status Register
 FDCDR               def       $4001               ; FDC Data Register
 
 ;*******************************************************************************
-;       BUFFER AND VARIABLES DEFINITIONS
+                    #RAM     ;$0060               ;BUFFER AND VARIABLES DEFINITIONS
 ;*******************************************************************************
-
-                    #RAM                          ; org $0060
 MyVars_Begin
-          ; FDD parameter variables
-
+          ;-------------------------------------- ; FDD parameter variables
 MLTITRK             rmb       1                   ; multi track access variable
 MFM                 rmb       1                   ; FM or MFM mode variable
 SKIP                rmb       1                   ; skip sector variable
@@ -153,9 +160,7 @@ TRKSCS              rmb       1                   ; sectors per track variable
 SDTRKS              rmb       1                   ; tracks per side variable
 DMA                 rmb       1                   ; DMA or non DMA mode variable
 FDCCMND             rmb       1                   ; FDC command number variable
-
-          ; FILE HANDLE STRUCTURE
-
+          ;-------------------------------------- ; FILE HANDLE STRUCTURE
 FNAME               rmb       FNAME_SIZE          ; 8.3 filename buffer
 FSIZE               rmb       4                   ; file size variable
 FPTR                rmb       3                   ; file pointer variable
@@ -170,9 +175,7 @@ LFFAT               rmb       2                   ; last free fat location varia
 NFBS                rmb       2                   ; number of free bytes left in sector var
 CTRLCD              rmb       1                   ; control code file access mode flag
 FHANDLE             rmb       1                   ; File handle code var
-
-          ; THE OTHERS
-
+          ;-------------------------------------- ; THE OTHERS
 APNDF               rmb       1
 ABSSEC              rmb       2                   ; absolute sector variable
 LASTHD              rmb       1                   ; last head accessed variable
@@ -214,8 +217,9 @@ DSKPRS              rmb       1                   ; gets set if a disk is in the
 DISKIN              rmb       1
 
 MyVars_End
-          ; THE BUFFERS
-                    #XRAM
+;*******************************************************************************
+                    #XRAM                         ; THE BUFFERS
+;*******************************************************************************
 MyXVars_Begin
 
 BUFFER              rmb       513                 ; 513 byte sector content buffer
@@ -255,11 +259,15 @@ OUTHR               equ       $F234
 ;       INITIALIZE ALL REGISTERS
 ;*******************************************************************************
 
-STOP                bsr       STOP0
+STOP                proc
+                    bsr       STOP0
                     cli                           ; Enable all IRQs
                     rts
 
-STOP0               sei                           ; first Disable all IRQs
+;*******************************************************************************
+
+STOP0               proc
+                    sei                           ; first Disable all IRQs
                     bsr       INITP2              ; Initialize Port 2
                     bsr       INITP5              ; "      Port 5 & RAM
                     bsr       INITP6              ; "      Port 6  (//H'shake)
@@ -268,8 +276,9 @@ STOP0               sei                           ; first Disable all IRQs
                     jsr       RSTFDC              ; reset disk controller
                     lda       DBUGF
                     anda      #%00000001
-                    bne       :AnRTS
+                    bne       Done@@
                     jmp       CLRRAM
+Done@@              equ       :AnRTS
 
                     fcc       'Copyright (c) 1994 Forde Electronics Ltd.'
 
@@ -287,7 +296,8 @@ STOP0               sei                           ; first Disable all IRQs
 ; T2CLK 7 = 1  OUT -
 ;*******************************************************************************
 
-INITP2              lda       #%11110011
+INITP2              proc
+                    lda       #%11110011
                     sta       P2DDR               ; Port 2 DDR
                     lda       #%11110011
                     sta       PORT2               ; Port 2 Data Reg.
@@ -466,6 +476,7 @@ BAUD1T              fcb        3,207              ; 300 Baud Rate
                     fcb       48,12               ; 4800 "   "
                     fcb       96,5                ; 9600 "   "
 
+;*******************************************************************************
 ; Initialize Serial-1 Port (A = Baud Rate)
 
 INTS1P              proc
@@ -483,13 +494,13 @@ INTS1P              proc
 
                     pula                          ; A = Baud Rate
                     ldx       #BAUD1T             ; Baud Rate Table
-SP11                cmpa      ,x
-                    beq       SP12
+_1@@                cmpa      ,x
+                    beq       _2@@
                     inx:2
                     cpx       #BAUD1T+12
-                    bne       SP11
+                    bne       _1@@
                     ldx       #BAUD1T+4           ; default is 1200 baud
-SP12                ldb       1,x
+_2@@                ldb       1,x
                     stb       TCONR               ; Timer 2 Time Const. Reg.
 
                     lda       #%00001100          ; 1 stop bit, Even parity
@@ -503,7 +514,8 @@ SP12                ldb       1,x
 ;       Subroutine to INITIALIZE SERIAL-1 (MPU)
 ;*******************************************************************************
 
-INITS1              clra                          ; first disable SIO
+INITS1              proc
+                    clra                          ; first disable SIO
                     sta       TRCSR1              ; Transmit / Receive CSR-1
                     sta       S1ERR               ; no Error
                     lda       #2
@@ -761,14 +773,14 @@ DOCMND              proc
 
                     jsr       PCMND               ; print command name if debugging
 
-DOC1                bsr       SETJMP
+                    bsr       SETJMP
                     pulb
                     jsr       SNDPRMS             ; send the parameters
 
-DOC2                bclr      PORT5,#%10000000    ; ensure terminal count is inactive
+                    bclr      PORT5,#%10000000    ; ensure terminal count is inactive
                     jsr       ,x                  ; jump to correct service depending on command
 
-DOC3                pulb                          ; retrieve num results
+                    pulb                          ; retrieve num results
                     pshb                          ; save for testing
                     bsr       GETRSLTS            ; get the results
 
@@ -802,7 +814,7 @@ SEEK                proc
 
                     jsr       PCMND               ; print command name if debugging
 
-SEEK1               ldb       #3
+                    ldb       #3
                     jsr       SNDPRMS             ; send the parameters
                     jmp       IRQSNS              ; get result
 
@@ -829,7 +841,7 @@ RECAL               proc
 
                     jsr       PCMND               ; print command name if debugging
 
-RCAL1               ldb       #2
+                    ldb       #2
                     jsr       SNDPRMS             ; send the parameters
                     jmp       IRQSNS              ; get result
 
@@ -1133,17 +1145,17 @@ IRQRD               proc
                     brset     PORT5,#01,*         ; wait for interrupt (it goes LO)
                     lda       FDCMSR              ; check first interrupt for end of execution
                     anda      #%00100000
-                    bne       IRQRD3
+                    bne       _1@@
                     lda       #$FF                ; read next byte from data bus
                     sta       DBUGF               ; save it in the next location
                     rts                           ; point to the next location
 
-IRQRD2              brset     PORT5,#01,*         ; wait for interrupt (it goes LO)
-IRQRD3              lda       FDCDR               ; read next byte from data bus
+Loop@@              brset     PORT5,#01,*         ; wait for interrupt (it goes LO)
+_1@@                lda       FDCDR               ; read next byte from data bus
                     sta       ,x                  ; save it in the next location
                     inx                           ; point to the next location
                     cpx       ENDX
-                    bne       IRQRD2              ; are all bytes read yet ?
+                    bne       Loop@@              ; are all bytes read yet ?
 
                     bset      PORT5,#%10000000    ; issue a terminal count
                     stx       PTRX
@@ -1158,17 +1170,17 @@ IRQWR               proc
                     brset     PORT5,#01,*         ; wait for interrupt
                     lda       FDCMSR              ; check first interrupt for end of execution
                     anda      #%00100000
-                    bne       IRQWR3
+                    bne       _1@@
                     lda       #$FF                ; get next byte from buffer
                     sta       DBUGF               ; write it to disk
                     rts                           ; point to the next location
 
-IRQWR2              brset     PORT5,#01,*         ; wait for interrupt
-IRQWR3              lda       ,x                  ; get next byte from buffer
+Loop@@              brset     PORT5,#01,*         ; wait for interrupt
+_1@@                lda       ,x                  ; get next byte from buffer
                     sta       FDCDR               ; write it to disk
                     inx                           ; point to the next location
                     cpx       ENDX
-                    bne       IRQWR2              ; are all bytes written yet ?
+                    bne       Loop@@              ; are all bytes written yet ?
 
                     bset      PORT5,#%10000000    ; issue a terminal count
                     stx       PTRX
@@ -1367,14 +1379,14 @@ MTOSB               proc
                     stx       DSTX
                     bra       MOVE
 
-MTOFD               ldx       #FDIRBUF            ; moves the data from SRCX to FDIR
+                    ldx       #FDIRBUF            ; moves the data from SRCX to FDIR
                     stx       DSTX
-                    ldb       #32                 ; 32 bytees in a file dir.
+                    ldb       #32                 ; 32 bytes in a file dir
                     bra       MOVE
 
-MTOBF               ldx       #DATA               ; moves the data from SRCX to BUFFER
+                    ldx       #DATA               ; moves the data from SRCX to BUFFER
                     stx       DSTX                ; count set by user
-MOVE                ldx       SRCX                ; moves the data from SRCX to DSTX
+Loop@@              ldx       SRCX                ; moves the data from SRCX to DSTX
                     lda       ,x                  ; fetch next byte
                     inx                           ; point to next source
                     stx       SRCX
@@ -1383,10 +1395,15 @@ MOVE                ldx       SRCX                ; moves the data from SRCX to 
                     inx                           ; move on to next destination
                     stx       DSTX
                     decb                          ; update the counter
-                    bne       MOVE                ; repeat if block not finished
+                    bne       Loop@@              ; repeat if block not finished
                     rts
 
-DMOVE               std       MVCOUNT             ; save counter value
+MOVE                equ       Loop@@
+
+;*******************************************************************************
+
+DMOVE               proc
+Loop@@              std       MVCOUNT             ; save counter value
                     ldx       SRCX                ; moves the data from SRCX to DSTX
                     lda       ,x                  ; fetch next byte
                     inx                           ; point to next source
@@ -1397,7 +1414,7 @@ DMOVE               std       MVCOUNT             ; save counter value
                     stx       DSTX
                     ldd       MVCOUNT
                     decd
-                    bne       DMOVE               ; repeat if block not finished
+                    bne       Loop@@              ; repeat if block not finished
                     rts
 
 ;*******************************************************************************
@@ -1487,13 +1504,16 @@ CLRRES              proc
 CLRSEC              proc
                     ldx       #SECBUF             ; clears the sector buffer
                     ldb       #20
+;                   bra       CLRXB
 
-          ; clears B bytes from X to X + B
+;*******************************************************************************
+; Clears B bytes from X to X + B
 
-CLRXB               clr       ,x                  ; clear current byte
+CLRXB               proc
+Loop@@              clr       ,x                  ; clear current byte
                     inx                           ; move on to next byte
                     decb                          ; update the counter
-                    bne       CLRXB               ; repeat if block not finished
+                    bne       Loop@@              ; repeat if block not finished
                     rts
 
 ;*******************************************************************************
@@ -1506,7 +1526,7 @@ Loop@@              clr       ,x
                     inx
                     cpx       #MyVars_End
                     blo       Loop@@
-
+          ;--------------------------------------
                     ldx       #MyXVars_Begin
 Loop@@@             clr       ,x
                     inx
@@ -1531,31 +1551,50 @@ WAIT12              proc
                     nop:4                         ; 9.5
                     rts                           ; 12uS
 
-W400                ldb       #40                 ; 400uS delay
+;*******************************************************************************
+
+W400                proc
+                    ldb       #40                 ; 400uS delay
                     bra       WAIT
 
-W200                ldb       #20                 ; 200uS delay
-WAIT                bsr       WAIT1               ; 15
+;*******************************************************************************
+
+W200                proc
+                    ldb       #20                 ; 200uS delay
+Loop@@              bsr       WAIT1               ; 15
                     decb                          ; 1
-                    bne       WAIT                ; 3
+                    bne       Loop@@              ; 3
                     rts                           ; 5 = 20.T = 10uSecs
 
-WAIT1               nop:5                         ; 5
+WAIT                equ       Loop@@
+
+;*******************************************************************************
+
+WAIT1               proc
+                    nop:5                         ; 5
                     rts                           ; 5
 
-W20MS               lda       #100                ; 20mS delay routine
-W20MS1              bsr       W200                ; wait 200uS
+;*******************************************************************************
+
+W20MS               proc
+                    lda       #100                ; 20mS delay routine
+Loop@@              bsr       W200                ; wait 200uS
                     deca
-                    bne       W20MS1
+                    bne       Loop@@
                     rts
 
-DELAY               lda       #50                 ; DELAY 1 SEC
-DLY1                psha                          ; delay 20 ms approx
+;*******************************************************************************
+
+DELAY               proc
+                    lda       #50                 ; DELAY 1 SEC
+Loop@@              psha                          ; delay 20 ms approx
                     bsr       W20MS               ; wait a while
                     pula
                     deca
-                    bne       DLY1
+                    bne       Loop@@
                     rts
+
+DLY1                equ       Loop@@
 
 ;*******************************************************************************
 ;       MATH ROUTINES
@@ -1582,9 +1621,9 @@ MLTPLY              proc
                     clr       PP                  ; PP(ms) = 0
                     clr       PP+1
 
-MUL1                lda       3,x                 ; test ls bit of multiplicand
+Loop@@              lda       3,x                 ; test ls bit of multiplicand
                     asra
-                    bcc       MUL3                ; if bit = 1
+                    bcc       Cont@@              ; if bit = 1
                     lda       1,x                 ; add multiplicand to PP (ms)
                     adda      5,x                 ; LS
                     sta       1,x
@@ -1592,13 +1631,13 @@ MUL1                lda       3,x                 ; test ls bit of multiplicand
                     adca      4,x                 ; MS
                     sta       ,x                  ; possible carry after addition
 
-MUL3                ror       ,x                  ; right shift PP (ms)
+Cont@@              ror       ,x                  ; right shift PP (ms)
                     ror       1,x                 ; right shift pp (ls)
                     ror       2,x
                     ror       3,x                 ; right shift multiplicand
 
                     decb
-                    bne       MUL1
+                    bne       Loop@@
 
                     ldd       TEMPA
                     std       TEMPD
@@ -1627,22 +1666,22 @@ DIV4B2              proc
                     ldx       #TEMPA
                     ldb       #17
                     stb       PP
-DV4B21              ldd       2,x
+Loop@@              ldd       2,x
                     subd      ,x
-                    bcc       DV4B23
-DV4B22              clc
-                    bra       DV4B24
+                    bcc       _1@@
+_@@                 clc
+                    bra       _2@@
 
-DV4B23              std       2,x
+_1@@                std       2,x
                     sec
-DV4B24              rol       5,x
+_2@@                rol       5,x
                     rol       4,x
                     dec       PP
                     beq       :AnRTS
                     rol       3,x
                     rol       2,x
-;                   bcs       DV4B22
-                    bra       DV4B21
+;                   bcs       _@@
+                    bra       Loop@@
 
 ;*******************************************************************************
 ;      ERROR HANDLING ROUTINE
@@ -1658,26 +1697,25 @@ DV4B24              rol       5,x
 
 ERROR               proc
                     lda       ERRNUM
-                    beq       FDCER0              ; test for FDC error
+                    beq       _1@@                ; test for FDC error
                     nop
                     rts
 
-FDCER0              jsr       PRSLT
+_1@@                jsr       PRSLT
                     lda       FDCCMND
                     cmpa      #%00000100          ; check for sense drive status command
-                    bne       FERR1
-                    jmp       FDCER3
+                    jeq       _3@@
 
-FERR1               lda       RESBUF              ; extract errors for status reg. 0
+                    lda       RESBUF              ; extract errors for status reg. 0
                     anda      #%11000000          ; extract interrupt code
                     clrb                          ; interrupt code error
                     jsr       PERROR
                     lda       RESBUF
                     anda      #%00100000          ; extract seek end bit - 1 => OK
-                    bne       FERR1A
+                    bne       _2@@
                     ldb       #$02                ; seek code error
                     jsr       PERROR
-FERR1A              lda       RESBUF
+_2@@                lda       RESBUF
                     anda      #%00010000          ; extract equipment check bit
                     ldb       #$03                ; equipment check code error
                     jsr       PERROR
@@ -1686,7 +1724,7 @@ FERR1A              lda       RESBUF
                     ldb       #$04                ; not ready code error
                     jsr       PERROR
 
-FDCER1              lda       FDCCMND
+                    lda       FDCCMND
                     cbeqa     #%00001000,:AnRTS   ; check for sense interrupt status command
 
                     lda       RESBUF+1            ; extract errors for status reg. 1
@@ -1714,7 +1752,7 @@ FDCER1              lda       FDCCMND
                     ldb       #$16                ; missing address mark code error
                     jsr       PERROR
 
-FDCER2              lda       RESBUF+2            ; extract errors for status reg. 2
+                    lda       RESBUF+2            ; extract errors for status reg. 2
                     anda      #%01000000          ; extract control mark code
                     ldb       #$20                ; control mark code error
                     jsr       PERROR
@@ -1743,7 +1781,7 @@ FDCER2              lda       RESBUF+2            ; extract errors for status re
                     ldb       #$26                ; missing address mark in data field code error
                     jmp       PERROR
 
-FDCER3              lda       RESBUF              ; extract errors for status reg. 3
+_3@@                lda       RESBUF              ; extract errors for status reg. 3
                     anda      #%10000000          ; extract fault code
                     ldb       #$30                ; fault code error
                     jsr       PERROR
@@ -1885,8 +1923,7 @@ Loop@@              pshb
                     std       ABSSEC
                     bsr       RSECTOR             ; read it
                     pulx                          ; point to next sector num entry
-                    inx
-                    inx
+                    inx:2
                     pulb                          ; are they all read
                     decb
                     bne       Loop@@
@@ -2003,8 +2040,7 @@ Loop@@              pshb
                     std       ABSSEC
                     bsr       WSECTOR             ; read it
                     pulx                          ; point to next sector num entry
-                    inx
-                    inx
+                    inx:2
                     pulb                          ; are they all read
                     decb
                     bne       Loop@@
@@ -2219,9 +2255,9 @@ WFLOW               proc
                     std       BSTEMP              ; save bsize
 
                     jsr       BLKADR              ; get block address and check if bsize is ok
-                    beq       WFL1
+                    beq       _2@@
                     ldd       BSIZE               ; bsize was too big
-                    beq       WFL2                ; check bsize does not equal zero
+                    beq       _1@@                ; check bsize does not equal zero
                     ldx       #BUFFER
                     stx       SRCX
                     ldx       BADDR
@@ -2229,7 +2265,7 @@ WFLOW               proc
                     ldd       BSIZE
                     jsr       DMOVE
 
-WFL2                bsr       WDATA               ; write the current 8k block
+_1@@                bsr       WDATA               ; write the current 8k block
                     ldd       PAGENUM
                     incd
                     std       PAGENUM
@@ -2245,19 +2281,17 @@ WFL2                bsr       WDATA               ; write the current 8k block
                     ldd       BSTEMP              ; reset bsize
                     subd      BSIZE
                     std       BSIZE
-                    bra       WFL3
+                    bra       _3@@
 
-WFL1                ldd       BSTEMP
+_2@@                ldd       BSTEMP
                     std       BSIZE
                     ldx       #BUFFER             ; write from start of buffer
                     stx       SRCX
-WFL3                ldx       BADDR
+_3@@                ldx       BADDR
                     stx       DSTX                ; write remainder of block
                     ldd       BSIZE
                     jsr       DMOVE
-
-          ; update file size field
-
+          ;-------------------------------------- ; update file size field
                     ldd       BSTEMP
                     std       BSIZE
                     jmp       UDFSZ
@@ -2277,11 +2311,11 @@ WFL3                ldx       BADDR
 WFMID               proc
                     lda       #'P'                ; check ctrl cd values
                     cmpa      CTRLCD
-                    jeq       WPTR                ; write from file ptr
+                    beq       _@@                 ; write from file ptr
 
                     lda       #'N'
                     cmpa      CTRLCD
-                    jeq       WPTR                ; write next block
+_@@                 jeq       WPTR                ; write next block
 
                     lda       #'A'
                     cbeqa     CTRLCD,APPEND       ; append to end of file
@@ -2302,32 +2336,26 @@ WFMID               proc
 APPEND              proc
                     ldd       BSIZE               ; save bsize first
                     std       BSTEMP
-APP1                ldd       FSIZE+1             ; set file pointer to file size
+Loop@@              ldd       FSIZE+1             ; set file pointer to file size
                     std       FPTR                ; i.e. point to eof
                     lda       FSIZE+3
                     sta       FPTR+2
 
                     lda       EOFFLG
-                    beq       APP2
-
-          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
-
+                    beq       _1@@
+          ;-------------------------------------- ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
                     ldd       FPTR+1              ; dec file pntr by one so that EOF gets over written
                     decd
                     std       FPTR+1
-                    bcc       APP2
+                    bcc       _1@@
                     dec       FPTR
 
-APP2                jsr       PNTRADR             ; convert to address
-
-          ; check for enough room in sector
-
-APP3                ldd       NFBS
+_1@@                jsr       PNTRADR             ; convert to address
+          ;-------------------------------------- ; check for enough room in sector
+                    ldd       NFBS
                     subd      BSTEMP              ; check if there is enough room left in current EOFS
-                    bcc       APP8
-
-          ; not enough room in current sector
-
+                    bcc       _2@@
+          ;-------------------------------------- ; not enough room in current sector
                     ldd       BSTEMP
                     pshd
                     ldd       NFBS
@@ -2349,9 +2377,9 @@ APP3                ldd       NFBS
                     cmpa      #$FF
                     jeq       FW85                ; FAT ERROR -----> ACCESS DENIED AND REBOOT
                     jsr       UDEOF               ; up date new EOF location for the file
-                    bra       APP1
+                    bra       Loop@@
 
-APP8                ldd       BSTEMP
+_2@@                ldd       BSTEMP
                     std       BSIZE               ; save the block size
                     pshd
                     jsr       WFLOW               ; write the block
@@ -2361,9 +2389,7 @@ APP8                ldd       BSTEMP
 
                     lda       EOFFLG
                     beq       :AnRTS
-
-          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
-
+          ;-------------------------------------- ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
                     ldd       FSIZE+2             ; sub 1 from fsize to adjust for decrementing
                     decd                          ; the file pointer above
                     std       FSIZE+2
@@ -2388,11 +2414,11 @@ APP8                ldd       BSTEMP
 WPTR                proc
                     ldd       BSIZE
                     std       BSTEMP
-WPTR1               jsr       PNTRADR             ; convert to address
+Loop@@              jsr       PNTRADR             ; convert to address
 
-WPTR2               ldd       NFBS
+                    ldd       NFBS
                     subd      BSTEMP              ; check if there is enough room left in current EOFS
-                    bcc       WPTR3
+                    bcc       _1@@
 
                     ldd       BSTEMP
                     pshd
@@ -2411,9 +2437,9 @@ WPTR2               ldd       NFBS
                     jsr       DMOVE
 
                     jsr       UDFPTR              ; and up date the file pointer position
-                    bra       WPTR1               ; go again
+                    bra       Loop@@              ; go again
 
-WPTR3               ldd       BSTEMP
+_1@@                ldd       BSTEMP
                     std       BSIZE
                     pshd
                     jsr       WFLOW               ; write block
@@ -2440,7 +2466,7 @@ RFLOW               proc
                     std       BSTEMP              ; save bsize
 
                     jsr       BLKADR              ; get block address and see if bsize is ok
-                    beq       RFL1
+                    beq       _1@@
                     ldd       BSIZE               ; bsize was too big
                     beq       :AnRTS              ; check bsize does not equal zero
                     ldx       BUFFX
@@ -2450,7 +2476,7 @@ RFLOW               proc
                     ldd       BSIZE
                     jsr       DMOVE
 
-RFL2                ldd       PAGENUM
+                    ldd       PAGENUM
                     incd
                     std       PAGENUM
                     jsr       RDATA               ; read the required 8k block
@@ -2463,13 +2489,13 @@ RFL2                ldd       PAGENUM
                     subd      BSIZE
                     beq       :AnRTS
                     std       BSIZE
-                    bra       RFL3
+                    bra       _2@@
 
-RFL1                ldd       BSTEMP
+_1@@                ldd       BSTEMP
                     subd      BSIZE               ; set bsize to remainder of block
                     addd      BUFFX
                     std       DSTX
-RFL3                ldx       BADDR
+_2@@                ldx       BADDR
                     stx       SRCX                ; read remainder of block
                     ldd       BSIZE
                     jmp       DMOVE
@@ -2494,7 +2520,7 @@ GETRSLTS            equ       GETRSLT
 
 RFMID               proc
                     lda       #'P'                ; check ctrl codes first
-                    cbeqa     CTRLCD,RFM2A        ; read from file ptr
+                    cbeqa     CTRLCD,_1@@         ; read from file ptr
 
                     lda       #'N'
                     cjnea     CTRLCD,FR85         ; illegal CTRLCD, ----> access denied, REBOOT
@@ -2502,17 +2528,17 @@ RFMID               proc
                     ldd       #SECTOR_SIZE
                     std       BSIZE               ; set block size to 128(?) bytes
 
-RFM2A               ldx       #BUFFER
+_1@@                ldx       #BUFFER
                     stx       BUFFX
 
-RFM2                ldd       BSIZE               ; save bsize
+Loop@@              ldd       BSIZE               ; save bsize
                     jeq       :AnRTS
                     std       BSTEMP
                     jsr       PNTRADR             ; convert to address
 
-RFM3                ldd       NFBS
+                    ldd       NFBS
                     subd      BSTEMP              ; check if there is enough room left in sector
-                    bcc       RFM8
+                    bcc       _2@@
 
                     ldd       BSTEMP
                     pshd
@@ -2528,9 +2554,9 @@ RFM3                ldd       NFBS
                     puld                          ; retrieve old bsize
                     subd      BSIZE               ; and up date num bytes to be written
                     std       BSIZE
-                    bra       RFM2                ; go again
+                    bra       Loop@@              ; go again
 
-RFM8                ldd       BSTEMP
+_2@@                ldd       BSTEMP
                     std       BSIZE
                     pshd
                     jsr       RFLOW               ; read block
@@ -2643,9 +2669,7 @@ TRKTHD              proc
 PNTRADR             proc
                     ldx       BSIZE               ; preserve bsize
                     pshx
-
-          ; get num sectors to file pointer position
-
+          ;-------------------------------------- ; get num sectors to file pointer position
                     clra
                     ldb       FPTR                ; fptr / 512 = sector + offset
                     std       TEMPD
@@ -2664,32 +2688,32 @@ PNTRADR             proc
                     std       NFBS
 
                     ldd       BOF                 ; trace through FAT until the Nth entry is found
-                    beq       PADRER              ; no fat entry can = 00
+                    beq       Fail@@              ; no fat entry can = 00
                     std       FATNUM              ; where N = value now stored in PTRADR
-PADR1               ldd       SECNUM
-                    beq       PADR2               ; finished ?
+Loop@@              ldd       SECNUM
+                    beq       Done@@              ; finished ?
                     jsr       GENTRY              ; get the fat entry
 
                     ldd       FATNUM
-                    beq       PADRER              ; no fat entry can = 00
+                    beq       Fail@@              ; no fat entry can = 00
                     std       TEMPD
                     ldd       #$0FFF
                     cmpd      TEMPD
-                    beq       PADRER              ; IF fat entry = FFFh we've gone too far
+                    beq       Fail@@              ; IF fat entry = FFFh we've gone too far
 
                     ldd       SECNUM              ; dec counter
                     decd
                     std       SECNUM
-                    bra       PADR1
+                    bra       Loop@@
 
-PADR2               ldd       FATNUM              ; save last entry read to sector
+Done@@              ldd       FATNUM              ; save last entry read to sector
                     subd      #2                  ; adjustment for correct addressing
                     std       SECNUM
                     pulx
                     stx       BSIZE               ; retrieve bsize
                     rts
 
-PADRER              jmp       FR85                ; FAT ERROR ---> ACCESS DENIED, REBOOT
+Fail@@              jmp       FR85                ; FAT ERROR ---> ACCESS DENIED, REBOOT
 
 ;*******************************************************************************
 ;  ROUTINE TO UPDATE THE FILE POINTER TO THE LAST
@@ -2751,22 +2775,23 @@ BLKADR              proc
                     ldd       TEMPX               ; get the pagenumber of this block
                     incd                          ; inc by one for correct answer(pages start @ 1 not 0)r
                     subd      PAGENUM
-                    beq       BLKA9
+                    beq       Done@@
                     ldx       TEMPX
                     pshx
                     lda       WFLAG               ; are we reading or writing
                     cmpa      #'W'
-                    bne       BLKA8
+                    bne       _@@
 
                     jsr       WDATA               ; new page
 
-BLKA8               pulx
+_@@                 pulx
                     xgdx
                     incd                          ; adjustment for correct addressing
                     std       PAGENUM             ; save new pagenumber
                     jsr       RDATA
-BLKA9               pulx
+Done@@              pulx
                     stx       BSIZE
+;                   bra       CHKBLK
 
 ;*******************************************************************************
 ; ROUTINE TO CHECK THAT BSIZE WONT PUT US BEYOND THE END
@@ -2787,7 +2812,7 @@ CHKBLK              proc
                     ldd       #TOPRAM             ; get num bytes to end of block from BADDR
                     subd      BADDR
                     subd      BSIZE               ; is bsize bigger than numbytes to end of block
-                    bcc       CHKB8
+                    bcc       Done@@
 
                     ldd       #TOPRAM             ; bsize too big => reset it
                     subd      BADDR
@@ -2795,7 +2820,7 @@ CHKBLK              proc
                     lda       #$FF
                     rts
 
-CHKB8               clra
+Done@@              clra
                     rts
 
 ;*******************************************************************************
@@ -2823,24 +2848,22 @@ GENTRY              proc
                     addd      #FATBUF             ; add offset to start of fat
                     xgdx
                     cpx       #FATEND             ; check if we are at the end of FAT
-                    beq       GEERR               ; we are => error
+                    beq       Fail@@              ; we are => error
                     puld
                     lsrd                          ; check for even or odd location
-                    bcs       GEODD               ; ODD ?
-          ; EVEN!
+                    bcs       Odd?@@              ; ODD ?
+          ;-------------------------------------- ; EVEN!
                     ldd       ,x                  ; get the location contents
                     lsrd:4                        ; fix it up
                     std       FATNUM              ; save it
                     rts
-
-          ; ODD !
-
-GEODD               ldd       ,x                  ; get location contents
+          ;-------------------------------------- ; ODD!
+Odd?@@              ldd       ,x                  ; get location contents
                     anda      #$0F                ; fix it up
                     std       FATNUM              ; save it
                     rts
 
-GEERR               puld                          ; no more entries error
+Fail@@              puld                          ; no more entries error
                     lda       #$FF
                     sta       TEMPA
                     rts
@@ -2936,10 +2959,8 @@ _1@@                clra                          ; Offset into file dir buffer 
 
 FRDFAT              proc
                     ldx       #FATBUF
-
-          ; FIX UP NEXT 3 BYTES
-
-FRDFT1              ldb       ,x                  ; 1st byte ok
+          ;-------------------------------------- ; FIX UP NEXT 3 BYTES
+Loop@@              ldb       ,x                  ; 1st byte ok
                     lda       1,x
                     anda      #$0F                ; prepare 2nd byte
                     clc
@@ -2957,7 +2978,7 @@ FRDFT1              ldb       ,x                  ; 1st byte ok
                     stb       1,x                 ; SAVE FIXED BYTE (2nd one)
                     inx:3                         ; point to next 3 bytes
                     cpx       #FATEND             ; check for END OF FAT
-                    bne       FRDFT1
+                    bne       Loop@@
                     rts
 
 ;*******************************************************************************
@@ -2998,11 +3019,9 @@ DOSFAT              proc
 UDFAT               proc
                     ldd       OLDEOF              ; get old eof location
                     std       FATNUM
-
-          ; update old location
-
+          ;-------------------------------------- ; update old location
                     lsrd                          ; check for an even or odd location first
-                    bcs       UDFAT1
+                    bcs       _1@@
                     jsr       FNUMLOC             ; convert to location address in FAT buffer
                     ldx       TEMPX
                     ldd       EOF                 ; reset FATNUM variable
@@ -3012,9 +3031,9 @@ UDFAT               proc
                     orb       #$0F                ; with a pointer to the new EOF location
                     andb      1,x
                     stb       1,x
-                    bra       UDFAT2
+                    bra       _2@@
 
-UDFAT1              jsr       FNUMLOC             ; its an odd location
+_1@@                jsr       FNUMLOC             ; its an odd location
                     ldx       TEMPX
                     ldd       EOF
                     std       FATNUM              ; reset FATNUM variable
@@ -3022,12 +3041,10 @@ UDFAT1              jsr       FNUMLOC             ; its an odd location
                     anda      ,x                  ; update the old EOF location
                     sta       ,x
                     stb       1,x
-
-          ; NOW MARK NEW EOF LOCATION
-
-UDFAT2              ldd       FATNUM
+          ;-------------------------------------- ; NOW MARK NEW EOF LOCATION
+_2@@                ldd       FATNUM
                     lsrd                          ; check for even or odd entry number
-                    bcs       UDFAT3              ; its an odd location
+                    bcs       _3@@                ; its an odd location
                     jsr       FNUMLOC             ; convert to location address in fat buffer
                     ldx       TEMPX
                     ldd       #$FFF0              ; save EOF marker there
@@ -3036,7 +3053,7 @@ UDFAT2              ldd       FATNUM
                     stb       1,x
                     rts
 
-UDFAT3              jsr       FNUMLOC             ; convert to location address in fat buffer
+_3@@                jsr       FNUMLOC             ; convert to location address in fat buffer
                     ldx       TEMPX
                     ldd       #$0FFF              ; save EOF marker there
                     ora       ,x                  ; update the new EOF location
@@ -3066,7 +3083,7 @@ Loop@@              ldd       TEMPD
                     cmpa      #$FF                ; check if last entry was read
                     jeq       FR85                ; FAT ERROR -----> ACCESS DENIED, REBOOT
                     ldd       FATNUM
-                    beq       FFFAT2              ; check if it`s free
+                    beq       Done@@              ; check if it`s free
                     ldd       TEMPD               ; inc fat location number
                     incd
                     std       TEMPD
@@ -3079,8 +3096,7 @@ Loop@@              ldd       TEMPD
 ;                   cmpd      TEMPD
 ;                   bne       Loop@@              ; go again
 ;                   bra       FR85                ; FAT ERROR -----> ACCESS DENIED, REBOOT
-
-FFFAT2              ldd       TEMPD
+Done@@              ldd       TEMPD
                     std       LFFAT               ; set last free fat location
                     std       FATNUM              ; set correct FAT number
                     rts
@@ -3154,10 +3170,10 @@ FEOF                proc
                     std       TEMPD
                     ldd       #$0FFF
                     cmpd      TEMPD               ; check if its the EOF location
-                    beq       FEOF2
+                    beq       _2@@
                     ldd       #$0FF8
                     cmpd      TEMPD               ; check if its the last cluster in file chain marker
-                    beq       FEOF2
+                    beq       _2@@
 Loop@@              ldd       TEMPD               ; preserve fatnum value on stack
                     jeq       FR85                ; FAT ERROR -----> ACCESS DENIED, REBOOT
                                                   ; no fat entry can = 00
@@ -3165,26 +3181,26 @@ Loop@@              ldd       TEMPD               ; preserve fatnum value on sta
                     std       FATNUM
                     jsr       GENTRY              ; get that FAT entry
                     ldd       FATNUM
-                    beq       FEOF4
+                    beq       _4@@
                     std       TEMPD
                     ldd       #$0FFF
                     cmpd      TEMPD               ; check if its the EOF location
-                    beq       FEOF3
+                    beq       _3@@
                     ldd       #$0FF8
                     cmpd      TEMPD               ; check if its the last cluster in file chain marker
-                    beq       FEOF3
+                    beq       _3@@
                     puld                          ; clear the stack
                     bra       Loop@@              ; try again
 
-FEOF2               ldd       BOF                 ; EOF = BOF condition
+_2@@                ldd       BOF                 ; EOF = BOF condition
                     std       EOF
                     rts
 
-FEOF3               puld                          ; EOF found
+_3@@                puld                          ; EOF found
                     std       EOF
                     rts
 
-FEOF4               puld
+_4@@                puld
                     clr       EOF
                     clr       EOF+1
                     rts
@@ -3338,11 +3354,11 @@ IFH1                ldd       FATNUM              ; else set next entry
 
 IFH2                jsr       FEOF                ; find the end of file sector
                     ldd       FATNUM
-                    beq       :AnRTS
+                    beq       Done@@
                     clr       LFFAT
                     clr       LFFAT+1
                     inc       FHANDLE
-                    rts
+Done@@              rts
 
 ;*******************************************************************************
 ;       SERIAL COMMUNICATIONS
@@ -3375,6 +3391,7 @@ Loop@@              bsr       RECVA               ; wait until escape ctrl code 
                     bne       Loop@@
                     rts
 
+;*******************************************************************************
 ; CHECK IF CHAR TO BE READ FROM SERIAL PORT
 
 QSERL               proc
@@ -3384,14 +3401,16 @@ QSERL               proc
                     tstb
                     rts
 
+;*******************************************************************************
 ; WAIT TO GET A CHAR FROM THE SERIAL PORT
 
 RECVA               proc
 Loop@@              bsr       QSERL
                     bpl       Loop@@              ; wait for RDRF = 1 (bit 7)
+;                   bra       GSERL
 
+;*******************************************************************************
 ; GET AVAILABLE CHAR FROM THE SERIAL PORT
-
 GSERL               proc
                     lda       RDR                 ; A = Read Data reg.
                     rts
@@ -3500,9 +3519,7 @@ FOPEN               proc
                     std       SBUFF+4
                     clr       SBUFF
                     bra       FOPN89
-
-; ERROR HANDLING
-
+          ;-------------------------------------- ; ERROR HANDLING
 FOPN81              lda       #1                  ; invalid function call error
                     sta       SBUFF
                     bra       FOPN89
@@ -3615,9 +3632,7 @@ MFPTR               proc
                     cbeqa     #2,MFPTR2           ; offset from fptr (reverse)
                     cjnea     #3,MFP81            ; invalid function call error
                     jmp       MFPTR3              ; offset from EOF
-
-; OFFSET FROM BOF
-
+          ;-------------------------------------- ; OFFSET FROM BOF
 MFPTR0              ldd       FSIZE+2             ; get num bytes from file pointer to EOF
                     subd      FPTR+1
                     std       SBUFF+6
@@ -3650,9 +3665,7 @@ MFP03               ldd       SBUFF+2             ; offset from bof
                     lda       SBUFF+4
                     sta       FPTR+2
                     bra       MFPTR4
-
-; OFFSET FROM FPTR (FORWARD)
-
+          ;-------------------------------------- ; OFFSET FROM FPTR (FORWARD)
 MFPTR1              ldd       FPTR+1              ; offset from current file pointer value
                     addd      SBUFF+3             ; file pointer += offset value
                     std       FPTR+1
@@ -3679,9 +3692,7 @@ MFP14               ldd       FSIZE+1             ; offset value too big
                     lda       FSIZE+3
                     sta       FPTR+2
                     bra       MFPTR4
-
-; OFFSET FROM FPTR (REVERSE)
-
+          ;-------------------------------------- ; OFFSET FROM FPTR (REVERSE)
 MFPTR2              ldd       FPTR+1              ; Back wards from current file pointer value
                     subd      SBUFF+3             ; file pointer -= offset value
                     std       FPTR+1
@@ -3695,9 +3706,7 @@ MFP21               lda       FPTR
                     clr       FPTR+1
                     clr       FPTR+2
                     bra       MFPTR4
-
-; OFFSET FROM EOF
-
+          ;-------------------------------------- ; OFFSET FROM EOF
 MFPTR3              ldd       FSIZE+2             ; offset from eof
                     subd      SBUFF+3             ; file pointer = file size - offset value
                     std       FPTR+1
@@ -3717,9 +3726,7 @@ MFPTR4              clr       SBUFF
                     lda       FPTR+2
                     sta       SBUFF+3
                     bra       MFP89
-
-; ERROR HANDLING
-
+          ;-------------------------------------- ; ERROR HANDLING
 MFP81               lda       #1                  ; invalid function
                     sta       SBUFF
                     bra       MFP89
@@ -3790,9 +3797,7 @@ FRNAME              proc
                     std       PAGENUM
                     clr       SBUFF
                     bra       FRN89
-
-; ERROR HANDLING
-
+          ;-------------------------------------- ; ERROR HANDLING
 FRN82               lda       #2                  ; file not found error
                     sta       SBUFF
                     bra       FRN89
@@ -3804,7 +3809,6 @@ FRN83               lda       #3                  ; path not found error
 FRN85               lda       #5                  ; access denied error
                     sta       SBUFF
                     bra       FRN89
-
                     rts
 
 FRN8B               lda       #$0B                ; not the same device error (WAS: 0B, possibly mis-scanned)
@@ -3953,9 +3957,7 @@ FR5                 lda       SBUFF+1             ; output numbytes read
                     jsr       SENDA               ; hi byte
                     lda       SBUFF+2             ; low byte
                     jmp       SENDA
-
-; ERROR HANDLING
-
+          ;-------------------------------------- ; ERROR HANDLING
 FR85                jsr       SNDESC              ; access denied error
                     lda       #5
                     sta       ERRNUM
@@ -4052,9 +4054,7 @@ FW2A                lda       #$FF
                     pshb
                     subd      SBUFF+1             ; calculate amount left to append
                     std       BSIZE
-
-          ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
-
+          ;-------------------------------------- ; INCLUDE THIS IF $1A EOF IS TO BE APPENDED TO FILES
 ;                   addd      #BUFFER             ; put EOF marker at end of file
 ;                   xgdx
 ;                   lda       #$1A
@@ -4062,7 +4062,7 @@ FW2A                lda       #$FF
 ;                   ldd       BSIZE
 ;                   incd
 ;                   std       BSIZE
-
+          ;--------------------------------------
                     ldx       #BUFFER             ; move data to be appended to start of buffer
                     stx       DSTX
                     ldd       SBUFF+1
@@ -4108,9 +4108,7 @@ FW52                jsr       PROMPT              ; debuging prompt
                     jsr       SENDA               ; numbytes written
                     lda       SBUFF               ; low byte
                     jmp       SENDA
-
-; ERROR HANDLING
-
+          ;-------------------------------------- ; ERROR HANDLING
 FW85                jsr       PROMPT              ; debuging prompt
                     jsr       SNDESC
                     lda       #5                  ; access denied error
@@ -4212,20 +4210,21 @@ Done@@              equ       :AnRTS
 ;*******************************************************************************
 ;       SCREEN I\O FUNCTION ROUTINES
 ;*******************************************************************************
-;
-;   ------   PRINT AN ALPHA-NUMERIC CHAR  -------
+
+;*******************************************************************************
+; PRINT AN ALPHA-NUMERIC CHAR
 
 PCHAR               proc
-                    cbeqa     #CR,PCHAR2          ; allow cr
-                    cbeqa     #LF,PCHAR2          ; allow lf
-                    cbeqa     #TAB,PCHAR2         ; allow tab
-                    cbeqa     #ESC,PCHAR2         ; allow escape
+                    cbeqa     #CR,Done@@          ; allow cr
+                    cbeqa     #LF,Done@@          ; allow lf
+                    cbeqa     #TAB,Done@@         ; allow tab
+                    cbeqa     #ESC,Done@@         ; allow escape
                     cmpa      #' '                ; $20 <= ALPHA-NUMERIC <= $7E
-                    bcs       PCHAR1
+                    bcs       Dot@@
                     cmpa      #$7E
-                    bls       PCHAR2
-PCHAR1              lda       #'.'
-PCHAR2              jmp       PUTCH
+                    bls       Done@@
+Dot@@               lda       #'.'
+Done@@              jmp       PUTCH
 
 ;*******************************************************************************
 ; PRINT A 2 BYTE HEX NUM. FOLLOWED BY A SPACE
@@ -4757,7 +4756,7 @@ FDRMAP              fcb       $53,$4B,$59,$54,$45,$4C,$4C,$45,$52,$20,$20,$28
                     fcb       $9D,$1C,$00,$00
 
 ;*******************************************************************************
-;       MAIN LOOP
+; MAIN LOOP
 ;*******************************************************************************
 
                     org       $A000
@@ -4812,7 +4811,7 @@ FRMT                jsr       RESET
 ;                   bra       LOOP
 
 ;*******************************************************************************
-;      MAIN LOOP
+; MAIN LOOP
 ;*******************************************************************************
 
                     org       $A500
@@ -4831,6 +4830,7 @@ Loop@@              pshx
                     bne       Loop@@
                     jmp       QUIT
 
+;*******************************************************************************
 ; TEST READ AND WRITE OF EVERY BYTE OF THE DISK
 
                     org       $A600
@@ -4900,6 +4900,7 @@ A6005               lda       ,x                  ; print the offending block
                     bne       A6005
                     bra       A6004
 
+;*******************************************************************************
 ; TEST READ OF EVERY BYTE OF THE DISK
 
                     org       $A700
@@ -4943,6 +4944,7 @@ A7005               lda       ,x                  ; print the block
                     bne       A7001
                     jmp       QUIT
 
+;*******************************************************************************
 ; HEAD TEST FUNCTION
 
                     org       $A800
@@ -4952,6 +4954,7 @@ A7005               lda       ,x                  ; print the block
                     jsr       HDTST
                     jmp       QUIT
 
+;*******************************************************************************
 ; FORMAT DISK FUNCTION
 
                     org       $A900
@@ -4961,14 +4964,13 @@ A7005               lda       ,x                  ; print the block
                     jsr       FORMAT
                     jmp       QUIT
 
+;*******************************************************************************
 ; ???
 
                     org       $AA00
                     jsr       STOP0
                     jsr       INITSYS
-
-          ; OPEN A FILE FIRST -- FILENAME AT SBUFF+1
-
+          ;-------------------------------------- ; OPEN A FILE FIRST -- FILENAME AT SBUFF+1
                     ldx       #SBUFF+1            ; set up params for ffile
                     stx       SRCX
                     ldx       #FNAME
@@ -4997,9 +4999,7 @@ FOP89               jsr       PROMPT              ; debuging prompt
                     beq       FRD1
                     sta       ERRNUM
                     jsr       FERROR              ; MUST RESET WHOLE SYSTEM FOR ANY ERRORS
-
-          ; NOW READ THE FILE
-
+          ;-------------------------------------- ; NOW READ THE FILE
 FRD1                ldd       FSIZE+2             ; get num bytes from file pointer to EOF
                     subd      FPTR+1
                     std       SBUFF+6
@@ -5087,8 +5087,7 @@ QUIT                jsr       WARM
 ;       THE VARIOUS TABLES FOR TESTING ROUTINES
 ;*******************************************************************************
 
-                    #DATA
-                    org       $B000
+                    #DATA     $B000
 
 EOFFLG              fcb       $00                 ; APPEND EOF MARK TO FILE FLAG
 DBUGF               fcb       $00                 ; TEST MODE FLAG
@@ -5161,6 +5160,8 @@ TRKEND              fcb       $00
 
 ERROR_MSG_SIZE      equ       60
 
+;*******************************************************************************
+
 ?                   macro     MsgString
                     mreq      1:MsgString
                     mset      1,~@~
@@ -5178,147 +5179,94 @@ ERROR_MSG_SIZE      equ       60
 
                     #HideMacros
 
-;-------------------------------------------------------------------------------
-; STATUS REGISTER 0 ERROR CODES
-;-------------------------------------------------------------------------------
-
-; INTERRUPT CODES
-
+          ;--------------------------------------
+          ; STATUS REGISTER 0 ERROR CODES
+          ;-------------------------------------- ; INTERRUPT CODES
 INTCDS              @?        ST0 NORMAL TERMINATION - COMMAND COMPLETED AND EXECUTED
                     @?        ST0 ABNORMAL TERMINATION - COMMAND STARTED BUT NOT COMPLETED
                     @?        ST0 ABNORMAL TERMINATION - INVALID COMMAND ISSUED
                     @?        ST0 ABNORMAL TERMINATION - READY, CHANGED DURING EXECUTION
-
-; SEEK CODES
-
+          ;-------------------------------------- ; SEEK CODES
 SEKCDS              @?        ST0 SEEK COMMAND NOT COMPLETED
                     @?        ST0 SEEK COMMAND COMPLETED
-
-; EQUIPMENT CHECK CODES
+          ;-------------------------------------- ; EQUIPMENT CHECK CODES
 EQPCDS              @?        ST0 NO FAULT SIGNAL - AND/OR TRACK 00 FOUND (RECALIBRATE OK)
                     @?        ST0 FAULT SIGNAL RECEIVED OR NO TRACK 0 AFTER 77 STEP PULSES
-
-; NOT READY CODES
+          ;-------------------------------------- ; NOT READY CODES
 RDYCDS              @?        ST0 FDD READY - AND/OR LEGAL HEAD NUMBER
                     @?        ST0 FDD NOT READY OR SINGLE SIDED DRIVE ONLY (ILLEGAL HEAD)
-
-; DUMMY CODE
+          ;-------------------------------------- ; DUMMY CODE
 DM1CDS              @?        ST0 DUMMY CODE DUMMY CODE DUMMY CODE
                     @?        ST0 DUMMY CODE DUMMY CODE DUMMY CODE
-
-; DUMMY CODE
+          ;-------------------------------------- ; DUMMY CODE
 DM2CDS              @?        ST0 DUMMY CODE DUMMY CODE DUMMY CODE
                     @?        ST0 DUMMY CODE DUMMY CODE DUMMY CODE
-
-;-------------------------------------------------------------------------------
-; STATUS REGISTER 1 ERROR CODES
-;-------------------------------------------------------------------------------
-
-; END OF TRACK CODES
+          ;--------------------------------------
+          ; STATUS REGISTER 1 ERROR CODES
+          ;-------------------------------------- ; END OF TRACK CODES
 EOTCDS              @?        ST1 SECTOR ON TRACK
                     @?        ST1 ATTEMPT TO ACCESS SECTOR BEYOND END OF TRACK
-
-; DATA ERROR CODES
+          ;-------------------------------------- ; DATA ERROR CODES
 DTECDS              @?        ST1 NO CRC ERROR
                     @?        ST1 CRC ERROR IN ID FIELD OR DATA FIELD
-
-; OVER RUN CODES
-
+          ;-------------------------------------- ; OVER RUN CODES
 OVRCDS              @?        ST1 FDC SERVICED IN TIME
                     @?        ST1 FDC NOT SERVICED IN TIME => OVERRUN ERROR
-
-; NO DATA CODES
-
+          ;-------------------------------------- ; NO DATA CODES
 NDTCDS              @?        ST1 DATA CODES OK
                     @?        ST1 CANNOT FIND SPECIFED SECTOR (READ, WRITE DELETED, SCAN)
                     @?        ST1 CANNOT READ ID FIELD WITHOUT ERROR ( READ ID )
                     @?        ST1 CANNOT FIND STARTING SECTOR ( READ A TRACK )
-
-; NOT WRITABLE CODES
-
+          ;-------------------------------------- ; NOT WRITABLE CODES
 WRTCDS              @?        ST1 DISK NOT PROTECTED
                     @?        ST1 WRITE PROTECTED DISK IN DRIVE
-
-; MISSING ADDRESS MARK CODES
-
+          ;-------------------------------------- ; MISSING ADDRESS MARK CODES
 MAMCDS              @?        ST1 NO MISSING ADDRESS MARKS
                     @?        ST1 IDAM, DAM, DDAM NOT FOUND - CHECK MAM IN DATA FIELD CODE
-
-;-------------------------------------------------------------------------------
-; STATUS REGISTER 2 ERROR CODES
-;-------------------------------------------------------------------------------
-
-; CONTROL MARK CODES
-
+          ;--------------------------------------
+          ; STATUS REGISTER 2 ERROR CODES
+          ;-------------------------------------- ; CONTROL MARK CODES
 CMKCDS              @?        ST2 NO DELETED DATA ADDRESS MARKS FOUND
                     @?        ST2 SECTOR CONTAINS A DELETED DATA ADDRESS MARK (READ, SCAN)
-
-; DATA ERROR IN DATA FIELD
-
+          ;-------------------------------------- ; DATA ERROR IN DATA FIELD
 DEDCDS              @?        ST2 NO CRC ERROR IN DATA FIELD
                     @?        ST2 CRC ERROR IN DATA FIELD
-
-; WRONG TRACK CODES
-
+          ;-------------------------------------- ; WRONG TRACK CODES
 WTRCDS              @?        ST2 CORRECT TRACK LOCATED
                     @?        ST2 DISK TRACK != IDR TRACK
-
-; SCAN EQUAL HIT CODES
-
+          ;-------------------------------------- ; SCAN EQUAL HIT CODES
 SEHCDS              @?        ST2 SCAN EQUAL NOT SATISFIED
                     @?        ST2 SCAN EQUAL SATISFIED
-
-; SCAN NOT SATISFIED CODES
-
+          ;-------------------------------------- ; SCAN NOT SATISFIED CODES
 SNSCDS              @?        ST2 FOUND SECTOR ON DISK MATCHING SCAN PARAMETERS
                     @?        ST2 CANNOT FIND SECTOR ON TRACK MATCHING SCAN PARAMETERS
-
-; BAD TRACK CODES
-
+          ;-------------------------------------- ; BAD TRACK CODES
 BTRCDS              @?        ST2 TRACK NUMBER OK
                     @?        ST2 TRACK = FFh AND DOES NOT EQUAL TRACK VALUE IN IDR
-
-; MISSING ADDRESS MARK IN DATA FIELD CODES
-
+          ;-------------------------------------- ; MISSING ADDRESS MARK IN DATA FIELD CODES
 MDFCDS              @?        ST2 NO MISSING ADDRESS MARKS IN DATA FIELD
                     @?        ST2 DAM OR DDAM NOT FOUND
-
-;-------------------------------------------------------------------------------
-; STATUS REGISTER 3 ERROR CODES
-;-------------------------------------------------------------------------------
-
-; FAULT LINE CODES
-
+          ;--------------------------------------
+          ; STATUS REGISTER 3 ERROR CODES
+          ;-------------------------------------- ; FAULT LINE CODES
 FLTCDS              @?        'ST3 FAULT LINE IS LOW    => NO FAULT'
                     @?        'ST3 FAULT LINE IS HIGH   => FAULT'
-
-; WRITE PROTECTED CODES
-
+          ;-------------------------------------- ; WRITE PROTECTED CODES
 WRPCDS              @?        'ST3 WRITE PROTECT LINE LOW       => NOT WRITE PROTECTED'
                     @?        'ST3 WRITE PROTECT LINE IS HIGH   => WRITE PROTECTED'
-
-; READY CODES
-
+          ;-------------------------------------- ; READY CODES
 REDCDS              @?        'ST3 READY LINE IS LOW   => FDD NOT READY'
                     @?        'ST3 READY LINE IS HIGH  => FDD IS READY'
-
-; TRACK 0 CODES
-
+          ;-------------------------------------- ; TRACK 0 CODES
 TR0CDS              @?        'ST3 TRACK 00 LINE IS LOW  => HEAD NOT ON TRACK 00'
                     @?        'ST3 TRACK 00 LINE IS HIGH => HEAD ON TRACK 00'
-
-; TWO SIDED CODES
-
+          ;-------------------------------------- ; TWO SIDED CODES
 TSDCDS              @?        'ST3 TWO SIDED LINE IS LOW  => SINGLE SIDED DISK'
                     @?        'ST3 TWO SIDED LINE IS HIGH => DOUBLE SIDED DISK'
-
-; HEAD ADDRESS MARK CODES
-
+          ;-------------------------------------- ; HEAD ADDRESS MARK CODES
 HDACDS              @?        'ST3 HEAD ADDRESS LINE IS LOW   => HEAD 2 SELECTED'
                     @?        'ST3 HEAD ADDRESS LINE IS HIGH  => HEAD 1 SELECTED'
-
-; DUMMY CODE
-
+          ;-------------------------------------- ; DUMMY CODE
 DM3CDS              @?        ST3 DUMMY CODE DUMMY CODE DUMMY CODE
                     @?        ST3 DUMMY CODE DUMMY CODE DUMMY CODE
 
@@ -5340,4 +5288,4 @@ DM3CDS              @?        ST3 DUMMY CODE DUMMY CODE DUMMY CODE
 
                     end       :s19crc
 
-                    #Message  FD verification 10615 bytes, RAM: 15566, CRC: $65C8
+                    #Message  -FD option verification 10612 bytes, RAM: 15566, CRC: $A4EB
