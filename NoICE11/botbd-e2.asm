@@ -215,13 +215,12 @@ RXRDY               equ       $20
 TXRDY               equ       $40                 ; TRANSMIT COMPLETE (FOR TURNOFF)
 
 ;*******************************************************************************
-                    #RAM
+                    #RAM      USER_VECT           ; RAM interrupt vectors
 ;*******************************************************************************
-                    org       USER_VECT           ; RAM interrupt vectors
 
 RAMVEC              rmb       21*2
 
-                    org       RAM_START           ; RAM definitions
+                    #RAM      RAM_START           ; RAM definitions
           ;--------------------------------------
           ; Monitor stack
           ; (Calculated use is at most 7 bytes.  Leave plenty of spare)
@@ -255,9 +254,8 @@ COMBUF              rmb       2+COMBUF_SIZE+1     ; BUFFER ALSO HAS FN, LEN, AND
 RAM_END             equ       *                   ; ADDRESS OF TOP+1 OF RAM
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      ROM_START
 ;*******************************************************************************
-                    org       ROM_START
 
 Start               proc                          ; Power on reset
           ;-------------------------------------- ; Set CPU mode to safe state
@@ -923,9 +921,8 @@ ILLOP_ENT           lda       #5
                     jmp       INT_ENTRY
 
 ;*******************************************************************************
-                    #VECTORS
+                    #VECTORS  HARD_VECT           ; INTERRUPT VECTORS
 ;*******************************************************************************
-                    org       HARD_VECT           ; INTERRUPT VECTORS
 
 NVEC                dw        SCI_ENT             ; FFD6
                     dw        SPI_ENT             ; FFD8

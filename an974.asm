@@ -27,8 +27,7 @@
 ;                       (513) 294-2231
 ;******************************************************************************
 
-                    #RAM
-                    org       $0000
+                    #RAM      $0000
 
 FPACC1EX            rmb       1                   ; FLOATING POINT ACCUMULATLR #1. .
 FPACC1MN            rmb       3
@@ -67,8 +66,7 @@ TAN90ERR            equ       7                   ; TANgent of 90 degrees attemp
 ;     routine in the D-register.
 ;*******************************************************************************
 ;
-;                   #RAM
-;                   org       $0000
+;                   #RAM      $0000
 ;
 ;FPACC1EX           rmb       1         FLOATING POINT ACCUMULATOR #1..
 ;FPACC1MN           rmb       3
@@ -84,8 +82,7 @@ TAN90ERR            equ       7                   ; TANgent of 90 degrees attemp
 EXPSIGN             equ       0                   ; EXPONENT SIGN (0=+, FF=-).
 PWR10EXP            equ       1                   ; POWER 10 EXPONENT.
 
-                    #ROM
-                    org       $C000               ; (TEST FOR EVB)
+                    #ROM      $C000               ; (TEST FOR EVB)
 
 ASCFLT              proc
                     pshx                          ; SAVE POINTER TO ASCII STRING.

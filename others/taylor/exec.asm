@@ -108,8 +108,7 @@ execSP              equ       $03FF               ; the executive's stack will a
 
 ; zero page variables
 
-                    #RAM
-                    org       $0000
+                    #RAM      $0000
 
 ; debugging msgs
 
@@ -185,8 +184,7 @@ usingIdleMsg        fcc       "Idle"
 ; Start of code
 ;*******************************************************************************
 
-                    #ROM
-                    org       $2000
+                    #ROM      $2000
 
 ; Set up the interrupts and so on
 
@@ -565,7 +563,7 @@ Loop@@              dey
 ; return from interrupt (using new task's registers on the stack)
 ;
 ; The endless loop looks wrong but the idle task is always available to run.
-;
+
                     org       *
 
 _taskSwitch         proc
@@ -698,8 +696,7 @@ task3Main           proc
 
 ;*******************************************************************************
 
-                    #RAM
-                    org       $7000
+                    #RAM      $7000
 
 taskStructBase      rmb       400
 taskStructMax       rmb       1

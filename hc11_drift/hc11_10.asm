@@ -159,9 +159,8 @@ ST4XMAX             equ       192
 ST4YMAX             equ       165
 
 ;*******************************************************************************
-                    #RAM
+                    #RAM      $0800               ; variable area
 ;*******************************************************************************
-                    org       $0800               ; variable area
 
 pdmir               rmb       1                   ; mirror of portd keys
 pamir               rmb       1                   ; mirror of porta keys
@@ -237,9 +236,8 @@ d48                 rmb       6                   ; Dividend
 work_space          rmb       2                   ; Work space for divide
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      $C000               ; location in FLASH RAM
 ;*******************************************************************************
-                    org       $C000               ; location in FLASH RAM
           #ifnz DEBUG
                     org       $2000
           #endif
@@ -1939,9 +1937,8 @@ SineTable           fcb       000                 ; 0
                     fcb       255                 ; 90
 #ifz DEBUG
 ;*******************************************************************************
-                    #EEPROM
+                    #EEPROM   $FF00               ; start of EEPROM
 ;*******************************************************************************
-                    org       $FF00               ; start of EEPROM
 
 RESET               proc                          ; INITIALIZE THE CPU
                     lds       #$01FF              ; put stack in CPU RAM
@@ -1970,9 +1967,8 @@ RESET               proc                          ; INITIALIZE THE CPU
 AnRTI               rti                           ; keine Bearbeitung fuer diese IRQ's
 
 ;*******************************************************************************
-                    #VECTORS
+                    #VECTORS  $FFD6               ; Start der Vectortabelle
 ;*******************************************************************************
-                    org       $FFD6               ; Start der Vectortabelle
 
                     dw        SCI_Handler
                     dw:12     AnRTI

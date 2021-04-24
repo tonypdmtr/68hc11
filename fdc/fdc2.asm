@@ -4759,7 +4759,7 @@ FDRMAP              fcb       $53,$4B,$59,$54,$45,$4C,$4C,$45,$52,$20,$20,$28
 ; MAIN LOOP
 ;*******************************************************************************
 
-                    org       $A000
+                    #ROM      $A000
 
 POWER               proc
                     lds       #$005F              ; set up the stack
@@ -4814,7 +4814,7 @@ FRMT                jsr       RESET
 ; MAIN LOOP
 ;*******************************************************************************
 
-                    org       $A500
+                    #ROM      $A500
 
 POWER1              proc
                     jsr       STOP0
@@ -4833,7 +4833,7 @@ Loop@@              pshx
 ;*******************************************************************************
 ; TEST READ AND WRITE OF EVERY BYTE OF THE DISK
 
-                    org       $A600
+                    #ROM      $A600
 
 POWER2              proc
                     lds       #$005F              ; set up the stack
@@ -4903,7 +4903,7 @@ A6005               lda       ,x                  ; print the offending block
 ;*******************************************************************************
 ; TEST READ OF EVERY BYTE OF THE DISK
 
-                    org       $A700
+                    #ROM      $A700
 
 POWER3              proc
                     lds       #$005F              ; set up the stack
@@ -4947,7 +4947,7 @@ A7005               lda       ,x                  ; print the block
 ;*******************************************************************************
 ; HEAD TEST FUNCTION
 
-                    org       $A800
+                    #ROM      $A800
                     jsr       STOP0
                     jsr       RESET               ; RESET THE DRIVE
                     jsr       CRLF
@@ -4957,7 +4957,7 @@ A7005               lda       ,x                  ; print the block
 ;*******************************************************************************
 ; FORMAT DISK FUNCTION
 
-                    org       $A900
+                    #ROM      $A900
                     jsr       STOP0
                     jsr       RESET               ; RESET THE DRIVE
                     jsr       CRLF
@@ -4966,8 +4966,7 @@ A7005               lda       ,x                  ; print the block
 
 ;*******************************************************************************
 ; ???
-
-                    org       $AA00
+                    #ROM      $AA00
                     jsr       STOP0
                     jsr       INITSYS
           ;-------------------------------------- ; OPEN A FILE FIRST -- FILENAME AT SBUFF+1
@@ -5276,9 +5275,9 @@ DM3CDS              @?        ST3 DUMMY CODE DUMMY CODE DUMMY CODE
 ; VECTORS
 ;*******************************************************************************
 
-                    #DATA                         ; org $7FE0
+                    #DATA     ;$7FE0
                     fcc       'LSI1.1'            ; PROGRAM ID
-                    bcd       {:date},{:month},{:year\100} ; FILE CREATION DATE (WAS: $15,$03,$94)
+                    @bcd      {:date},{:month},{:year\100} ; FILE CREATION DATE (WAS: $15,$03,$94)
 
                     fcb       $00                 ; ROM CHECKSUM BYTE
 

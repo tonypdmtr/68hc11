@@ -40,17 +40,10 @@ RESERVED_VECTORS    equ       $0400               ;Reserved vectors (normally 22
                     #MEMORY   ROM       ROM_END
                     #MEMORY   VECTORS   VECTORS+42-1
 
-                    #SEG9
-                    org       ROM_END-$200
-
-                    #VECTORS
-                    org       VECTORS
-
-                    #RAM
-                    org       RAM
-
-                    #ROM
-                    org       ROM
+                    #SEG9     ROM_END-$200
+                    #VECTORS  VECTORS
+                    #RAM      RAM
+                    #ROM      ROM
 
                     #Uses     common.inc
 
@@ -117,9 +110,7 @@ CSCTL               equ       REGS+$5D,1          ;Chip Select Program Control
 CSGADR              equ       REGS+$5E,1          ;Chip Select General Address
 CSGSIZ              equ       REGS+$5F,1          ;Chip Select General Address Size
 
-                    #DATA
-                    org       EEPROM              ;Reset DATA segment to start of EEPROM
-
+                    #DATA     EEPROM              ;Reset DATA segment to start of EEPROM
                     #ROM
 
                     #!Drop    SetChipSelects

@@ -21,9 +21,8 @@ STACKTOP            equ       RAM-1               ;top of stack
 Vreset              equ       $FFFE               ;reset vector
 
 ;*******************************************************************************
-                    #RAM
+                    #RAM      RAM
 ;*******************************************************************************
-                    org       RAM
           ;--------------------------------------
           ; RAM is initialized during S19 load
           ; (good for simulator use only)
@@ -31,9 +30,8 @@ Vreset              equ       $FFFE               ;reset vector
 Samples             fcb       18,205,15,62,230,27,246,155
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      ROM
 ;*******************************************************************************
-                    org       ROM
 
 BubbleSort          proc
                     ldb       #::Samples          ;B = number of elements to check

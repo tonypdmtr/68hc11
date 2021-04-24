@@ -35,20 +35,11 @@ RESERVED_VECTORS    equ       $FFC0               ;Reserved vectors (22 bytes)
                     #MEMORY   ROM       ROM_END
                     #MEMORY   VECTORS   VECTORS|$00FF
 
-                    #VECTORS
-                    org       VECTORS
-
-                    #SEG9
-                    org       RESERVED_VECTORS-512
-
-                    #RAM
-                    org       RAM
-
-                    #DATA
-                    org       EEPROM
-
-                    #ROM
-                    org       ROM
+                    #VECTORS  VECTORS
+                    #SEG9     RESERVED_VECTORS-512
+                    #RAM      RAM
+                    #DATA     EEPROM
+                    #ROM      ROM
 
                     #Uses     common.inc
 

@@ -13,9 +13,8 @@ REVECT              equ       $00eb               ; revectored to RAM
 STACK               equ       $01ff               ; high stack
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      $B600               ; in EEPROM
 ;*******************************************************************************
-                    org       $B600               ; in EEPROM
 
 Start               proc
                     sei                           ; disable interrupts

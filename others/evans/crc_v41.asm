@@ -56,7 +56,7 @@ OUTER_COUNT         equ       31
 CHKSUM1             equ       32
 CHKSUM2             equ       33
 
-                    org       $E000
+                    #ROM      $E000
 
 crc_V41             proc
                     push

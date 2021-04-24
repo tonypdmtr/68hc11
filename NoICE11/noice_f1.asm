@@ -185,9 +185,8 @@ RXRDY               equ       $20
 TXRDY               equ       $40                 ;TRANSMIT COMPLETE (FOR TURNOFF)
 
 ;*******************************************************************************
-                    #RAM
+                    #RAM      RAM_START
 ;*******************************************************************************
-                    org       RAM_START
           ;--------------------------------------
           ; RAM interrupt vectors (first in SEG for easy
           ; addressing, else move to their own SEG)
@@ -235,9 +234,8 @@ COMBUF              rmb       2+COMBUF_SIZE+1     ;buffer also has FN, LEN, and 
 RAM_END             equ       *                   ;address of TOP+1 of RAM
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      ROM
 ;*******************************************************************************
-                    org       ROM
 
 Start               proc                          ;Power on reset
           ;-------------------------------------- ;Set CPU mode to safe state
@@ -1013,9 +1011,8 @@ BreakPoint@@        ldx       _X_,x               ;restore original X
                     jmp       CommonHandler
 
 ;*******************************************************************************
-                    #VECTORS
+                    #VECTORS  VECTORS             ;Vectors through RAM
 ;*******************************************************************************
-                    org       VECTORS             ;Vectors through RAM
 
 NVEC                dw        SCI_Handler         ;$FFD6
                     dw        SPI_Handler         ;$FFD8

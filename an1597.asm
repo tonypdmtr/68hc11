@@ -39,7 +39,7 @@ RBO                 equ       $1000               ; REGISTER BLOCK OFFSET
 ;                   RAM allocation  status flags
 ;*******************************************************************************
 
-                    org       $0000
+                    #RAM      $0000
 
 stat1               rmb       1                   ; 0: VALID CRC
                                                   ; 3: UPDATE DISPLAY
@@ -101,7 +101,7 @@ KEY                 rmb       1                   ; CODE OF PRESSED KEY
 KOUNT               rmb       1                   ; KEYBOARD COUNTER
 ADIS                rmb       1                   ; ALTERNATIVE DISPLAY TYPE
 
-                    org       $F800               ; .ROM1
+                    #ROM      $F800
 
 ;*******************************************************************************
 ;                     Reset & initialisation
@@ -1323,7 +1323,7 @@ Loop@@              clr       ,x
 ;              MC68HC811E2 Vectors.
 ;*******************************************************************************
 
-                    org       $FFF0               ; SECTION .VECTOR
+                    #VECTORS  $FFF0
 
                     fdb       TINTB               ; RTI
                     fdb       SDATA               ; IRQ

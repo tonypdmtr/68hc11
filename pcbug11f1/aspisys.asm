@@ -43,8 +43,7 @@ EPROG               exp       PPROG               ;address of EPROG register (fo
 RAMVECTORS          equ       $00C4               ;beginning of RAM copy of vectors (WAS: $BF)
 
 ;*******************************************************************************
-                    #ROM
-                    org       ROM
+                    #ROM      ROM
 ;*******************************************************************************
 
 talker_start        exp       *                   ;Talker code start address
@@ -307,8 +306,7 @@ vCMF                !jmp      null_srv            ;Clock Monitor Fail
                     !jmp      Start               ;Reset
 
 ;*******************************************************************************
-                    #VECTORS
-                    org       $FFD6
+                    #VECTORS  $FFD6
 ;*******************************************************************************
 
 ?                   macro

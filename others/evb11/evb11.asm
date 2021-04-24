@@ -12,13 +12,17 @@ PORTB               equ       $1004
 PORTCL              equ       $1005
 DDRC                equ       $1007
 
+;*******************************************************************************
 
-                    org       $FFFE
-                    dw        start
+                    #VECTORS  $FFFE
+                    dw        Start
 
-                    org       $E000
+;*******************************************************************************
+                    #ROM      $E000
+;*******************************************************************************
 
-start               lds       #$FF
+Start               proc
+                    lds       #$FF
 
                     lda       #$03                ; Reset
                     sta       ACIA_CONTROL
@@ -28,24 +32,30 @@ start               lds       #$FF
 
                     lda       #$FF
                     sta       DDRC
+;                   bra       waitrx
 
+;*******************************************************************************
 
-waitrx              lda       ACIA_STATUS
+waitrx              proc
+Loop@@              lda       ACIA_STATUS
                     anda      #$01
                     bne       readrx
-                    lda       #0
-delay               deca
-                    bne       delay
-                    bra       waitrx
+                    clra
+Delay@@             deca
+                    bne       Delay@@
+                    bra       Loop@@
 
-readrx              ldb       ACIA_DATA
+;*******************************************************************************
+
+readrx              proc
+                    ldb       ACIA_DATA
                     stb       PORTB
 
-waittx              lda       ACIA_STATUS
+Loop@@              lda       ACIA_STATUS
                     anda      #$02
-                    beq       waittx
+                    beq       Loop@@
 
                     stb       ACIA_DATA
                     stb       PORTC
 
-done                bra       waitrx
+                    bra       waitrx

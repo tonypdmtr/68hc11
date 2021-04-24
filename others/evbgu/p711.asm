@@ -80,12 +80,11 @@ cjeqa               macro     Value,Address
                     endm
 
 ;*******************************************************************************
+                    #ROM      $A000
+;*******************************************************************************
 
-                    #ROM
-
-                    org       $A000
-
-Start               lds       #$0300              ; INIT. STACK
+Start               proc
+                    lds       #$0300              ; INIT. STACK
                     ldd       #$0B00              ; INITIAL CHIP SELECTS
                     sta       CSCTL               ; 0B
                     stb       GPCS1A              ; /CS equ $CSGP1

@@ -40,9 +40,8 @@ REVECT              equ       $00eb               ; revectored RTI
 STACK               equ       $00ff               ; good to know where it is
 
 ;*******************************************************************************
-                    #ROM                          ; Main program section
+                    #ROM      $B600               ; Main program section
 ;*******************************************************************************
-                    org       $B600
 
 Start               proc
                     lds       #STACK

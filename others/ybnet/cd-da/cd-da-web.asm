@@ -96,9 +96,8 @@ IDE_REG             equ       $1802               ; registre IDE (écriture)
 KEYBOARD            equ       $1805               ; registre du clavier (lecture)
 
 ;*******************************************************************************
-                    #RAM                          ; variables maison
+                    #RAM      DEB_RAM             ; variables maison
 ;*******************************************************************************
-                    org       DEB_RAM
 
 LCDINFO             rmb       1                   ; Infos sur l'affichage
                                                   ; bits 0 à 4 : longueur du message à afficher (16max)
@@ -300,9 +299,8 @@ ICONES              fcb       $10,$18,$1C,$1E,$1E,$1C,$18,$10  ; PLAY |>
 ICO                 fcb       0,1,2               ; code du caractere
 
 ;*******************************************************************************
-                    #ROM                          ;        InI Port's
+                    #ROM      DEB_PROG            ;        InI Port's
 ;*******************************************************************************
-                    org       DEB_PROG
 
 Start               proc
                     lds       #$3FF               ; Initialisation de la pile(1024octets)

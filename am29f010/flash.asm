@@ -210,9 +210,8 @@ FCmdSEra            equ       $30                 ; Erase subcommand: Single sec
 ; Location may be changed to suit your needs
 
 ;*******************************************************************************
-                    #RAM                          ; Page 0 variables
+                    #RAM      $0000               ; Page 0 variables, start of variable block
 ;*******************************************************************************
-                    org       $0000               ; Start of variable block
 
 sector              rmb       1                   ; Sector # selected for programming
 offset              rmb       2                   ; Offset to add to S-record addresses
@@ -226,9 +225,8 @@ checksum            rmb       1                   ; S-record running checksum
 sbuffer             rmb       BUFSIZE             ; S-record data field in binary format
 
 ;*******************************************************************************
-                    #ROM
+                    #ROM      $2000               ; Change to desired load address
 ;*******************************************************************************
-                    org       $2000               ; Change to desired load address
 
 ;*******************************************************************************
 ; Purpose: Initialization

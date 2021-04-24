@@ -126,8 +126,7 @@ CONFIG              equ       REGS+$3F,1          ;Configuration Register
 .INCHAR             next      :temp,3             ;wait for and input a char from term
 .VECINT             next      :temp,3             ;initialize RAM vector table
 
-                    #VECTORS
-                    org       VECTORS
+                    #VECTORS  VECTORS
 
 ; The following section puts the JMP opcodes in the pseudo-vector area
 ; so the user need only use DW LABEL instructions to fill the rest
@@ -145,11 +144,6 @@ CONFIG              equ       REGS+$3F,1          ;Configuration Register
 
                     org       Vsci+1              ;ready to accept first DW statement
 
-                    #DATA
-                    org       EEPROM              ;points to actual EEPROM
-
-                    #RAM
-                    org       RAM                 ;points to beginning of user RAM
-
-                    #ROM
-                    org       ROM                 ;points to RAM used for program storage
+                    #DATA     EEPROM              ;points to actual EEPROM
+                    #RAM      RAM                 ;points to beginning of user RAM
+                    #ROM      ROM                 ;points to RAM used for program storage

@@ -5,7 +5,7 @@
 ; Reformatted and adapted to ASM11 by Tony G. Papadimitriou <tonyp@acm.org>
 ;*******************************************************************************
 
-                    org       *
+                    #ROM      *
           ;-------------------------------------- ; Define symbol equates
 ADDR_DIR            equ       $F8                 ; An 8-bit address (upper 8 bits = 0)
 ADDR_EXT            equ       $A45C               ; A 16-bit address

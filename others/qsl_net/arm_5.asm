@@ -39,9 +39,8 @@ OPEN                equ       $f700
 CLOSE               equ       $f400
 
 ;*******************************************************************************
-                    #ROM                          ; This is the MAIN
+                    #ROM      $B600               ; start of EEPROM
 ;*******************************************************************************
-                    org       $B600               ; start of EEPROM
 
 Start               proc
                     lds       #STACK              ; stack top

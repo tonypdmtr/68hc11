@@ -75,8 +75,7 @@ INTFC56             rmb       4
 OLDDTY              rmb       4
 NEWDTY              rmb       4
 
-                    #ROM
-                    org       *
+                    #ROM      *
 
 ;******** OUTPUT LAST PERIOD RESULT AND DO KP TERM ********
 
