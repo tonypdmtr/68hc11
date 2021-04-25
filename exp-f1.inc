@@ -136,6 +136,7 @@ CSGSIZ              equ       REGS+$5F,1          ;Chip Select General Address S
 ?$2AAA              equ       $8000+$2AAA         ;AT28C256 special address
 
                     #MEMORY   CONFIG
+
                     #DATA     CONFIG
 
 ?                   macro

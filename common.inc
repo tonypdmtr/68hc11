@@ -93,15 +93,11 @@ ConstValues         macro     Symbol,Value[,Value]*
 VDD                 def       5000                ;MCU voltage in mV
 
 ;===============================================================================
-#ifndef Hz
- #ifndef KHZ
-  #ifndef MHZ
+#ifndef HZ¦KHZ¦MHZ
 MHZ                 def       8                   ;default for most anything
    #ifdef __DK68HC11__
 HZ                  def       9830400
    #endif
-  #endif
- #endif
 #endif
 ;-------------------------------------------------------------------------------
 ?                   macro     FromHz,ToHz
@@ -2338,9 +2334,7 @@ MAX_OS_CALLS        def       200                 ;default room for OS calls (68
                     endm
 
                     @?        RAM
-          #ifdef XRAM
                     @?        XRAM
-          #endif
                     @?        EEPROM
                     @?        ROM
 
