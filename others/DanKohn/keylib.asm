@@ -75,7 +75,6 @@ Done@@              lda       #END_STR            ; Instert end of string charac
                     pulx
                     rts                           ; exit
 
-
 ;*************************************************************************
 ; Name:         Keypad Setup
 ; Call By:      KEYSET
@@ -86,7 +85,6 @@ Done@@              lda       #END_STR            ; Instert end of string charac
 ; Function:     Set up PORTD For Keypad Entry by setting PDDR
 ;
 ; Protocol:     No Registers Changed upon RTS
-;
 
 KEYSET              proc
                     psha
@@ -169,7 +167,6 @@ ANYKEY              proc
 ;
 ; Protocol:     On Exit REGISTER A contains a $00 if no key pressed
 ;               or the ASCII Code of the key pressed.
-;
 
 GETKEY              proc
                     pshx
@@ -220,8 +217,6 @@ Done@@              pulb                          ; Exit
 ;                  register A with the value stored in step 1 and exit
 ;
 ; Protocol:     Returns the debounced key's ascii value in REG A
-;
-;
 
 DBKEY               proc
                     pshx

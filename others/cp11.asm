@@ -49,8 +49,8 @@ LED_UP              equ       $02                 ; LED count up
 ; Other equates
 
 JMP_OP              equ       $7E                 ; Operand for JMP instruction
-CARRIAGE_RET        equ       $0D
-LINE_FEED           equ       $0A
+CR                  equ       13
+LF                  equ       10
 ASCII_D             equ       $44
 ASCII_U             equ       $55
 ASCII_Q             equ       $51
@@ -72,8 +72,9 @@ STACK               equ       $00C3
 ;*******************************************************************************
 
 ;*******************************************************************************
-                    #RAM      $0000
+                    #RAM
 ;*******************************************************************************
+                    org       $0000
 
 ; Transmit buffer
 
@@ -96,8 +97,9 @@ led_ctrl            rmb       1                   ; LED control bits
 ;*******************************************************************************
 
 ;*******************************************************************************
-                    #RAM      $00C4
+                    #RAM
 ;*******************************************************************************
+                    org       $00C4
 
 jmp_sci             rmb       3
 
@@ -106,8 +108,9 @@ jmp_sci             rmb       3
 ;*******************************************************************************
 
 ;*******************************************************************************
-                    #ROM      $B600
+                    #ROM
 ;*******************************************************************************
+                    org       $B600
 
 Start               proc
                     lds       #STACK              ; set the stack pointer
@@ -117,11 +120,7 @@ Start               proc
                     sta       jmp_sci             ; JSR intsruction
                     ldx       #SCI_Handler        ; address of interrupt handler
                     stx       jmp_sci+1
-
-;*******************************************************************************
-; Initialize port A for LED test.
-;*******************************************************************************
-
+          ;-------------------------------------- Initialize port A for LED test.
                     lda       #$80                ; enable PA7 for output
                     sta       PACTL,y
                     clra                          ; disable PA alternate functions
@@ -159,6 +158,7 @@ InitSCI             proc
 ;*******************************************************************************
 
                     bset      led_ctrl,#LED_UP+LED_ON  ; set LED control for counting up
+;                   bra       Test
 
 ;*******************************************************************************
 ; Main loop
@@ -167,11 +167,11 @@ InitSCI             proc
 ; Serial processing is all interrupt driven.
 ;*******************************************************************************
 
-test                proc
-                    bsr       TestLED             ; count on the upper nibble of Port A
-                    ldx       #$ffff              ; delay value
+Test                proc
+Loop@@              bsr       TestLED             ; count on the upper nibble of Port A
+                    ldx       #$FFFF              ; delay value
                     bsr       Delay
-                    bra       test
+                    bra       Loop@@
 
 ;*******************************************************************************
 ; Subroutines
@@ -184,17 +184,12 @@ test                proc
 
 TestLED             proc
                     lda       PORTA,y             ; load current LED pattern
-
                     brset     led_ctrl,#LED_ON,On@@ ; test whether count enabled
-
                     clra                          ; if not enabled, clear PORTA
                     bra       Test@@
-
 On@@                brclr     led_ctrl,#LED_UP,Down@@ ; test for up or down count
-
                     adda      #$10                ; increment upper nibble of A
                     bra       Test@@
-
 Down@@              suba      #$10                ; decrement upper nibble of A
 Test@@              sta       PORTA,y
                     rts
@@ -276,7 +271,7 @@ RxChr               proc
                     brclr     SCSR,y,#SCSR_RDRF,Done@@ ; return if RDR empty
                     lda       SCDR,y              ; read newly received character
                     sta       SCDR,y              ; echo char
-          ;***** PENDING! Add code described in RxChr function header. *****
+                    ...       PENDING! Add code described in RxChr function header
 Done@@              rts
 
 ;*******************************************************************************
@@ -299,12 +294,10 @@ do_cmd              proc
                     bra       Prompt              ; valid command, display prompt
 
 ; D: (Down) Clear the led_ctrl:LED_UP byte for counting down.
-do_cmd2
-;***** PENDING! Handle "D" command. *****
+do_cmd2             ...       PENDING! Handle "D" command
 
 ; Q: (Quit) Turn off LEDs and don't count
-do_cmd3
-;***** PENDING! Handle "Q" command. *****
+do_cmd3             ...       PENDING! Handle "Q" command
 
 ; Add future commands here. When a command is not recognized, execution falls
 ; through to the "BadCmd" label, and an appropriate message is displayed.
@@ -315,8 +308,7 @@ do_cmd4
 
 BadCmd              proc
                     ldx       #BADPROMPT          ; Display possible cmds + prompt for invalid cmd
-                    bsr       TxStr
-                    rts                           ; ...and return
+                    bra       TxStr
 
 ;*******************************************************************************
 ; Display next prompt here.
@@ -343,7 +335,7 @@ SCI_Handler         proc
 prompt              macro
                     mset      #
                     mstr      1
-                    fcc       CARRIAGE_RET,LINE_FEED,~1~
+                    fcc       CR,LF,~1~
                     endm
 
 BADPROMPT           @prompt   Commands: U, D, Q   ; Response to invalid cmd = "\r\n??\r\nHC11> "

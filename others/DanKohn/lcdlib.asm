@@ -87,7 +87,6 @@ Done@@              pulb
 ; On Call:      No Registers need to be set up
 ;
 ; On Return:    No Registers Modified
-;
 
 LCDSET              proc
                     psha
@@ -130,11 +129,8 @@ LCDSET              proc
 ; Protocol:     On Entry, REG D contains value to display on LCD. No
 ;               value returned
 
-
-LCDDEC              psha
-                    pshb
-                    pshx
-                    pshy
+LCDDEC              proc
+                    push
                     ldy       #LCDBUF+4           ; *Point to LSB of LCDBUF
 Loop@@              ldx       #$0A                ; *divide by 10dec to convert to BCD
                     idiv
@@ -148,10 +144,7 @@ Loop@@              ldx       #$0A                ; *divide by 10dec to convert 
                     sta       LCDBUF+5
                     ldx       #LCDBUF             ; *Point to LCDBUF and call MSG Display Routine
                     bsr       LCDMSG
-                    puly
-                    pulx
-                    pulb
-                    pula
+                    pull
                     rts                           ; *returns from the subroutine
 
 ;*************************************************************************
@@ -175,7 +168,6 @@ Loop@@              ldx       #$0A                ; *divide by 10dec to convert 
 LCDMSG              proc
                     pshx
                     psha
-
 Loop@@              lda       ,x
                     cmpa      #'$'
                     beq       Done@@
@@ -183,7 +175,6 @@ Loop@@              lda       ,x
                     bsr       LC_DELAY1
                     inx
                     bra       Loop@@
-
 Done@@              pula
                     pulx
                     rts
@@ -208,16 +199,14 @@ Done@@              pula
 ;
 
 LC_DELAY            proc
-                    pshb                          ; save registers
-                    psha
+                    pshd                          ; save registers
                     ldb       #$F0                ; set loop count 1
 MainLoop@@          lda       #$F0                ; set loop count 2
-Loop@@              deca                          ; decriment counter 2
+Loop@@              deca                          ; decrement counter 2
                     bne       Loop@@              ; branch if not 0
-                    decb                          ; decriment counter 1
+                    decb                          ; decrement counter 1
                     bne       MainLoop@@          ; branch if not 0
-                    pula                          ; restore registers
-                    pulb
+                    puld                          ; restore registers
                     rts
 
 ;*************************************************************************
@@ -241,7 +230,7 @@ Loop@@              deca                          ; decriment counter 2
 LC_DELAY1           proc
                     pshx                          ; save x
                     ldx       #20000              ; load count
-Loop@@              dex                           ; decriment x
+Loop@@              dex                           ; decrement x
                     bne       Loop@@              ; loop if not 0
                     pulx                          ; restore x
                     rts

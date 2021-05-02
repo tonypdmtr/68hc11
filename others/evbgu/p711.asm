@@ -2,10 +2,9 @@
 ;* Language  : Motorola/Freescale/NXP 68HC11 Assembly Language (aspisys.com/ASM11)
 ;*******************************************************************************
 ; "  P711 - TEST   PROGRAM   for   68HC711K4              1.1.97"
-; Ver 1.3b
+; Ver 1.3b - LCD PC1602-ARS-PSD
 ; Optimized a bit by Tony Papadimitriou (99.08.07)
 
-                    #Macro
                     #CaseOn
 
 PORTD               equ       $08                 ; Port D data
@@ -48,9 +47,7 @@ Delay               macro     parm
                     lda       ~1~
                     jsr       DELAY
                     endm
-
 ;-------------------------------------------------------------------------------
-
 cbeqa               macro     Value,Address
           #ifparm ~2~ = *
                     mset      2,{*}
@@ -58,9 +55,7 @@ cbeqa               macro     Value,Address
                     cmpa      ~1~
                     beq       ~2~
                     endm
-
 ;-------------------------------------------------------------------------------
-
 cbnea               macro     Value,Address
           #ifparm ~2~ = *
                     mset      2,{*}
@@ -68,9 +63,7 @@ cbnea               macro     Value,Address
                     cmpa      ~1~
                     bne       ~2~
                     endm
-
 ;-------------------------------------------------------------------------------
-
 cjeqa               macro     Value,Address
           #ifparm ~2~ = *
                     mset      2,{*}
@@ -80,8 +73,9 @@ cjeqa               macro     Value,Address
                     endm
 
 ;*******************************************************************************
-                    #ROM      $A000
+                    #ROM
 ;*******************************************************************************
+                    org       $A000
 
 Start               proc
                     lds       #$0300              ; INIT. STACK
@@ -113,56 +107,62 @@ Start               proc
                     std       SCCR1               ; RECEIVE 8 DATA BITS, 1 START BIT, 1 STOP BIT
 
                     ldy       #4                  ; INIT. LCD
-D0                  lda       #$38                ; Function Set : 8 bit, 2line, 5x7 dots
+_0@@                lda       #$38                ; Function Set : 8 bit, 2line, 5x7 dots
                     sta       DISPL
                     ldx       #5000
-D1                  nop
+_1@@                nop
                     dex
-                    bne       D1
+                    bne       _1@@
                     dey
-                    bne       D0
+                    bne       _0@@
 
-                    delay     #8                  ; Function
-                    delay     #1
-                    delay     #6
-                    delay     #$0F                ; Function
-STAR                delay     #1                  ; Clear Display (Cursor at HOME)
+                    @delay    #8                  ; Function
+                    @delay    #1
+                    @delay    #6
+                    @delay    #$0F                ; Function
+
+Star                @delay    #1                  ; Clear Display (Cursor at HOME)
                     inca                          ; Cursor At Home
                     jsr       DELAY
 
                     ldx       #T1ST               ; PRINT TEST HEADER
                     bsr       TYP
-                    delay     #$C0                ; NEXT LINE OF LCD
+                    @delay    #$C0                ; NEXT LINE OF LCD
                     ldx       #VER                ; PRINT VER
                     bsr       TYP
+;                   bra       MainLoop
 
+;*******************************************************************************
 ; RECEIVE the NUMBER of PROGRAM to RUN
 
-START               bsr       GETNUM
+MainLoop            proc
+                    bsr       GETNUM
                     sta       CODE
 
-                    cbeqa     #1,SCI
-                    cjeqa     #2,DURT
-                    cjeqa     #3,ECHO
-                    cjeqa     #4,EPROM
-                    cjeqa     #5,SRAM
-                    cjeqa     #6,AtoD
-                    cjeqa     #7,LEDH
-                    cjeqa     #8,D2A
-                    cbnea     #9,XA
+                    @cbeqa    #1,SCI
+                    @cjeqa    #2,DURT
+                    @cjeqa    #3,ECHO
+                    @cjeqa    #4,EPROM
+                    @cjeqa    #5,SRAM
+                    @cjeqa    #6,AtoD
+                    @cjeqa    #7,LEDH
+                    @cjeqa    #8,D2A
+                    @cbnea    #9,_@@
 
-                    delay     #1                  ; Clear Display (Cursor at HOME)
+                    @delay    #1                  ; Clear Display (Cursor at HOME)
                     inca                          ; Cursor At Home
                     jsr       DELAY
-                    bra       START
+                    bra       MainLoop
 
-XA                  cmpa      #$0A
-                    jeq       DISP
+_@@                 cmpa      #$0A
+                    jeq       ClearLCD
                     cmpa      #$0B
-                    bne       START
+                    bne       MainLoop
                     jmp       KEYBO
 
-DELY                proc
+;*******************************************************************************
+
+Delay               proc
                     pshx
                     ldx       #30000              ; DELAY
 Loop@@              dex
@@ -172,49 +172,55 @@ Loop@@              dex
 
 ;*******************************************************************************
 
-TYP                 lda       ,x                  ; TYPE .TEXT
+TYP                 proc
+Loop@@              lda       ,x                  ; TYPE .TEXT
                     cmpa      #'$'                ; END OF STRING
-                    beq       :AnRTS
+                    beq       Done@@
                     jsr       DELAY1
                     inx
-                    bra       TYP
+                    bra       Loop@@
+Done@@              equ       :AnRTS
 
-; =================    SCI      =========================
+;*******************************************************************************
 
-SCI                 ldx       #TABLE              ; DATA TABLE ADDRES
-NEXT                bsr       GETNUM
+SCI                 proc
+                    ldx       #TABLE              ; DATA TABLE ADDRES
+Loop@@              bsr       GETNUM
                     sta       ,x
                     inx                           ; NEXT ADDRES
                     tsta                          ; 0 - END OF DATA TABLE
-                    bne       NEXT                ; READ NEXT DATA
+                    bne       Loop@@              ; READ NEXT DATA
                     sta       ,x                  ; 0 AT THE END OF TABLE
                     bra       TRANS
 
-GETNUM
-GET                 lda       SCSR1               ; READ STATUS REG.
+;*******************************************************************************
+
+GETNUM              proc
+Loop@@              lda       SCSR1               ; READ STATUS REG.
                     anda      #$20
-                    beq       GET                 ; JUMP IF RDRF equ $0
+                    beq       Loop@@              ; JUMP IF RDRF equ $0
                     lda       SCDAT               ; READ DATA REG.
                     cmpa      #' '                ; SPACE SEND BY BASIC
-                    beq       GET
+                    beq       Loop@@
                     anda      #$0F                ; CONVERT TO BINARY
                     rts
 
-; TRANS                                            ; TRANSMIT  A  reg. to PC  by  SCI
+;*******************************************************************************
+; TRANSMIT RegA to PC by SCI
 
-TRANS               ldx       #TABLE              ; SEND to IBM_PC.
-ZERO                ldb       ,x
-                    jeq       STAR
-                    orb       #$30
-TRN                 lda       SCSR1               ; LOOP TILL TDRE=1
-                    bpl       TRN
-                    stb       SCDAT
+TRANS               proc
+                    ldx       #TABLE              ; SEND to IBM_PC.
+Loop@@              ldb       ,x
+                    jeq       Star
+                    jsr       PutChar
                     inx
-                    bra       ZERO
+                    bra       Loop@@
 
-; ===================    ONUART     =====================
+;*******************************************************************************
+; ONUART
 
-ECHO                ldx       #DUART
+ECHO                proc
+                    ldx       #DUART
                     ldd       #$2238              ; RSET RECEIVER
                     sta       2,x                 ; $8102 equ $CRA REG
                     stb       2,x                 ; RESET TRANSMIT CRA
@@ -228,13 +234,15 @@ ECHO                ldx       #DUART
                     stb       ,x                  ; 1 STOP BIT MR2A
                     lda       #$BB                ; BAUD RATE equ $9600
                     sta       1,x                 ; TX and RCV BOUD RATE CSRA
-                    lda       #05                 ; ENABLE TX and RCV
+                    lda       #5                  ; ENABLE TX and RCV
                     sta       2,x
-ST                  jmp       START
+ST                  jmp       MainLoop
 
-; ==================   DUART    =========================
+;*******************************************************************************
+; DUART
 
-DURT                ldx       #DUART
+DURT                proc
+                    ldx       #DUART
                     ldd       #$2238              ; RSET RECEIVER
                     sta       2,x                 ; $8102 equ $CRA REG
                     stb       2,x                 ; RESET TRANSMIT CRA
@@ -248,22 +256,25 @@ DURT                ldx       #DUART
                     stb       ,x                  ; 1 STOP BIT MR2A
                     lda       #$BB                ; BOUD RATE equ $9600
                     sta       1,x                 ; TX and RCV BOUD RATE CSRA
-                    lda       #05                 ; ENABLE TX and RCV
+                    lda       #5                  ; ENABLE TX and RCV
                     sta       2,x
 
                     ldx       #TABLE
+;                   bra       INUART
 
+;*******************************************************************************
 ; INUART (PORT) - CHECK DUART for ANY INPUT
 
-INUART              ldy       #DUART
-                    lda       1,Y                 ; READ STATUS (SRA REG)
-                    anda      #01                 ; CHECK RXRDY
-                    beq       INURT0              ; JUMPING NO DATA
-                    lda       3,Y                 ; READ DATA - RBA
+INUART              proc
+                    ldy       #DUART
+                    lda       1,y                 ; READ STATUS (SRA REG)
+                    anda      #1                  ; CHECK RXRDY
+                    beq       Go@@                ; JUMPING NO DATA
+                    lda       3,y                 ; READ DATA - RBA
                     anda      #$7F                ; MASK PARITY
-INURT0              tsta
+Go@@                tsta
                     beq       INUART
-                    cmpa      #$20
+                    cmpa      #' '
                     beq       INUART
                     anda      #$0F
                     sta       ,x                  ; CHECK IF THER WAS AN INPUT
@@ -273,29 +284,33 @@ INURT0              tsta
                     sta       ,x                  ; 0 AT THE END OF TABLE
 
                     ldx       #TABLE              ; TRANSMIT THE DATA TO THE PC.
-LD2                 lda       ,x
+Loop@@              lda       ,x
                     beq       ST
                     ora       #$30
                     bsr       OUTURT
                     inx
-                    bra       LD2
+                    bra       Loop@@
 
-; OUTUART (PORT) -     OUTPUT the CHARACTER IN A.
+;*******************************************************************************
+; OUTUART (PORT) - OUTPUT THE CHARACTER IN A.
 
-OUTURT              pshx
+OUTURT              proc
+                    pshx
                     ldx       #DUART
-OUTU2               ldb       1,x                 ; CHECK STATUS
+Loop@@              ldb       1,x                 ; CHECK STATUS
                     andb      #4
-                    beq       OUTU2               ; LOOP UNTIL TDRE =1
+                    beq       Loop@@              ; LOOP UNTIL TDRE =1
                     anda      #$7F                ; MASK PERITY
                     sta       3,x                 ; SEND CHARACTER
                     pulx
                     rts
 
-; ==================   RAM  TEST   ======================
+;*******************************************************************************
+; RAM TEST
 
-SRAM                ldx       #RAM
-SRM                 ldd       #$55AA
+SRAM                proc
+                    ldx       #RAM
+Loop@@              ldd       #$55AA
                     sta       ,x
                     stb       TABLE+1             ; DELAY FOR REMOVING PREVIOUS DATA.
                     cmpa      ,x
@@ -306,26 +321,28 @@ SRM                 ldd       #$55AA
                     bne       EROR
                     inx
                     cpx       #$8000
-                    bne       SRM
+                    bne       Loop@@
                     lda       #1
                     bra       OK
 
-; ================    EPROM  TEST    ====================
+;*******************************************************************************
+; EPROM TEST
 
-EPROM               ldx       #EPRM
-EROM                ldd       #$55AA
+EPROM               proc
+                    ldx       #EPRM
+Loop@@              ldd       #$55AA
                     sta       ,x
-                    jsr       D10MS               ; DELAY OF 10 Msec
+                    jsr       Delay10msec
                     cmpa      ,x
                     bne       EROR
                     stb       ,x
-                    jsr       D10MS               ; DELAY OF 10 Msec
+                    jsr       Delay10msec
                     cmpb      ,x
                     bne       EROR
                     ldb       #$20
                     abx
                     cpx       #$5FD0
-                    bls       EROM
+                    bls       Loop@@
                     lda       #1
                     bra       OK
 
@@ -334,117 +351,127 @@ OK                  sta       TABLE
                     clr       TABLE+1
                     jmp       TRANS
 
-; ==================    A to D    =======================
+;*******************************************************************************
 
-AtoD                lda       #$90                ; INIT A to D
+AtoD                proc
+                    lda       #$90                ; INIT A to D
                     sta       OPTION
                     ldy       #10
-SAMP                clr       ADCTL               ; start of conversion.
-WAIT                lda       ADCTL
-                    bpl       WAIT                ; CCF equ $1 ; Conversion Complete Flag.
+Sample@@            clr       ADCTL               ; start of conversion.
+_@@                 lda       ADCTL
+                    bpl       _@@                 ; CCF equ $1 ; Conversion Complete Flag.
                     ldb       ADR1
-
-          ; TRANSMIT  A  reg. to PC  by  SCI
-
+          ;-------------------------------------- ; TRANSMIT  A  reg. to PC  by  SCI
                     andb      #$0F                ; LOW BYTE
                     cmpb      #9
                     ble       NUM
                     subb      #9
                     orb       #$40
-                    bra       TRAL
-
-NUM                 orb       #$30
-TRAL                lda       SCSR1               ; LOOP TILL TDRE=1
-                    bpl       TRAL
-                    stb       SCDAT               ; send
-                    ldb       ADR1
+                    bsr       WaitTDRE
+                    bra       ReadAD@@
+          ;--------------------------------------
+NUM                 bsr       PutChar
+ReadAD@@            ldb       ADR1
                     lsrb:4                        ; HIGH BYTE
                     cmpb      #9
                     ble       NUML
                     subb      #9
                     orb       #$40
-                    bra       TRAH
+                    bsr       WaitTDRE
+                    bra       Delay@@
 
-NUML                orb       #$30
-TRAH                lda       SCSR1               ; LOOP TILL TDRE=1
-                    bpl       TRAH
-                    stb       SCDAT               ; send
+NUML                bsr       PutChar
 
-                    ldx       #50
-DL                  bsr       D10MS
+Delay@@             ldx       #50
+DLoop@@             bsr       Delay10msec
                     dex
-                    bne       DL
+                    bne       DLoop@@
                     dey
-                    bne       SAMP
+                    bne       Sample@@
                     lda       #$10                ; STOP A to D
                     sta       OPTION
-                    jmp       START
+                    jmp       MainLoop
 
-; ==================    D to A    =======================
+;*******************************************************************************
 
-D2A                 lda       #$FF
+PutChar             proc
+                    orb       #$30
+Loop@@              lda       SCSR1               ; LOOP TILL TDRE=1
+                    bpl       Loop@@
+                    stb       SCDAT               ; send
+                    rts
+
+WaitTDRE            equ       Loop@@
+
+;*******************************************************************************
+
+D2A                 proc
+                    lda       #$FF
                     ldy       #4
-DD2                 sta       DtoA
+Loop@@              sta       DtoA
                     ldx       #200
-DDL                 bsr       D10MS               ; DELAY
+_@@                 bsr       Delay10msec
                     dex
-                    bne       DDL
-                    suba      #$40
+                    bne       _@@
+                    suba      #64
                     dey
-                    bne       DD2
+                    bne       Loop@@
                     clr       DtoA
-                    jmp       START
+                    jmp       MainLoop
 
-; ==================   LED PORT H    ====================
+;*******************************************************************************
+; LED PORT H
 
-LEDH                ldd       #$FFE               ; 0 - 3 -> OUT ; 4 - 7 <- IN
+LEDH                proc
+                    ldd       #$FFE               ; 0 - 3 -> OUT ; 4 - 7 <- IN
                     sta       DDRH
                     stb       PORTH               ; LED PH0 -> ON
                     ldx       #100
-PH0                 bsr       D10MS
+_0@@                bsr       Delay10msec
                     dex
-                    bne       PH0
+                    bne       _0@@
                     lda       #$FD                ; LED PH1 -> ON
                     sta       PORTH
                     ldx       #100
-PH1                 bsr       D10MS
+_1@@                bsr       Delay10msec
                     dex
-                    bne       PH1
+                    bne       _1@@
                     lda       #$FB                ; LED PH2 -> ON
                     sta       PORTH
                     ldx       #100
-PH2                 bsr       D10MS
+_2@@                bsr       Delay10msec
                     dex
-                    bne       PH2
+                    bne       _2@@
                     lda       #$F7                ; LED PH3 -> ON
                     sta       PORTH
                     ldx       #100
-PH3                 bsr       D10MS
+_3@@                bsr       Delay10msec
                     dex
-                    bne       PH3
+                    bne       _3@@
                     ldd       #$FF00              ; ALL LED ARE OFF
                     sta       PORTH
                     stb       TABLE+1
                     jmp       TRANS
 
-; DELAY 10 Msec
-D10MS               pshd
+;*******************************************************************************
+
+Delay10msec         proc
+                    pshd
                     lda       #$80
                     sta       TFLG1
                     ldd       TCNT
                     addd      #20000              ; D+ 2000 -> D
                     std       TOC1                ; D -> TOC1
-DE10                lda       TFLG1
-                    bpl       DE10
+Loop@@              lda       TFLG1
+                    bpl       Loop@@
                     sta       TFLG1
                     puld
                     rts
 
-; ================   LCD PC1602-ARS-PSD   ===============
+;*******************************************************************************
 
-; CLEAR LCD DISPLAY
-
-DISP                lda       #1                  ; Clear Display (Cursor at HOME)
+ClearLCD            proc
+                    lda       #1                  ; Clear Display (Cursor at HOME)
                     bsr       DELAY
                     inca                          ; Cursor At Home
                     bsr       DELAY
@@ -454,29 +481,37 @@ DISP                lda       #1                  ; Clear Display (Cursor at HOM
                     bsr       DELAY
                     inx
                     jsr       TYP                 ; Q to Z , 1 to 6
-                    jmp       START
+                    jmp       MainLoop
+
+;*******************************************************************************
 
 DELAY               proc
                     sta       DISPL
                     pshx
-                    ldx       #3280               ; 1.64 mS DELAY
+                    ldx       #DELAY@@
 Loop@@              dex
                     bne       Loop@@
                     pulx
                     rts
+
+DELAY@@             equ       3280                ; 1.64 mS DELAY
+
+;*******************************************************************************
 
 DELAY1              proc
                     sta       DISPL1
                     pshx
-                    ldx       #0080               ; 200 uS DELAY
+                    ldx       #80                 ; 200 uS DELAY
 Loop@@              dex
                     bne       Loop@@
                     pulx
                     rts
 
-; ===================   KEYBORD     =====================
+;*******************************************************************************
+; KEYBORD
 
-KEYBO               lda       #1                  ; Clear Display (Cursor at HOME)
+KEYBO               proc
+                    lda       #1                  ; Clear Display (Cursor at HOME)
                     bsr       DELAY
                     inca                          ; Cursor At Home
                     bsr       DELAY
@@ -484,7 +519,7 @@ KEYBO               lda       #1                  ; Clear Display (Cursor at HOM
                     ldx       #KEYB               ; TYPE '  KEYBOARD'
                     jsr       TYP
                     clr       TABLE+1             ; COUNTER OF PRESSING KEY
-LL                  cli
+Loop@@              cli
                     ldd       #$31FE              ; PH0 equ $0 :1, 4, 7, A
                     stb       PORTH
                     sta       TABLE               ; '1'
@@ -504,101 +539,108 @@ LL                  cli
                     sei
                     lda       TABLE+1
                     cmpa      #8
-                    ble       LL
+                    ble       Loop@@
                     ldd       #$FF00              ; ALL LED ARE OFF
                     sta       PORTH
                     stb       TABLE+1
                     jmp       TRANS
 
-IDEL                sei
+;*******************************************************************************
+
+IDEL                proc
+                    sei
                     pshx
-                    ldx       #20000              ; DELAY
-LLX                 dex
-                    bne       LLX
+                    ldx       #DELAY@@
+Loop@@              dex
+                    bne       Loop@@
                     pulx
                     cli
                     rts
+
+DELAY@@             equ       20000
+
+;*******************************************************************************
 
 T1ST                fcc       ' TEST 68HC711K4$'
 VER                 fcc       ' Ver 1.3b $'
 ABC                 fcc       'ABCDEFGHIJKLMNOP$QRSTUVWXYZ123456$'
 KEYB                fcc       '  KEYBOARD TEST$'
 
+;*******************************************************************************
 ; "  K711 - PROGRAM TO BE OPERATED BY INTERRUPT           25.11.96"
 ; VER 1.3b
                     org       $A600
 
-intkey              sei
+intkey              proc
+                    sei
                     lda       PORTD               ; SAMPLE PORTD D
                     clrb
                     anda      #$3C                ; 00111100B ; PD2 - PD5
                     cmpa      #$38                ; PD2 = 0
-                    beq       SOF
-H1                  cmpa      #$34                ; PD3 = 0
-                    bne       H2
+                    beq       _8@@
+                    cmpa      #$34                ; PD3 = 0
+                    bne       _2@@
                     ldb       TABLE
                     cmpb      #$43                ; COLUMN OF "C"
-                    bne       H12
+                    bne       _1@@
                     lda       #'D'
-                    bra       SFF
+                    bra       _9@@
 
-H12                 ldb       #3
-                    bra       SOF
+_1@@                ldb       #3
+                    bra       _8@@
 
-H2                  cmpa      #$2C                ; PD4 = 0
-                    bne       H3
+_2@@                cmpa      #$2C                ; PD4 = 0
+                    bne       _4@@
                     ldb       TABLE
                     cmpb      #$43                ; COLUMN OF "C"
-                    bne       H22
+                    bne       _3@@
                     lda       #'E'
-                    bra       SFF
+                    bra       _9@@
 
-H22                 ldb       #6
-                    bra       SOF
+_3@@                ldb       #6
+                    bra       _8@@
 
-H3                  cmpa      #$1C                ; PD5 = 0
-                    bne       ERR
+_4@@                cmpa      #$1C                ; PD5 = 0
+                    bne       Fail@@
                     ldb       TABLE
                     cmpb      #$31                ; FIRST COLUMN
-                    bne       N2
+                    bne       _5@@
                     lda       #'A'                ; "A"
-                    bra       SFF
+                    bra       _9@@
 
-N2                  cmpb      #$32                ; SECOND COLUMN
-                    bne       N3
+_5@@                cmpb      #$32                ; SECOND COLUMN
+                    bne       _6@@
                     lda       #'0'                ; "0"
-                    bra       SFF
+                    bra       _9@@
 
-N3                  cmpb      #$33                ; THIRED COLUMN
-                    bne       N4
+_6@@                cmpb      #$33                ; THIRED COLUMN
+                    bne       _7@@
                     lda       #'B'                ; "B"
-                    bra       SFF
+                    bra       _9@@
 
-N4                  cmpb      #$43                ; FOURTH COLUMN
-                    bne       SOF
+_7@@                cmpb      #$43                ; FOURTH COLUMN
+                    bne       _8@@
                     lda       #'F'
-                    bra       SFF
+                    bra       _9@@
 
-ERR                 lda       #'J'                ; JUNK
-                    bra       SFF
+Fail@@              lda       #'J'                ; JUNK
+                    bra       _9@@
 
-SOF                 lda       TABLE
+_8@@                lda       TABLE
                     aba
-SFF                 sta       TABLE
+_9@@                sta       TABLE
 
                     inc       TABLE+1             ; = COUNTER
-                    lda       #02
+                    lda       #2
                     sta       DISPL
-                    jsr       DELY
-                    lda       #$20
+                    jsr       Delay
+                    lda       #' '
                     sta       DISPL1
-                    jsr       DELY
-                    lda       #02
+                    jsr       Delay
+                    lda       #2
                     sta       DISPL
-                    jsr       DELY
+                    jsr       Delay
                     lda       TABLE
                     sta       DISPL1
-                    jsr       DELY
+                    jsr       Delay
                     rti
-
-                    end       :s19crc

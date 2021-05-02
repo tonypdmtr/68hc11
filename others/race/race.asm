@@ -9,7 +9,7 @@
 ;*
 ;* Author's page: http://www.fascinationsoftware.com/FS/html/RaceGuage.html
 ;*
-;* Copyright (c) 2020, 2003 Richard Goedeken.
+;* Copyright (c) 2021, 2003 Richard Goedeken.
 ;* Modified for the ASPiSYS F1 Board by Tony G. Papadimitriou <tonyp@acm.org>
 ;* Assemble with ASM11 v9.65+ by Tony G. Papadimitriou <tonyp@acm.org>
 ;*
