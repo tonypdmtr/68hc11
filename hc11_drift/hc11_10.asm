@@ -51,69 +51,69 @@ GGMODE              def       0
 ;*******************************************************************************
 
 REGS                equ       $1000               ; start of CPU register block
-PORTA               equ       $00                 ; PORT A
-DDRA                equ       $01                 ; PORT A DDR
-PORTG               equ       $02                 ; PORT G
-DDRG                equ       $03                 ; PORT G DDR
-PORTB               equ       $04                 ; PORT B
-PORTCL              equ       $05                 ; PROT C LATCHED DATA REG.
-DDRC                equ       $07                 ; DATA DIRECTION REGISTER C
-PORTD               equ       $08                 ; PORT D
-DDRD                equ       $09                 ; DATA DIRECTION REGISTER D
-PORTE               equ       $0A                 ; PORT E
-CFORC               equ       $0B                 ; TIMER COMPARE FORCE REG.
-OC1M                equ       $0C                 ; O/P COMPARE 1 MASK REG.
-OC1D                equ       $0D                 ; O/P COMPARE 1 DATA REG
-TCNT                equ       $0E                 ; TIMER COUNT H
-TCNTL               equ       $0F                 ; L
-TIC1                equ       $10                 ; TIMER O/P COMPARE 1 H
-TIC1L               equ       $11                 ; 1 L
-TIC2                equ       $12                 ; 2 H
-TIC2L               equ       $13                 ; 2 L
-TIC3                equ       $14                 ; 3 H
-TIC3L               equ       $15                 ; 3 L
-TOC1                equ       $16                 ; TIMER O/P COMPARE 1 H
-TOC1L               equ       $17                 ; 1 L
-TOC2                equ       $18                 ; 2 H
-TOC2L               equ       $19                 ; 2 L
-TOC3                equ       $1A                 ; 3 H
-TOC3L               equ       $1B                 ; 3 L
-TOC4                equ       $1C                 ; 4 H
-TOC4L               equ       $1D                 ; 4 L
-TOC5                equ       $1E                 ; 5 H
-TOC5L               equ       $1F                 ; 5 L
-TCTL1               equ       $20                 ; TIMER CONTROL REG 1
-TCTL2               equ       $21                 ; TIMER CONTROL REG 2
-TMSK1               equ       $22                 ; TIMER MASK 1
-TFLG1               equ       $23                 ; TIMER FLAG 1
-TMSK2               equ       $24                 ; TIMER MASK 2
-TFLG2               equ       $25                 ; TIMER FLAG 2
-PACTL               equ       $26                 ; PULSE ACCUMULATOR CONT. REG.
-PACNT               equ       $27                 ; PULSE ACCUMULATOR COUNT REG.
-SPCR                equ       $28
-SPSR                equ       $29
-SPDR                equ       $2A
-BAUD                equ       $2B                 ; SCI BAUD REG
-SCCR1               equ       $2C                 ; SCI CONTROL 1 REG
-SCCR2               equ       $2D                 ; SCI CONTROL 2 REG
-SCSR                equ       $2E                 ; SCI STATUS REG
-SCDR                equ       $2F                 ; SCI DATA REG
-ADCTL               equ       $30
-ADR1                equ       $31
-ADR2                equ       $32
-ADR3                equ       $33
-ADR4                equ       $34
-BPROT               equ       $35
-OPTION              equ       $39                 ; OPTION REG
-COPRST              equ       $3A                 ; COP RESET REG
+PORTA               equ       REGS+$00            ; PORTA
+DDRA                equ       REGS+$01            ; PORTA DDR
+PORTG               equ       REGS+$02            ; PORTG
+DDRG                equ       REGS+$03            ; PORTG DDR
+PORTB               equ       REGS+$04            ; PORTB
+PORTCL              equ       REGS+$05            ; PROTC LATCHED DATA REG.
+DDRC                equ       REGS+$07            ; PORTC DDR
+PORTD               equ       REGS+$08            ; PORTD
+DDRD                equ       REGS+$09            ; PORTD DDR
+PORTE               equ       REGS+$0A            ; PORT E
+CFORC               equ       REGS+$0B            ; TIMER COMPARE FORCE REG.
+OC1M                equ       REGS+$0C            ; O/P COMPARE 1 MASK REG.
+OC1D                equ       REGS+$0D            ; O/P COMPARE 1 DATA REG
+TCNT                equ       REGS+$0E            ; H TIMER COUNT
+TCNTL               equ       REGS+$0F            ; L
+TIC1                equ       REGS+$10            ; 1 H TIMER O/P COMPARE
+TIC1L               equ       REGS+$11            ; 1 L
+TIC2                equ       REGS+$12            ; 2 H
+TIC2L               equ       REGS+$13            ; 2 L
+TIC3                equ       REGS+$14            ; 3 H
+TIC3L               equ       REGS+$15            ; 3 L
+TOC1                equ       REGS+$16            ; 1 H TIMER O/P COMPARE
+TOC1L               equ       REGS+$17            ; 1 L
+TOC2                equ       REGS+$18            ; 2 H
+TOC2L               equ       REGS+$19            ; 2 L
+TOC3                equ       REGS+$1A            ; 3 H
+TOC3L               equ       REGS+$1B            ; 3 L
+TOC4                equ       REGS+$1C            ; 4 H
+TOC4L               equ       REGS+$1D            ; 4 L
+TOC5                equ       REGS+$1E            ; 5 H
+TOC5L               equ       REGS+$1F            ; 5 L
+TCTL1               equ       REGS+$20            ; TIMER CONTROL REG 1
+TCTL2               equ       REGS+$21            ; TIMER CONTROL REG 2
+TMSK1               equ       REGS+$22            ; TIMER MASK 1
+TFLG1               equ       REGS+$23            ; TIMER FLAG 1
+TMSK2               equ       REGS+$24            ; TIMER MASK 2
+TFLG2               equ       REGS+$25            ; TIMER FLAG 2
+PACTL               equ       REGS+$26            ; PULSE ACCUMULATOR CTRL REG
+PACNT               equ       REGS+$27            ; PULSE ACCUMULATOR COUNT REG
+SPCR                equ       REGS+$28
+SPSR                equ       REGS+$29
+SPDR                equ       REGS+$2A
+BAUD                equ       REGS+$2B            ; SCI BAUD REG
+SCCR1               equ       REGS+$2C            ; SCI CONTROL 1 REG
+SCCR2               equ       REGS+$2D            ; SCI CONTROL 2 REG
+SCSR                equ       REGS+$2E            ; SCI STATUS REG
+SCDR                equ       REGS+$2F            ; SCI DATA REG
+ADCTL               equ       REGS+$30
+ADR1                equ       REGS+$31
+ADR2                equ       REGS+$32
+ADR3                equ       REGS+$33
+ADR4                equ       REGS+$34
+BPROT               equ       REGS+$35
+OPTION              equ       REGS+$39            ; OPTION REG
+COPRST              equ       REGS+$3A            ; COP RESET REG
 PPROG               equ       REGS+$3B            ; EEPROM PROG REG
-HPRIO               equ       $3C                 ; HPRIO REG
-INIT                equ       $3D                 ; INIT
-CONFIG              equ       $3F                 ; CONFIG REG
-CSSTRH              equ       $5C                 ; CS CYCLE STRETCH
-CSCTL               equ       $5D                 ; CS CONTROL
-CSGADR              equ       $5E                 ; GENERAL PURPOSE CS (RAM)
-CSGSIZ              equ       $5F                 ; GENERAL PURPOSE CS SIZE
+HPRIO               equ       REGS+$3C            ; HPRIO REG
+INIT                equ       REGS+$3D            ; INIT
+CONFIG              equ       REGS+$3F            ; CONFIG REG
+CSSTRH              equ       REGS+$5C            ; CS CYCLE STRETCH
+CSCTL               equ       REGS+$5D            ; CS CONTROL
+CSGADR              equ       REGS+$5E            ; GENERAL PURPOSE CS (RAM)
+CSGSIZ              equ       REGS+$5F            ; GENERAL PURPOSE CS SIZE
 
 ;*******************************************************************************
 ; Constants (define references that do not change)
@@ -206,11 +206,7 @@ cntxld              rmb       2                   ; 1sec down x-counter load val
 cntyld              rmb       2                   ; 1sec down y-counter load value
 xvalid              rmb       1                   ; flag if x corrections are enabled
 yvalid              rmb       1                   ; flag if y corrections are enabled
-
-;****************************
-; Stuff for multiply divide
-;****************************
-
+          ;-------------------------------------- ; Stuff for multiply divide
 counter             rmb       1                   ; Counter for mul/div
 .divisor            rmb       2                   ; Ptr to MS byte of divisor
 divisor_size        rmb       1                   ; Number of bytes in the divisor
@@ -218,21 +214,15 @@ dividend_size       rmb       1                   ; Number of bytes in the divid
 .quotient_byte      rmb       2                   ; Ptr to current byte of quotient
 quotient_remaining  rmb       1                   ; Number of bytes remaining to be found in quotient
 quotient_trial_val  rmb       1                   ; Current quotient trial value
-
-; Temp storage for multiply
-
+          ;-------------------------------------- ; Temp storage for multiply
 a24                 rmb       3                   ; Argument for multiple precision mul
 b24                 rmb       3                   ; Argument for multiple precision mul
 a48                 rmb       6                   ; Product from multiple precision mul
-
-; Temp storage for  divide
-
+          ;-------------------------------------- ; Temp storage for  divide
 d24                 rmb       3                   ; Divisor
 q24                 rmb       3                   ; Quotient - Must immediately precede dividend
 d48                 rmb       6                   ; Dividend
-
-; Temp storage for divide
-
+          ;-------------------------------------- ; Temp storage for divide
 work_space          rmb       2                   ; Work space for divide
 
 ;*******************************************************************************
@@ -249,18 +239,18 @@ Start               proc
                     lds       #$07FF
           #endif
                     ldx       #REGS               ; register base address
-                    lda       DDRA,x
+                    lda       [DDRA,x
                     anda      #%11110111          ; make 'ent' key -> input
                     ora       #%10000111          ; make LED interface -> output
-                    sta       DDRA,x
-                    lda       DDRD,x
+                    sta       [DDRA,x
+                    lda       [DDRD,x
                     anda      #%11000011          ; make pd2-pd5 'keys' -> input
-                    sta       DDRD,x
+                    sta       [DDRD,x
                     lda       #%00000001
-                    sta       PACTL,x
-                    bset      TMSK2,x,%01000000   ; allow real time irq to cause int
+                    sta       [PACTL,x
+                    bset      [TMSK2,x,%01000000  ; allow real time irq to cause int
                     lda       #%00110000          ; first prescaler/13 sec ps/1 => 9600bd@8MHz
-                    sta       BAUD,x
+                    sta       [BAUD,x
           #ifz DEBUG
                     lda       #%00010000          ; bit8+7 are recv bit8 and send bit8
           #else
@@ -275,9 +265,9 @@ Start               proc
                     std       RAM_SIO             ; replace with ROM irq later
                     lda       #%00000000
           #endif
-                    sta       SCCR1,x
+                    sta       [SCCR1,x
                     lda       #%00101100          ; enable transmitter and receiver of SCI
-                    sta       SCCR2,x
+                    sta       [SCCR2,x
 
                     ldd       #sendbuf            ; init sio queues prior to first possible irq
                     std       sendrd
@@ -320,13 +310,13 @@ Start               proc
                     sta       st4refy
           #endif
                     ldx       #REGS               ; Eat up any trash in serial input data reg
-start10             lda       SCSR,x
+_1@@                lda       [SCSR,x
                     anda      #%00100000
-                    beq       start20
-                    lda       SCDR,x              ; count shows -> one read is enough to clr bit
-                    bra       start10
+                    beq       _2@@
+                    lda       [SCDR,x             ; count shows -> one read is enough to clr bit
+                    bra       _1@@
 
-start20             cli
+_2@@                cli
 
                     jsr       ang2rmp
                     jsr       drf2rmp
@@ -344,43 +334,43 @@ start20             cli
                     jsr       ldorng
                     lda       #$ff
                     sta       timout
-startxx             tst       timout
-                    bne       startxx
+_3@@                tst       timout
+                    bne       _3@@
           #else
-start21             jsr       rd_stat             ; retrieve status
+                    jsr       rd_stat             ; retrieve status
                     ora       #$20                ; set bit 5 -> call for interrupt ST4
                     jsr       wr_stat
 
                     lda       #10
                     sta       errcnt1             ; initialize error counter
-start22             jsr       rd_stat
+_4@@                jsr       rd_stat
                     anda      #$20                ; wait for status to clear
-                    beq       start23             ; done
+                    beq       _5@@                ; done
                     dec       errcnt1
-                    bne       start22
+                    bne       _4@@
                     ldd       #2                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
           #endif
-start23             lda       #9                  ; hi decode mode
+_5@@                lda       #9                  ; hi decode mode
                     ldb       #%00000111          ; lo left BIN right BCD
-                    jsr       disp
+                    jsr       Disp
                     lda       #ANGDG2
                     ldb       #%01000111          ; 'F'
-                    jsr       disp
+                    jsr       Disp
                     lda       #ANGDG1
                     ldb       #%00001110          ; 'L'
-                    jsr       disp
+                    jsr       Disp
                     lda       #ANGDG0
                     ldb       #%00000000          ; ' '
-                    jsr       disp
+                    jsr       Disp
                     jsr       ldred
 
-start30             jsr       dft2dsp             ; wait for enter focal length
+_6@@                jsr       dft2dsp             ; wait for enter focal length
                     jsr       dispfl
                     jsr       ang2rmp
                     jsr       drf2rmp
                     tst       entflg
-                    beq       start30
+                    beq       _6@@
 
                     ldd       drift
                     std       flen                ; store focal length
@@ -388,27 +378,31 @@ start30             jsr       dft2dsp             ; wait for enter focal length
                     std       drift
                     jsr       InitLED             ; overwrite 'FL' back to numeric
 
-start40             tst       entflg
-                    bne       start40
+_7@@                tst       entflg
+                    bne       _7@@
           #ifnz DEBUG
                     ldd       flen                ; print focal length for debug
                     jsr       out_dec
                     jsr       crlf
           #endif
-main                tst       cor_mod             ; 0= pre correction. 1= correction mode
-                    bne       main_a0
-                    jmp       main00              ; skip if not yet in correction mode
 
-main_a0             jsr       ldgren              ; in corr mode led = green
+;*******************************************************************************
+
+MainLoop            proc
+                    tst       cor_mod             ; 0= pre correction. 1= correction mode
+                    bne       _1@@
+                    jmp       _16@@               ; skip if not yet in correction mode
+
+_1@@                jsr       ldgren              ; in corr mode led = green
                     tst       sec_flg             ; count down x y correction 1sec timers
-                    bne       main_a2             ; go there if sec flag == 1
-                    jmp       main00a             ; nothing to do
+                    bne       _2@@                ; go there if sec flag == 1
+                    jmp       _17@@               ; nothing to do
 
-main_a2             tst       lst_sec             ; if secflg == 1 and lastsec == 0 -> we just have pos edge
-                    beq       main_a4             ; we have found the edge -> go there
-                    jmp       main00a             ; otherwise goto end of main loop
+_2@@                tst       lst_sec             ; if secflg == 1 and lastsec == 0 -> we just have pos edge
+                    beq       _3@@                ; we have found the edge -> go there
+                    jmp       _17@@               ; otherwise goto end of main loop
 
-main_a4             inc       lst_sec             ; we just have a positive edge on secflag -> do the stuff
+_3@@                inc       lst_sec             ; we just have a positive edge on secflag -> do the stuff
           #ifnz DEBUG
                     ldd       countx
                     jsr       out_dec
@@ -419,21 +413,21 @@ main_a4             inc       lst_sec             ; we just have a positive edge
                     jsr       crlf
           #endif
                     tst       xvalid              ; test if we have excluded X
-                    beq       main0b              ; don't consider x
+                    beq       _9@@                ; don't consider x
 
                     ldx       xrmpcnt             ; dec ramp x counter
                     dex
                     stx       xrmpcnt
-                    bne       main_a6             ; if not zero -> no ramp step needed
+                    bne       _4@@                ; if not zero -> no ramp step needed
 
                     ldx       xrmplod             ; reset ramp x counter
                     stx       xrmpcnt
                     dec       xrmpld              ; dec x led ramp value
 
-main_a6             ldx       countx
+_4@@                ldx       countx
                     dex
                     stx       countx
-                    bne       main0b              ; countx > 0
+                    bne       _9@@                ; countx > 0
 
                     ldx       cntxld              ; reset x-counter + apply x correction
                     stx       countx
@@ -449,56 +443,56 @@ main_a6             ldx       countx
           #endif
                     lda       quadr
           #ifz ST4_90                             ; This table for straight through guide scope
-                    beq       main0c0             ; quadr=0 -> increment xref
+                    beq       _5@@                ; quadr=0 -> increment xref
                     cmpa      #1
-                    beq       main0d0             ; quadr=1 -> decrement xref
+                    beq       _6@@                ; quadr=1 -> decrement xref
                     cmpa      #2
-                    beq       main0d0             ; quadr=2 -> decrement xref
+                    beq       _6@@                ; quadr=2 -> decrement xref
                     cmpa      #3
-                    beq       main0c0             ; quadr=3 -> increment xref
+                    beq       _5@@                ; quadr=3 -> increment xref
           #else                                   ; This table for guide scope with 90deg prism
-                    beq       main0d0             ; quadr=0 -> decrement xref
+                    beq       _6@@                ; quadr=0 -> decrement xref
                     cmpa      #1
-                    beq       main0c0             ; quadr=1 -> increment xref
+                    beq       _5@@                ; quadr=1 -> increment xref
                     cmpa      #2
-                    beq       main0c0             ; quadr=2 -> increment xref
+                    beq       _5@@                ; quadr=2 -> increment xref
                     cmpa      #3
-                    beq       main0d0             ; quadr=3 -> decrement xref
+                    beq       _6@@                ; quadr=3 -> decrement xref
           #endif
-                    bra       main0b
-main0c0             lda       st4refx             ; get xref
+                    bra       _9@@
+_5@@                lda       st4refx             ; get xref
                     cmpa      #ST4XMAX
-                    beq       main0b              ; see if we would go beyond max x -> yes, do nothing
+                    beq       _9@@                ; see if we would go beyond max x -> yes, do nothing
                     inca                          ; increment xref
-                    bra       main0d2
+                    bra       _7@@
 
-main0d0             lda       st4refx             ; get xref
-                    beq       main0b              ; see if we would go below 0 -> yes, do nothing
+_6@@                lda       st4refx             ; get xref
+                    beq       _9@@                ; see if we would go below 0 -> yes, do nothing
                     deca                          ; decrement xref
-main0d2             sta       st4refx
-main0d3             jsr       wr_xref             ; write to ST4
+_7@@                sta       st4refx
+_8@@                jsr       wr_xref             ; write to ST4
                     jsr       rd_xref
                     cmpa      st4refx
-                    beq       main0b
+                    beq       _9@@
                     lda       st4refx
-                    bra       main0d3
+                    bra       _8@@
 
-main0b              tst       yvalid
-                    beq       main0d              ; don't consider y
+_9@@                tst       yvalid
+                    beq       _15@@               ; don't consider y
 
                     ldx       yrmpcnt             ; dec ramp x counter
                     dex
                     stx       yrmpcnt
-                    bne       main0bx             ; if not zero -> no ramp step needed
+                    bne       _10@@               ; if not zero -> no ramp step needed
 
                     ldx       yrmplod             ; reset ramp x counter
                     stx       yrmpcnt
                     dec       yrmpld              ; dec x led ramp value
 
-main0bx             ldx       county
+_10@@               ldx       county
                     dex
                     stx       county
-                    bne       main0d              ; county > 0 -> nothing to do
+                    bne       _15@@               ; county > 0 -> nothing to do
 
                     ldx       cntyld              ; reset y-counter + apply y correction
                     stx       county
@@ -513,52 +507,52 @@ main0bx             ldx       county
                     jsr       crlf
           #endif
                     lda       quadr
-                    beq       main0f0             ; quadr=0 -> increment yref
+                    beq       _11@@               ; quadr=0 -> increment yref
                     cmpa      #1
-                    beq       main0f0             ; quadr=1 -> increment yref
+                    beq       _11@@               ; quadr=1 -> increment yref
                     cmpa      #2
-                    beq       main0g0             ; quadr=2 -> decrement yref
+                    beq       _12@@               ; quadr=2 -> decrement yref
                     cmpa      #3
-                    beq       main0g0             ; quadr=3 -> decrement yref
-                    bra       main0d              ; illegal quadrant value. should be 0...3
+                    beq       _12@@               ; quadr=3 -> decrement yref
+                    bra       _15@@               ; illegal quadrant value. should be 0...3
 
-main0f0             lda       st4refy             ; get yref
+_11@@               lda       st4refy             ; get yref
                     cmpa      #ST4YMAX
-                    beq       main0d              ; see if we would go beyond max y -> yes, do nothing
+                    beq       _15@@               ; see if we would go beyond max y -> yes, do nothing
                     inca                          ; increment yref
-                    bra       main0g2
+                    bra       _13@@
 
-main0g0             lda       st4refy             ; get xref
-                    beq       main0d              ; see if we would go below 0 -> yes, do nothing
+_12@@               lda       st4refy             ; get xref
+                    beq       _15@@               ; see if we would go below 0 -> yes, do nothing
                     deca                          ; decrement yref
-main0g2             sta       st4refy
-main0g3             jsr       wr_yref             ; write to ST4
+_13@@               sta       st4refy
+_14@@               jsr       wr_yref             ; write to ST4
                     jsr       rd_yref
                     cmpa      st4refy
-                    beq       main0d
+                    beq       _15@@
                     lda       st4refy
-                    bra       main0g3
+                    bra       _14@@
 
-main0d              bra       main01
+_15@@               bra       _18@@
 
-main00              jsr       ldorng
-main00a             tst       sec_flg             ; see if sec flag still ==1
-                    bne       main01              ; wait as long as secflag ==1
+_16@@               jsr       ldorng
+_17@@               tst       sec_flg             ; see if sec flag still ==1
+                    bne       _18@@               ; wait as long as secflag ==1
                     clr       lst_sec             ; reset lastflag so that we can find next edge
-main01              jsr       ang2dsp             ; do all the display stuff
+_18@@               jsr       ang2dsp             ; do all the display stuff
                     jsr       dft2dsp
                     jsr       dispang
                     jsr       dispdrf
                     jsr       ang2rmp
                     jsr       drf2rmp
 
-main08              tst       entflg              ; see if we have enter key pressed
-                    bne       main08a             ; if enter key pressed
+                    tst       entflg              ; see if we have enter key pressed
+                    bne       _20@@               ; if enter key pressed
                                                   ; -> have to do the x y calc and reset counters
-main081             jmp       main                ; if no enter key go back to main loop start
+_19@@               jmp       MainLoop            ; if no enter key go back to main loop start
 
-main08a             ldx       drift
-                    beq       main081             ; No drift => dont enter corrections mode + go to main
+_20@@               ldx       drift
+                    beq       _19@@               ; No drift => dont enter corrections mode + go to main
                     lda       #1
                     sta       cor_mod
 
@@ -566,37 +560,35 @@ main08a             ldx       drift
                     sta       st4refx
                     jsr       rd_yref
                     sta       st4refy
-
-          ; calc x y down counter values
-
+          ;-------------------------------------- ; calc x y down counter values
                     ldd       angl                ; get angle to calc modulus 90deg and quadrant
                     clrx                          ; x will become quadrant
-main09              cmpd      #89                 ; see if we can subtract 90deg (once again)
-                    ble       main10              ; no. => 0<=D<=90
+_21@@               cmpd      #89                 ; see if we can subtract 90deg (once again)
+                    ble       _22@@               ; no. => 0<=D<=90
                     subd      #90                 ; yes. subtract
                     inx                           ; increment quadrant counter
-                    bra       main09              ; loop around
+                    bra       _21@@               ; loop around
 
-main10              stb       angmod
+_22@@               stb       angmod
                     xgdx
                     stb       quadr
 
-xcalc               ldd       angl
+                    ldd       angl
                     cmpd      #90                 ; if angle = 90 or 270 -> disable x-calc + x-corr
-                    beq       xcalc10
+                    beq       _23@@
                     cmpd      #270
-                    beq       xcalc10
+                    beq       _23@@
 
                     lda       #1
                     sta       xvalid
-                    bra       xcalc20
+                    bra       _24@@
 
-xcalc10             clr       xvalid              ; disable x-calc + x-corr
+_23@@               clr       xvalid              ; disable x-calc + x-corr
                     clr       xrmpld
                     jsr       ang2rmp
-                    bra       ycalc               ; jmp to y-calc. no x-calc required.
+                    bra       _25@@               ; jmp to y-calc. no x-calc required.
 
-xcalc20             ldd       flen                ; do x calculation
+_24@@               ldd       flen                ; do x calculation
                     std       a24+1
                     clr       a24                 ; a24= Flen / 10
                     ldd       drift
@@ -643,20 +635,20 @@ xcalc20             ldd       flen                ; do x calculation
                     lda       #5
                     sta       xrmpld
 
-ycalc               ldd       angl
-                    beq       ycalc10             ; if angle=0 or 180 disable y-calc + y-corr
+_25@@               ldd       angl
+                    beq       _26@@               ; if angle=0 or 180 disable y-calc + y-corr
                     cmpd      #180
-                    beq       ycalc10
+                    beq       _26@@
                     lda       #1
                     sta       yvalid
-                    bra       ycalc20
+                    bra       _27@@
 
-ycalc10             clr       yvalid
+_26@@               clr       yvalid
                     clr       yrmpld
                     jsr       drf2rmp
-                    bra       main25              ; skip y-calc
+                    bra       _28@@               ; skip y-calc
 
-ycalc20             ldd       flen                ; do y calculation
+_27@@               ldd       flen                ; do y calculation
                     std       a24+1
                     clr       a24                 ; a24= Flen / 10
                     ldd       drift
@@ -702,7 +694,7 @@ ycalc20             ldd       flen                ; do y calculation
                     stx       yrmpcnt
                     lda       #5
                     sta       yrmpld
-main25
+_28@@
           #ifnz DEBUG
                     ldd       angl
                     jsr       out_dec
@@ -730,32 +722,32 @@ main25
                     jsr       out_dec
                     jsr       crlf
           #endif
-main26              tst       entflg
-                    bne       main26
-                    jmp       main
+_29@@               tst       entflg
+                    bne       _29@@
+                    jmp       MainLoop
 
 ;*******************************************************************************
 
 InitLED             proc
                     lda       #15                 ; hi test register
                     ldb       #%00000000          ; lo 0 = normal ops
-                    jsr       disp
+                    jsr       Disp
 
                     lda       #12                 ; hi shut down reg
                     ldb       #%00000001          ; lo 1 = normal ops
-                    jsr       disp
+                    jsr       Disp
 
                     lda       #11                 ; hi scan limit reg
                     ldb       #%00000111          ; lo %0111 display all digits
-                    jsr       disp
+                    jsr       Disp
 
                     lda       #10                 ; hi intensity reg
                     ldb       #%00001000          ; lo 1/2 intensity
-                    jsr       disp
+                    jsr       Disp
 
                     lda       #9                  ; hi decode mode
                     ldb       #%01110111          ; lo left BCD right BCD
-                    jmp       disp
+                    jmp       Disp
 
 ;*******************************************************************************
 
@@ -766,7 +758,7 @@ ang2rmp             proc
                     xgdx
                     ldb       ,x
                     lda       #ANGRMP
-                    jmp       disp
+                    jmp       Disp
 
 ;*******************************************************************************
 
@@ -810,7 +802,7 @@ drf2rmp             proc
                     ldb       ,x
                     orb       rgled
                     lda       #DRFRMP
-                    jmp       disp
+                    jmp       Disp
 
 ;*******************************************************************************
 
@@ -859,40 +851,40 @@ dft2dsp             proc
 dispang             proc
                     lda       #ANGDG0
                     ldb       angdsp
-                    bsr       disp
+                    bsr       Disp
                     lda       #ANGDG1
                     ldb       angdsp+1
-                    bsr       disp
+                    bsr       Disp
                     lda       #ANGDG2
                     ldb       angdsp+2
-                    bra       disp
+                    bra       Disp
 
 ;*******************************************************************************
 
 dispdrf             proc
                     lda       #DRFDG0
                     ldb       drfdsp
-                    bsr       disp
+                    bsr       Disp
                     lda       #DRFDG1
                     ldb       drfdsp+1
                     orb       #%10000000
-                    bsr       disp
+                    bsr       Disp
                     lda       #DRFDG2
                     ldb       drfdsp+2
-                    bra       disp
+                    bra       Disp
 
 ;*******************************************************************************
 
 dispfl              proc
                     lda       #DRFDG0
                     ldb       drfdsp
-                    bsr       disp
+                    bsr       Disp
                     lda       #DRFDG1
                     ldb       drfdsp+1
-                    bsr       disp
+                    bsr       Disp
                     lda       #DRFDG2
                     ldb       drfdsp+2
-                    bra       disp
+                    bra       Disp
 
 ;*******************************************************************************
 
@@ -907,33 +899,33 @@ dispdec             proc
                     pshb
                     xgdx
                     lda       #ANGDG2
-                    bsr       disp
+                    bsr       Disp
                     pulb
                     lda       #ANGDG1
-                    bsr       disp
+                    bsr       Disp
                     pulb
                     lda       #ANGDG0
 ;                   bra       disp
 
 ;*******************************************************************************
 
-disp                proc
+Disp                proc
                     push
                     ldx       #REGS
-                    bclr      PORTA,x,CLK
-                    bclr      PORTA,x,LOAD
-                    bclr      PORTA,x,DATA
+                    bclr      [PORTA,x,CLK
+                    bclr      [PORTA,x,LOAD
+                    bclr      [PORTA,x,DATA
                     ldy       #16
 Loop@@              lsld
                     bcc       Zero@@
-                    bset      PORTA,x,DATA
+                    bset      [PORTA,x,DATA
                     bra       Clock@@
-Zero@@              bclr      PORTA,x,DATA
-Clock@@             bset      PORTA,x,CLK
-                    bclr      PORTA,x,CLK
+Zero@@              bclr      [PORTA,x,DATA
+Clock@@             bset      [PORTA,x,CLK
+                    bclr      [PORTA,x,CLK
                     dey
                     bne       Loop@@
-                    bset      PORTA,x,LOAD
+                    bset      [PORTA,x,LOAD
                     pull
                     rts
 
@@ -1683,7 +1675,7 @@ _2@@                tab
 RTI_Handler         proc
                     ldx       #REGS
                     lda       #%01000000
-                    sta       TFLG2,x
+                    sta       [TFLG2,x
 
                     tst       timout
                     beq       _1@@
@@ -1705,7 +1697,7 @@ _2@@                inc       key_cnt
                     rti                           ; skip all irq until key_cnt = 12
 
 _3@@                clr       key_cnt
-                    lda       PORTD,x
+                    lda       [PORTD,x
                     sta       pdmir
                     anda      #ALLKEY
                     cmpa      #ALLKEY
@@ -1751,7 +1743,7 @@ _8@@                ldd       drift
                     std       drift
 ;                   bra       _9@@
 
-_9@@                lda       PORTA,x
+_9@@                lda       [PORTA,x
                     anda      #ENTKEY
                     bne       _10@@
                     lda       #1
@@ -1765,7 +1757,7 @@ _11@@               bra       sio_snd             ; see if we have to initiate s
 
 SCI_Handler         proc
                     ldx       #REGS
-                    lda       SCSR,x
+                    lda       [SCSR,x
                     sta       scsr_mr
                     anda      #%00100000
                     bne       _1@@
@@ -1774,7 +1766,7 @@ SCI_Handler         proc
                     bne       sio_snd
                     rti                           ; if not rcv or snd. No other irq served.
 
-_1@@                lda       SCDR,x              ; dont care for overrun error yet
+_1@@                lda       [SCDR,x             ; dont care for overrun error yet
                     ldy       recvwr
                     sta       ,y
                     cpy       #recvbuf+15
@@ -1793,7 +1785,7 @@ sio_snd             proc
                     ldy       sendrd
                     cpy       sendwr
                     beq       _4@@                ; nothing to send
-                    brclr     SCSR,x,%10000000,*  ; wait till send reg empty
+                    brclr     [SCSR,x,%10000000,* ; wait till send reg empty
 
                     pshx
                     ldx       #8
@@ -1809,12 +1801,12 @@ Cont@@              dex
                     pulx
                     andb      #1
                     bne       _1@@
-                    bclr      SCCR1,x,%01000000
+                    bclr      [SCCR1,x,%01000000
                     bra       _2@@
 
-_1@@                bset      SCCR1,x,%01000000
+_1@@                bset      [SCCR1,x,%01000000
 
-_2@@                sta       SCDR,x
+_2@@                sta       [SCDR,x
                     cpy       #sendbuf+15
                     bne       _3@@
                     ldy       #sendbuf-1
@@ -1822,10 +1814,10 @@ _3@@                iny
                     sty       sendrd
                     cpy       sendwr
                     beq       _4@@                ; nothing more to send
-                    bset      SCCR2,x,%10000000   ; if more bytes to send set irq enable bit
+                    bset      [SCCR2,x,%10000000  ; if more bytes to send set irq enable bit
                     bra       Done@@
 
-_4@@                bclr      SCCR2,x,%10000000   ; if no more bytes to send clr irq enable
+_4@@                bclr      [SCCR2,x,%10000000  ; if no more bytes to send clr irq enable
 Done@@              rti
 
 ;*******************************************************************************
@@ -1944,22 +1936,22 @@ RESET               proc                          ; INITIALIZE THE CPU
                     lds       #$01FF              ; put stack in CPU RAM
                     ldx       #REGS               ; register base address
                     lda       #%10010001          ; adpu, irqe, dly, cop = 65mS
-                    sta       OPTION,x
+                    sta       [OPTION,x
                     lda       #%00000000
-                    sta       TMSK2,x
+                    sta       [TMSK2,x
                     lda       #%00000000
-                    sta       BPROT,x             ; make CONFIG & EEPROM writable
+                    sta       [BPROT,x            ; make CONFIG & EEPROM writable
                     lds       #$03ff
                     lda       #%00000101
-                    sta       CSCTL,x             ; enable program CS for 32K
+                    sta       [CSCTL,x            ; enable program CS for 32K
                     lda       #%00000000
-                    sta       CSGADR,x            ; RAM starts at address 0000H
+                    sta       [CSGADR,x           ; RAM starts at address 0000H
                     lda       #%00000001
-                    sta       CSGSIZ,x            ; RAM block size is 32K
+                    sta       [CSGSIZ,x           ; RAM block size is 32K
                     lda       #%00011111
-                    sta       DDRG,x              ; bank select bits = outputs
+                    sta       [DDRG,x             ; bank select bits = outputs
                     lda       #%00000000
-                    sta       PORTG,x             ; select 1ST bank
+                    sta       [PORTG,x            ; select 1ST bank
                     jmp       Start
 
 ;*******************************************************************************
