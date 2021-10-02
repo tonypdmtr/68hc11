@@ -910,12 +910,13 @@ dispdec             proc
 ;*******************************************************************************
 
 Disp                proc
-                    push
+                    pshx
+                    pshd
                     ldx       #REGS
                     bclr      [PORTA,x,CLK
                     bclr      [PORTA,x,LOAD
                     bclr      [PORTA,x,DATA
-                    ldy       #16
+                    ldb       #16
 Loop@@              lsld
                     bcc       Zero@@
                     bset      [PORTA,x,DATA
@@ -923,10 +924,11 @@ Loop@@              lsld
 Zero@@              bclr      [PORTA,x,DATA
 Clock@@             bset      [PORTA,x,CLK
                     bclr      [PORTA,x,CLK
-                    dey
+                    decb
                     bne       Loop@@
                     bset      [PORTA,x,LOAD
-                    pull
+                    puld
+                    pulx
                     rts
 
 ;*******************************************************************************
@@ -979,9 +981,9 @@ wr_yref             proc
                     bra       crlf
           #else
 rd_stat             proc
-                    lda       #10
+MainLoop@@          lda       #10
                     sta       errcnt              ; init error counter
-rd_st02             lda       #2                  ; read RAM cmd. and reetry point for error recovery
+Loop@@              lda       #2                  ; read RAM cmd. and reetry point for error recovery
                     jsr       sendv24
                     lda       #1                  ; number of bytes
                     jsr       sendv24
@@ -995,52 +997,51 @@ rd_st02             lda       #2                  ; read RAM cmd. and reetry poi
                     jsr       sendv24
           ;-------------------------------------- ; response :    02 01 ST CS
                     ldx       #st4buf             ; pointer to read buffer
-rd_st05             lda       #$ff                ; init value for timeout
+_1@@                lda       #$ff                ; init value for timeout
                     sta       timout
                     ldy       recvrd
-rd_st10             cpy       recvwr              ; check if we have received something
-                    bne       rd_st15             ; we have received something
+_2@@                cpy       recvwr              ; check if we have received something
+                    bne       _3@@                ; we have received something
                     tst       timout              ; wait a while to receive data
-                    bne       rd_st10             ; lop around to try wait more
+                    bne       _2@@                ; loop around to try wait more
                     dec       errcnt              ; time out! count down error
-                    bne       rd_st02             ; loop back to send command
+                    bne       Loop@@              ; loop back to send command
                     ldd       #10                 ; had 10 failures -> fatal error
                     bra       Fatal               ; go fatal
 
-rd_st15             lda       ,y
+_3@@                lda       ,y
                     sta       ,x                  ; copy v24 receive data to st4 receive buffer
                     inx
                     cpy       #recvbuf+15
-                    bne       rd_st20
+                    bne       _4@@
                     ldy       #recvbuf-1
-rd_st20             iny
+_4@@                iny
                     sty       recvrd
                     cpx       #st4buf+4
-                    bne       rd_st05             ; go back for next char. incl re-init of timeout
+                    bne       _1@@                ; go back for next char. incl re-init of timeout
 
                     lda       st4buf              ; all received. now check
                     cmpa      #2
-                    bne       rd_st95
+                    bne       _6@@
                     lda       st4buf+1
                     cmpa      #1
-                    bne       rd_st95
+                    bne       _6@@
 
                     clra
                     ldx       #st4buf
-rd_st30             adda      ,x                  ; add up checksum
+_5@@                adda      ,x                  ; add up checksum
                     inx
                     cpx       #st4buf+3
-                    bne       rd_st30
+                    bne       _5@@
                     cmpa      ,x                  ; compare with received checksum value
-                    bne       rd_st95             ; goto error handler if wrong checksum
+                    bne       _6@@                ; goto error handler if wrong checksum
                     lda       st4buf+2            ; retrieve status byte and return it
                     rts
 
-rd_st95             dec       errcnt              ; count down for error
-                    beq       rd_st97
-                    jmp       rd_stat             ; if received data are bad goto re issue command
+_6@@                dec       errcnt              ; count down for error
+                    jne       MainLoop@@          ; if received data are bad goto re issue command
 
-rd_st97             ldd       #1                  ; if 10 errors encountered -> goto fatal halt
+                    ldd       #1                  ; if 10 errors encountered -> goto fatal halt
                     jmp       Fatal
 
 ;*******************************************************************************
@@ -1319,7 +1320,6 @@ _3@@                iny
 Fail@@              jmp       Fatal
 Done@@              equ       :AnRTS
           #endif
-
 ;*******************************************************************************
 
 out_dec             proc
