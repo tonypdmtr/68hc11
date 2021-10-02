@@ -39,9 +39,7 @@ RESERVED_VECTORS    equ       $FFC0               ;Reserved vectors (22 bytes)
                     #ROM      ROM
 
                     #Uses     common.inc
-
-; Register definitions
-
+          ;-------------------------------------- ;Register definitions
 PORTA               equ       REGS+$00,1          ;Port A Data
 PIOC                equ       REGS+$02,1          ;Parallel IO Control
 PORTC               equ       REGS+$03,1          ;Port C Data

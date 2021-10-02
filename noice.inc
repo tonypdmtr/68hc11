@@ -48,9 +48,7 @@ RESERVED_VECTORS    equ       $0400               ;Reserved vectors (normally 22
                     #Uses     common.inc
 
 Villop              set       $0422               ;Illegal opcode trap
-
-; Register definitions
-
+          ;-------------------------------------- ;Register definitions
 PORTA               equ       REGS+$00,1          ;Port A Data
 DDRA                equ       REGS+$01,1          ;Data Direction Register A
 PORTG               equ       REGS+$02,1          ;Port G Data

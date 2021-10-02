@@ -36,9 +36,7 @@ VECTORS_END         equ       $FF                 ;end of user JMP vectors
                     #MEMORY   VECTORS VECTORS|$00FF
 
                     #Uses     common.inc
-
-; Register definitions
-
+          ;-------------------------------------- ;Register definitions
 PORTA               equ       REGS+$00,1          ;Port A Data
 PIOC                equ       REGS+$02,1          ;Parallel IO Control
 PORTC               equ       REGS+$03,1          ;Port C Data
@@ -91,9 +89,9 @@ HPRIO               equ       REGS+$3C,1          ;Highest Interrupt Priority
 INIT                equ       REGS+$3D,1          ;INIT
 XINIT               equ       $103D,1             ;Out-of-reset INIT
 CONFIG              equ       REGS+$3F,1          ;Configuration Register
-
+          ;--------------------------------------
           ; BUFFALO USER CALLABLE SUBROUTINES (eg. JSR .BPCLR)
-
+          ;--------------------------------------
                     #temp     $FF7C
 
 .WARMST             next      :temp,3             ;warm start
@@ -126,13 +124,13 @@ CONFIG              equ       REGS+$3F,1          ;Configuration Register
 .INCHAR             next      :temp,3             ;wait for and input a char from term
 .VECINT             next      :temp,3             ;initialize RAM vector table
 
-                    #VECTORS  VECTORS
-
+;*******************************************************************************
 ; The following section puts the JMP opcodes in the pseudo-vector area
 ; so the user need only use DW LABEL instructions to fill the rest
 ; DWs must be spaced one byte apart from one another to skip over the JMPs
 ; You could delete this and use whole JMP LABEL instructions starting at
 ; #VECTORS with the above org in place.
+;*******************************************************************************
 
 ?                   macro
                     fcb       JMP_OPCODE
@@ -140,10 +138,9 @@ CONFIG              equ       REGS+$3F,1          ;Configuration Register
                     mtop      20
                     endm
 
+                    #VECTORS  VECTORS
                     @?
-
-                    org       Vsci+1              ;ready to accept first DW statement
-
+                    #VECTORS  Vsci+1              ;ready to accept first DW statement
                     #DATA     EEPROM              ;points to actual EEPROM
                     #RAM      RAM                 ;points to beginning of user RAM
                     #ROM      ROM                 ;points to RAM used for program storage
