@@ -22,7 +22,7 @@ interuptdelay       equ       20000
 
 flashflag           rmb       1
 
-                    org       $00D9               ; interrupt jump table
+                    #VECTORS  $00D9               ; interrupt jump table
                     jmp       ISR_Handler         ; causes interrupt when OC3 is triggered
 
 ;*******************************************************************************

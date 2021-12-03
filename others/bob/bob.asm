@@ -89,11 +89,10 @@ TCNT                @?        $0E                 ; TCNT Register
           #endif
 
 ;*******************************************************************************
-                    #RAM                          ; Register structures
+                    #RAM      RAM                 ; Register structures
 ;*******************************************************************************
-                    org       RAM
-?MyVars
 
+?MyVars
 TABLE               rmb       152*2               ; Table of 16-bit entry values
                     org       *+26                ; filler
 TABLE_OFFSET        rmb       2                   ; Last record in turn-off table
@@ -109,9 +108,8 @@ HOLD                rmb       2                   ; Temp register
                     #size     ?MyVars
 
 ;*******************************************************************************
-                    #ROM                          ; Setup and initialization code
+                    #ROM      ROM                 ; Setup and initialization code
 ;*******************************************************************************
-                    org       ROM                 ; $D000 is the beginning of EPROM
 
 Start               proc
                     clr       XINIT

@@ -42,7 +42,7 @@ alarm1              equ       $001C,1
 alarm30             equ       $001D,2
 
 ;*******************************************************************************
-                    org       $0000
+                    #RAM      $0000
           ;-------------------------------------- ; List of Hex Values 0-9 for 7-Segment
 Zero                fcb       $3F
 One                 fcb       $06
@@ -56,7 +56,7 @@ Eight               fcb       $7F
 Nine                fcb       $6F
                     fcb       $0A,$00,$00,$00     ;what are these?
 
-                    org       $0010
+                    #RAM      $0010
           ;-------------------------------------- ; Time followed by alarm time
 hh                  fcb       $06,$06
 mm                  fcb       $3F,$3F

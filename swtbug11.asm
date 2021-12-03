@@ -9,8 +9,8 @@
 ; Revised for the 68HC11
 ; 15 December 2002
 ; John E. Kent
-;
-                    org       $A000
+
+                    #RAM      $A000
 
 IRQ                 rmb       2                   ; IRQ POINTER
 BEGA                rmb       2                   ; BEGINNING ADDR PNCH
@@ -36,10 +36,9 @@ BKLST               rmb       1                   ; BREAKPOINT DATA
 ; Two more bytes added to the stack
 ; for the IY register
 ;
-                    org       $A040
-STACK               rmb       1                   ; SWTBUG STACK
-;
-                    org       $E000
+STACK               equ       $A040               ; SWTBUG STACK
+
+                    #ROM      $E000
 ;
 ; I/O INTERRUPT SEQUENCE
 IRQV                ldx       IRQ
@@ -715,12 +714,12 @@ TABLE1              fcb       'P'                 ; ASCII PUNCH
 TABEND              fcb       'E'                 ; END OF TAPE
                     fdb       PNCHS9
 
-                    org       $E3F8
+                    #VECTORS  $E3F8
                     fdb       IRQV                ; IRQ VECTOR
                     fdb       SFE                 ; SOFTWARE INTERRUPT
                     fdb       NMIV                ; NMI VECTOR
                     fdb       START               ; RESTART VECTOR
 
-                    org       $A048
+                    #VECTORS  $A048
                     fdb       START
                     end

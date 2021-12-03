@@ -564,7 +564,7 @@ Loop@@              dey
 ;
 ; The endless loop looks wrong but the idle task is always available to run.
 
-                    org       *
+                    #ROM      *
 
 _taskSwitch         proc
                     lda       tflg2
