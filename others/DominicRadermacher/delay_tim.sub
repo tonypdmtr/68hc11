@@ -1,0 +1,32 @@
+;*******************************************************************************
+; Function          Delay10ms
+; Description       Delay for 10 milliseconds
+; Last update       2005-10-16
+; Notes             This works any E-Clock specified by BUS_KHZ
+; Stack usage       4 bytes
+; Code size         31 bytes
+;*******************************************************************************
+
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+#endif ;------------------------------------------------------------------------
+
+Delay10ms           proc                          ;20000 cycles to eat
+                    pshx
+                    pshd
+                    ldx       #REGS
+                    lda       #$80
+                    sta       [TFLG1,x            ;4c clear OC1F if it is allready set
+                    clr       [TMSK2,x            ;setup clock divider and interupt
+                    ldd       [TCNT,x             ;read counter value
+                    addd      #10*BUS_KHZ         ;(KHZ represent msec)
+                    std       [TOC1,x             ;when TCNT==TOC1, OC1F will be raised
+                    brclr     [TFLG1,x,#$80,*
+                    lda       #$80
+                    sta       [TFLG1,x            ;clear OC1F
+                   ;bclr      [TFLG1,x,#$7f       ;clear OC1F
+                    puld
+                    pulx
+                    rts
