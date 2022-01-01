@@ -1,0 +1,28 @@
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Description       Delay for N milliseconds (give N in RegA, N = 1..255)
+;                   For N=0, the function will delay 256 ms
+; Notes             This works for an E-Clock of BUS_KHZ MHz.
+;                   If an interrupt occurs, timing is not precise.
+
+                              #Cycles 6           ;(for JSR)
+Delay               proc
+                    pshx
+                    psha
+Loop@@              ldx       #DELAY@@
+                              #Cycles
+_@@                 dex
+                    bne       _@@
+                              #temp :cycles
+                    deca
+                    bne       Loop@@
+                    pula
+                    pulx
+                    rts
+
+DELAY@@             equ       BUS_KHZ-:cycles-:ocycles/:temp
