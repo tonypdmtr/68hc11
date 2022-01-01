@@ -5,12 +5,7 @@
 #endif ;------------------------------------------------------------------------
 
 ;*******************************************************************************
-; Function          Delay100us
-; Description       Delay for 100 microseconds (with E-Clk = BUS_KHZ)
-; Last update       2005-10-16
-; Stack usage       1 byte
-; Code size         8 bytes
-;*******************************************************************************
+; Delay for 100 microseconds (with E-Clk = BUS_KHZ)
 
                               #Cycles 6           ;(for JSR)
 Delay100us          proc
