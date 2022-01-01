@@ -1,0 +1,26 @@
+#ifmain ;-----------------------------------------------------------------------
+                    #ListOff
+                    #Uses     mcu.inc
+                    #ListOn
+#endif ;------------------------------------------------------------------------
+
+;*******************************************************************************
+; Function          Delay100us
+; Description       Delay for 100 microseconds (with E-Clk = BUS_KHZ)
+; Last update       2005-10-16
+; Stack usage       1 byte
+; Code size         8 bytes
+;*******************************************************************************
+
+                              #Cycles 6           ;(for JSR)
+Delay100us          proc
+                    psha
+                    lda       #DELAY@@
+                              #Cycles
+Loop@@              deca
+                    bne       Loop@@
+                              #temp :cycles
+                    pula
+                    rts
+
+DELAY@@             equ       BUS_KHZ/10-:cycles-:ocycles/:temp
